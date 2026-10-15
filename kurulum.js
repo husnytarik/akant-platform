@@ -81,9 +81,30 @@ export async function kurulumApi({ req, res, url, o, json, govde, denetle }) {
 
   if (req.method !== 'POST') return false;
   const uclar = ['/api/yonetim/ogretmen-kayit', '/api/yonetim/ogrenci-kayit', '/api/yonetim/ogretmen-dersleri',
-    '/api/yonetim/ogrenci-sinif', '/api/yonetim/sinif-ogretmeni'];
+    '/api/yonetim/ogrenci-sinif', '/api/yonetim/sinif-ogretmeni', '/api/yonetim/veli-bagla', '/api/yonetim/veli-coz'];
   if (!uclar.includes(yol)) return false;
   const b = await govde(req);
+
+  // Veli-öğrenci ilişkisi: aynı şubede aktif veli ve öğrenci üyelikleri bağlanır.
+  if (yol === '/api/yonetim/veli-bagla' || yol === '/api/yonetim/veli-coz') {
+    const veliId = tamSayi(b.veliUyelikId, 1, 1e9);
+    const ogrId = tamSayi(b.ogrenciUyelikId, 1, 1e9);
+    const veli = veliId && db.prepare("SELECT * FROM memberships WHERE id = ? AND role = 'veli' AND status = 'aktif'").get(veliId);
+    const ogr = ogrId && db.prepare("SELECT * FROM memberships WHERE id = ? AND role = 'ogrenci'").get(ogrId);
+    if (!veli) return hata(404, 'Aktif veli bulunamadı');
+    if (!ogr) return hata(404, 'Öğrenci bulunamadı');
+    if (yol === '/api/yonetim/veli-coz') {
+      db.prepare('DELETE FROM guardians WHERE parent_membership_id = ? AND student_membership_id = ?').run(veliId, ogrId);
+      denetle(o.user_id, 'veli-coz', { veliId, ogrId });
+      json(res, 200, { tamam: true });
+      return true;
+    }
+    if (veli.branch_id !== ogr.branch_id) return hata(400, 'Veli ve öğrenci farklı şubelerde');
+    db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(veliId, ogrId);
+    denetle(o.user_id, 'veli-bagla', { veliId, ogrId });
+    json(res, 201, { tamam: true });
+    return true;
+  }
 
   if (yol === '/api/yonetim/ogretmen-kayit') {
     const dersIds = Array.isArray(b.dersIds) ? [...new Set(b.dersIds.map(Number))] : [];

@@ -33,8 +33,43 @@ let tohum = 20260;
 const rnd = () => (tohum = (tohum * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const karistir = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
+// Her öğrenciye bir veli açar ve bağlar (yoksa); demo veli ile demo öğrenciyi de bağlar.
+function veliBagla() {
+  const ogrenciler = db.prepare(`
+    SELECT m.id AS mid, m.branch_id AS sube, u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id
+    WHERE m.role = 'ogrenci' AND m.status = 'aktif'
+      AND NOT EXISTS (SELECT 1 FROM guardians g WHERE g.student_membership_id = m.id)
+      AND u.tc_no NOT IN ('10000000382')`).all();
+  let eklenen = 0;
+  for (const o of ogrenciler) {
+    const soyad = o.ad.split(' ').slice(-1)[0];
+    const ad = `${ADLAR[(o.mid * 5 + 1) % ADLAR.length]} ${soyad}`;
+    const tc = tcUret('6' + String(o.mid).padStart(8, '0'));
+    const tel = '551' + String(o.mid).padStart(7, '0');
+    let u = db.prepare('SELECT id FROM users WHERE tc_no = ?').get(tc);
+    if (!u) u = { id: Number(db.prepare('INSERT INTO users (tc_no, phone, full_name, created_at) VALUES (?,?,?,?)').run(tc, tel, ad, Date.now()).lastInsertRowid) };
+    const vm = db.prepare("SELECT id FROM memberships WHERE user_id = ? AND branch_id = ? AND role = 'veli'").get(u.id, o.sube)
+      || { id: Number(db.prepare("INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,'veli')").run(u.id, o.sube).lastInsertRowid) };
+    db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(vm.id, o.mid);
+    eklenen++;
+  }
+  // Demo veli <-> demo öğrenci (aynı şube), demo öğrenci bir sınıfa yerleşir
+  const dm = (tc, rol) => db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
+                                      WHERE u.tc_no = ? AND m.role = ? AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get(tc, rol);
+  const dOgr = dm('10000000382', 'ogrenci');
+  const dVeli = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id
+                            WHERE u.tc_no = '10000000450' AND m.role = 'veli' AND m.branch_id = ? AND m.status = 'aktif'`)
+    .get(dOgr?.branch_id);
+  if (dOgr && dVeli) {
+    db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(dVeli.id, dOgr.id);
+    const sinif = db.prepare("SELECT id FROM classes WHERE name = '4-A' AND branch_id = ?").get(dOgr.branch_id);
+    if (sinif) db.prepare('INSERT OR IGNORE INTO class_students (class_id, student_membership_id) VALUES (?,?)').run(sinif.id, dOgr.id);
+  }
+  return eklenen;
+}
+
 if (db.prepare("SELECT COUNT(*) AS n FROM classes WHERE name = '4-A'").get().n > 0) {
-  console.log('Örnek veri zaten eklenmiş; işlem yapılmadı.');
+  console.log(`Örnek veri zaten eklenmiş; ${veliBagla()} veli eklendi.`);
   process.exit(0);
 }
 
@@ -128,7 +163,9 @@ try {
     gunSayisi.set(`${a.id}-${g}`, (gunSayisi.get(`${a.id}-${g}`) || 0) + 1);
     yerlesen++;
   }
+  const veliSayisi = veliBagla();
   db.exec('COMMIT');
+  console.log(`Veli: ${veliSayisi} (her öğrenciye bir veli bağlandı).`);
   console.log(`Eklendi: 20 öğretmen, 200 öğrenci, ${siniflar.length} sınıf, ${siniflar.length * 10} ders ataması.`);
   console.log(`Haftalık program: ${yerlesen} ders saati yerleşti, ${yerlesemeyen} yerleşemedi.`);
 } catch (e) {

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { db, tcGecerliMi, seed } from './db.js';
 import { dersProgramiApi } from './ders-programi.js';
 import { kurulumApi } from './kurulum.js';
+import { etutApi } from './etut.js';
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.
@@ -29,6 +30,9 @@ const MODULLER = [
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
   { id: 'duyuru', ad: 'Duyuru ve kampanyalar', aciklama: 'Okul adına duyuru ve bildirim yayınlama', roller: ['yonetim'] },
   { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'] },
+  { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
+  { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
+  { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
   { id: 'siniflarim', ad: 'Sınıflarım', aciklama: 'Sorumlu olduğum sınıf ve öğrenciler', roller: ['ogretmen'] },
   { id: 'yoklama', ad: 'Yoklama', aciklama: 'Ders yoklaması alma', roller: ['ogretmen'] },
   { id: 'not-girisi', ad: 'Not girişi', aciklama: 'Sınav ve değerlendirme notları', roller: ['ogretmen'] },
@@ -201,6 +205,12 @@ async function api(req, res, url) {
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
+  if (url.pathname.startsWith('/api/etut/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await etutApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   json(res, 404, { hata: 'Bulunamadı' });
 }
 
@@ -303,6 +313,7 @@ function statik(req, res, url) {
   if (ad === '/kullanicilar') ad = '/kullanicilar.html';
   if (ad === '/ders-programi') ad = '/ders-programi.html';
   if (ad === '/kurulum') ad = '/kurulum.html';
+  if (ad === '/etut') ad = '/etut.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

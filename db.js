@@ -81,6 +81,35 @@ CREATE TABLE IF NOT EXISTS schedule (
   assignment_id INTEGER NOT NULL REFERENCES assignments(id),
   UNIQUE (class_id, day, period)
 );
+-- Veli-öğrenci ilişkisi (üyelik düzeyinde)
+CREATE TABLE IF NOT EXISTS guardians (
+  parent_membership_id  INTEGER NOT NULL REFERENCES memberships(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  PRIMARY KEY (parent_membership_id, student_membership_id)
+);
+-- Etüt: öğretmenin açtığı ek ders; tarih/saat yerel (okul saati) metin olarak tutulur
+CREATE TABLE IF NOT EXISTS etutler (
+  id                    INTEGER PRIMARY KEY,
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  course_id             INTEGER REFERENCES courses(id),
+  topic                 TEXT NOT NULL,
+  date                  TEXT NOT NULL,
+  start_time            TEXT NOT NULL,
+  duration_min          INTEGER NOT NULL,
+  place                 TEXT,
+  note                  TEXT,
+  status                TEXT NOT NULL DEFAULT 'planli' CHECK (status IN ('planli','iptal')),
+  created_at            INTEGER NOT NULL
+);
+-- Etüte davet edilen öğrenciler ve velinin yanıtı
+CREATE TABLE IF NOT EXISTS etut_katilimcilar (
+  etut_id               INTEGER NOT NULL REFERENCES etutler(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  parent_response       TEXT NOT NULL DEFAULT 'bekliyor' CHECK (parent_response IN ('bekliyor','gelecek','gelmeyecek')),
+  responded_at          INTEGER,
+  responded_by          INTEGER REFERENCES users(id),
+  PRIMARY KEY (etut_id, student_membership_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

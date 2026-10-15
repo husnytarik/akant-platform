@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Etüt</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1 id="baslik">Etüt</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <section id="yeni" class="gizli">
+      <h2 class="baslik2">Yeni etüt</h2>
+      <form id="etut-form">
+        <div class="form-satir">
+          <div>
+            <label for="konu">Konu</label>
+            <input id="konu" maxlength="80" required placeholder="Örn. Kesirler tekrarı">
+          </div>
+          <div>
+            <label for="ders">Ders (isteğe bağlı)</label>
+            <select id="ders"></select>
+          </div>
+          <div>
+            <label for="yer">Yer (isteğe bağlı)</label>
+            <input id="yer" maxlength="60" placeholder="Örn. 5-A sınıfı">
+          </div>
+        </div>
+        <div class="form-satir">
+          <div>
+            <label for="tarih">Tarih</label>
+            <input id="tarih" type="date" required>
+          </div>
+          <div>
+            <label for="saat">Başlangıç saati</label>
+            <input id="saat" type="time" required>
+          </div>
+          <div>
+            <label for="sure">Süre</label>
+            <select id="sure"></select>
+          </div>
+        </div>
+        <label for="not">Veliye not (isteğe bağlı)</label>
+        <input id="not" maxlength="300">
+
+        <fieldset class="kutu">
+          <legend>Sınıf seç (tüm öğrencileri davet edilir)</legend>
+          <div class="onay-liste" id="sinif-liste"></div>
+        </fieldset>
+
+        <fieldset class="kutu">
+          <legend>Veya tek tek öğrenci seç</legend>
+          <label for="ogrenci-sinif">Listeyi süz</label>
+          <select id="ogrenci-sinif"></select>
+          <div class="onay-liste" id="ogrenci-liste"></div>
+        </fieldset>
+
+        <p id="secim-ozet" class="alt"></p>
+        <button class="birincil kucuk" type="submit">Etüt oluştur ve velilere gönder</button>
+      </form>
+    </section>
+
+    <h2 class="baslik2" id="liste-baslik">Etütler</h2>
+    <div id="liste"></div>
+  </main>
+  <script src="/etut.js"></script>
+</body>
+</html>
