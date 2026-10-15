@@ -1,0 +1,14 @@
+{
+  "name": "akant-okul-platformu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Akant Koleji okul yönetim platformu - giriş sistemi prototipi",
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "test-sunucu": "node --no-warnings db.js --seed && node --no-warnings ornek-veri.js && node --no-warnings server.js",
+    "ornek": "node --no-warnings ornek-veri.js",
+    "seed": "node --no-warnings db.js --seed"
+  },
+  "engines": { "node": ">=22.5" }
+}

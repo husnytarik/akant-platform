@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Okul Kurulumu</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Okul kurulumu</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+
+    <div class="sekmeler s4" role="group" aria-label="Kurulum adımları">
+      <button type="button" data-sekme="dersler" aria-pressed="true">1. Dersler</button>
+      <button type="button" data-sekme="ogretmenler" aria-pressed="false">2. Öğretmenler</button>
+      <button type="button" data-sekme="ogrenciler" aria-pressed="false">3. Öğrenciler</button>
+      <button type="button" data-sekme="siniflar" aria-pressed="false">4. Sınıflar</button>
+    </div>
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <!-- 1. Dersler -->
+    <section id="s-dersler">
+      <h2 class="baslik2">Ders aç</h2>
+      <form id="ders-form" class="form-satir">
+        <div><label for="ders-ad">Ders adı</label><input id="ders-ad" required maxlength="60"></div>
+        <div><button class="birincil" type="submit">Ders aç</button></div>
+      </form>
+      <h2 class="baslik2">Açık dersler</h2>
+      <div id="ders-liste" class="cipler"></div>
+    </section>
+
+    <!-- 2. Öğretmenler -->
+    <section id="s-ogretmenler" class="gizli">
+      <h2 class="baslik2">Öğretmen kaydı</h2>
+      <form id="ogretmen-form">
+        <div class="form-satir">
+          <div><label for="o-ad">Ad soyad</label><input id="o-ad" required maxlength="80"></div>
+          <div><label for="o-kimlik">T.C. / pasaport no</label><input id="o-kimlik" required maxlength="20"></div>
+          <div><label for="o-tel">Telefon</label><input id="o-tel" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
+          <div><label for="o-sube">Şube</label><select id="o-sube" required></select></div>
+        </div>
+        <fieldset class="kutu"><legend>Verebildiği dersler</legend><div id="o-dersler" class="onay-liste"></div></fieldset>
+        <button class="birincil" type="submit">Öğretmeni kaydet</button>
+      </form>
+      <h2 class="baslik2">Kayıtlı öğretmenler</h2>
+      <div class="tablo-sar">
+        <table><thead><tr><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Verebildiği dersler</th></tr></thead>
+        <tbody id="ogretmen-liste"></tbody></table>
+      </div>
+    </section>
+
+    <!-- 3. Öğrenciler -->
+    <section id="s-ogrenciler" class="gizli">
+      <h2 class="baslik2">Öğrenci kaydı</h2>
+      <form id="ogrenci-form" class="form-satir">
+        <div><label for="g-ad">Ad soyad</label><input id="g-ad" required maxlength="80"></div>
+        <div><label for="g-kimlik">T.C. / pasaport no</label><input id="g-kimlik" required maxlength="20"></div>
+        <div><label for="g-tel">Telefon (öğrenci veya veli)</label><input id="g-tel" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
+        <div><label for="g-sube">Şube</label><select id="g-sube" required></select></div>
+        <div><label for="g-sinif">Sınıf (isteğe bağlı)</label><select id="g-sinif"></select></div>
+        <div><button class="birincil" type="submit">Öğrenciyi kaydet</button></div>
+      </form>
+      <h2 class="baslik2">Kayıtlı öğrenciler</h2>
+      <div class="tablo-sar">
+        <table><thead><tr><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Sınıfı</th></tr></thead>
+        <tbody id="ogrenci-liste"></tbody></table>
+      </div>
+    </section>
+
+    <!-- 4. Sınıflar -->
+    <section id="s-siniflar" class="gizli">
+      <h2 class="baslik2">Sınıf aç</h2>
+      <form id="sinif-form" class="form-satir">
+        <div><label for="s-sube">Şube</label><select id="s-sube" required></select></div>
+        <div><label for="s-kademe">Kademe</label><select id="s-kademe" required></select></div>
+        <div><label for="s-ad">Sınıf adı</label><input id="s-ad" required maxlength="20" placeholder="5-A"></div>
+        <div><label for="s-ogretmen">Sınıf öğretmeni (isteğe bağlı)</label><select id="s-ogretmen"></select></div>
+        <div><button class="birincil" type="submit">Sınıf aç</button></div>
+      </form>
+      <h2 class="baslik2">Sınıflar</h2>
+      <div class="tablo-sar">
+        <table><thead><tr><th>Şube</th><th>Kademe</th><th>Sınıf</th><th>Sınıf öğretmeni</th><th>Öğrenci</th><th></th></tr></thead>
+        <tbody id="sinif-liste"></tbody></table>
+      </div>
+
+      <div id="sinif-detay" class="detay gizli">
+        <h2 class="baslik2" id="detay-baslik"></h2>
+        <label for="d-sinif-ogretmen">Sınıf öğretmeni</label>
+        <select id="d-sinif-ogretmen"></select>
+
+        <h3 class="baslik3">Sınıfın dersleri ve öğretmenleri</h3>
+        <div class="tablo-sar">
+          <table><thead><tr><th>Ders</th><th>Haftalık saat</th><th>Dersin öğretmeni</th><th>Programda</th><th></th></tr></thead>
+          <tbody id="d-ders-liste"></tbody></table>
+        </div>
+        <form id="d-ders-form" class="form-satir">
+          <div><label for="d-ders">Sınıfa ders ekle</label><select id="d-ders" required></select></div>
+          <div><label for="d-saat">Haftalık ders saati</label><input id="d-saat" type="number" min="1" max="40" value="2" required></div>
+          <div><button class="birincil" type="submit">Dersi ekle</button></div>
+        </form>
+
+        <h3 class="baslik3">Sınıfın öğrencileri</h3>
+        <div class="tablo-sar">
+          <table><thead><tr><th>Ad soyad</th><th></th></tr></thead><tbody id="d-ogrenci-liste"></tbody></table>
+        </div>
+        <form id="d-ogrenci-form" class="form-satir">
+          <div><label for="d-ogrenci">Sınıfsız öğrenci ekle</label><select id="d-ogrenci" required></select></div>
+          <div><button class="birincil" type="submit">Öğrenciyi ekle</button></div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/kurulum.js"></script>
+</body>
+</html>

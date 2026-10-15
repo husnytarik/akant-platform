@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Ders Programı</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Haftalık ders programı</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+        <span class="alt"> · </span><a href="/kurulum" class="alt">Okul kurulumu</a>
+      </div>
+    </div>
+
+    <div class="sekmeler" role="group" aria-label="Bölümler">
+      <button type="button" data-sekme="program" aria-pressed="true">Sınıf programı hazırla</button>
+      <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmen programı</button>
+    </div>
+
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <section id="s-program">
+      <label for="program-sinif">Sınıf</label>
+      <select id="program-sinif"></select>
+      <p class="alt">Hücreden ders seçin; öğretmen çakışması ve haftalık saat sınırı otomatik denetlenir.
+        Listede yalnızca öğretmeni atanmış dersler görünür.</p>
+      <div class="tablo-sar"><table class="program" id="program-tablo"></table></div>
+      <p id="program-ozet" class="alt"></p>
+    </section>
+
+    <section id="s-ogretmen" class="gizli">
+      <label for="ogretmen-sec">Öğretmen</label>
+      <select id="ogretmen-sec"></select>
+      <div class="tablo-sar"><table class="program" id="ogretmen-tablo"></table></div>
+    </section>
+  </main>
+  <script src="/ders-programi.js"></script>
+</body>
+</html>

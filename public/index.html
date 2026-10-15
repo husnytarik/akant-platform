@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Giriş</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart">
+    <h1>Akant Koleji</h1>
+    <p class="alt">Okul yönetim platformuna giriş</p>
+
+    <div class="sekmeler" role="group" aria-label="Giriş türü">
+      <button type="button" data-rol="yonetim" aria-pressed="true">Yönetim</button>
+      <button type="button" data-rol="ogretmen" aria-pressed="false">Öğretmen</button>
+      <button type="button" data-rol="ogrenci" aria-pressed="false">Öğrenci</button>
+      <button type="button" data-rol="veli" aria-pressed="false">Veli</button>
+    </div>
+
+    <form id="adim1">
+      <label for="kimlik">T.C. kimlik no veya pasaport no</label>
+      <input id="kimlik" autocomplete="username" inputmode="text" required maxlength="20">
+      <label for="telefon">Telefon numarası</label>
+      <input id="telefon" type="tel" autocomplete="tel" placeholder="5XX XXX XX XX" required maxlength="20">
+      <button class="birincil" type="submit">Doğrulama kodu gönder</button>
+    </form>
+
+    <form id="adim2" class="gizli">
+      <label for="kod">Telefonunuza gelen 6 haneli kod</label>
+      <input id="kod" inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" maxlength="6" required>
+      <button class="birincil" type="submit">Giriş yap</button>
+      <button class="ikincil" type="button" id="geri">Bilgileri değiştir</button>
+      <div id="dev" class="dev gizli"></div>
+    </form>
+
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

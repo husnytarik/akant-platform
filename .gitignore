@@ -1,0 +1,6 @@
+data/
+node_modules/
+.claude/
+*.log
+PLAN.txt
+DEMO-HESAPLAR.txt

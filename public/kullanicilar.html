@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Kullanıcı Yönetimi</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Kullanıcı ve rol yönetimi</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+
+    <h2 class="baslik2">Yeni kullanıcı</h2>
+    <form id="ekle" class="form-satir">
+      <div><label for="ad">Ad soyad</label><input id="ad" required maxlength="80"></div>
+      <div><label for="kimlik">T.C. / pasaport no</label><input id="kimlik" required maxlength="20"></div>
+      <div><label for="telefon">Telefon</label><input id="telefon" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
+      <div><label for="sube">Şube</label><select id="sube" required></select></div>
+      <div><label for="rol">Rol</label><select id="rol" required></select></div>
+      <div><button class="birincil" type="submit">Ekle</button></div>
+    </form>
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <h2 class="baslik2">Kullanıcılar</h2>
+    <div class="tablo-sar">
+      <table>
+        <thead><tr><th>Ad soyad</th><th>Kimlik</th><th>Telefon</th><th>Üyelikler</th><th>Üyelik ekle</th></tr></thead>
+        <tbody id="liste"></tbody>
+      </table>
+    </div>
+  </main>
+  <script src="/kullanicilar.js"></script>
+</body>
+</html>
