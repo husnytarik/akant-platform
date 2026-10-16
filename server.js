@@ -7,6 +7,7 @@ import { db, tcGecerliMi, seed } from './db.js';
 import { dersProgramiApi } from './ders-programi.js';
 import { kurulumApi } from './kurulum.js';
 import { etutApi } from './etut.js';
+import { yoklamaApi } from './yoklama.js';
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.
@@ -34,7 +35,7 @@ const MODULLER = [
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
   { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
   { id: 'siniflarim', ad: 'Sınıflarım', aciklama: 'Sorumlu olduğum sınıf ve öğrenciler', roller: ['ogretmen'] },
-  { id: 'yoklama', ad: 'Yoklama', aciklama: 'Ders yoklaması alma', roller: ['ogretmen'] },
+  { id: 'yoklama', ad: 'Devamsızlık / yoklama', aciklama: 'Girdiğim derslerde öğrenci devamsızlığı gir', roller: ['ogretmen'], yol: '/yoklama' },
   { id: 'not-girisi', ad: 'Not girişi', aciklama: 'Sınav ve değerlendirme notları', roller: ['ogretmen'] },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
   { id: 'ders-programi', ad: 'Ders programım', aciklama: 'Haftalık ders çizelgesi', roller: ['ogrenci'] },
@@ -211,6 +212,12 @@ async function api(req, res, url) {
     if (await etutApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname.startsWith('/api/yoklama/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await yoklamaApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   json(res, 404, { hata: 'Bulunamadı' });
 }
 
@@ -314,6 +321,7 @@ function statik(req, res, url) {
   if (ad === '/ders-programi') ad = '/ders-programi.html';
   if (ad === '/kurulum') ad = '/kurulum.html';
   if (ad === '/etut') ad = '/etut.html';
+  if (ad === '/yoklama') ad = '/yoklama.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

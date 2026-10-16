@@ -68,8 +68,19 @@ function veliBagla() {
   return eklenen;
 }
 
+// Demo Öğretmen hesabı da gerçek dersler alsın: Bilişim derslerinin öğretmeni olur.
+function demoOgretmenBagla() {
+  const d = db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
+                        WHERE u.tc_no = '10000000214' AND m.role = 'ogretmen' AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get();
+  const ders = db.prepare("SELECT id FROM courses WHERE name = 'Bilişim'").get();
+  if (!d || !ders) return 0;
+  db.prepare('INSERT OR IGNORE INTO teacher_courses (teacher_membership_id, course_id) VALUES (?,?)').run(d.id, ders.id);
+  return Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?
+    WHERE course_id = ? AND class_id IN (SELECT id FROM classes WHERE branch_id = ?)`).run(d.id, ders.id, d.branch_id).changes);
+}
+
 if (db.prepare("SELECT COUNT(*) AS n FROM classes WHERE name = '4-A'").get().n > 0) {
-  console.log(`Örnek veri zaten eklenmiş; ${veliBagla()} veli eklendi.`);
+  console.log(`Örnek veri zaten eklenmiş; ${veliBagla()} veli eklendi, Demo Öğretmen ${demoOgretmenBagla()} derse atandı.`);
   process.exit(0);
 }
 
@@ -164,6 +175,7 @@ try {
     yerlesen++;
   }
   const veliSayisi = veliBagla();
+  demoOgretmenBagla();
   db.exec('COMMIT');
   console.log(`Veli: ${veliSayisi} (her öğrenciye bir veli bağlandı).`);
   console.log(`Eklendi: 20 öğretmen, 200 öğrenci, ${siniflar.length} sınıf, ${siniflar.length * 10} ders ataması.`);

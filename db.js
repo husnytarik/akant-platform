@@ -110,6 +110,24 @@ CREATE TABLE IF NOT EXISTS etut_katilimcilar (
   responded_by          INTEGER REFERENCES users(id),
   PRIMARY KEY (etut_id, student_membership_id)
 );
+-- Ders yoklaması: bir sınıfın belirli tarih ve ders saatindeki devam kaydı
+CREATE TABLE IF NOT EXISTS yoklama (
+  id                    INTEGER PRIMARY KEY,
+  class_id              INTEGER NOT NULL REFERENCES classes(id),
+  date                  TEXT NOT NULL,
+  period                INTEGER NOT NULL,
+  assignment_id         INTEGER NOT NULL REFERENCES assignments(id),
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  created_at            INTEGER NOT NULL,
+  updated_at            INTEGER NOT NULL,
+  UNIQUE (class_id, date, period)
+);
+CREATE TABLE IF NOT EXISTS yoklama_kayit (
+  yoklama_id            INTEGER NOT NULL REFERENCES yoklama(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  status                TEXT NOT NULL CHECK (status IN ('geldi','gelmedi','gec','izinli')),
+  PRIMARY KEY (yoklama_id, student_membership_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Devamsızlık</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Devamsızlık / yoklama</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <div class="form-satir">
+      <div>
+        <label for="tarih">Tarih</label>
+        <input id="tarih" type="date" required>
+      </div>
+    </div>
+
+    <h2 class="baslik2">Bu günkü dersleriniz</h2>
+    <div id="dersler"></div>
+
+    <section id="yoklama" class="gizli">
+      <h2 class="baslik2" id="yoklama-baslik"></h2>
+      <p class="alt">Varsayılan "Geldi" işaretlidir; yalnızca gelmeyenleri değiştirin.</p>
+      <label class="onay"><input type="checkbox" id="hepsi-geldi" checked> <strong>Hepsi geldi</strong></label>
+      <div class="tablo-sar"><table id="ogrenci-tablo"></table></div>
+      <p id="ozet" class="alt"></p>
+      <button class="birincil kucuk" type="button" id="kaydet">Yoklamayı kaydet</button>
+    </section>
+  </main>
+  <script src="/yoklama.js"></script>
+</body>
+</html>

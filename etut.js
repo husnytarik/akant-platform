@@ -9,7 +9,7 @@ const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/I
 const SURELER = [30, 40, 45, 60, 80, 90, 120];
 
 // Ders saatlerinin gün içindeki saatleri (varsayım; okulun gerçek zil saatlerine göre güncellenmeli)
-const DERS_ZAMANLARI = [
+export const DERS_ZAMANLARI = [
   ['08:30', '09:10'], ['09:20', '10:00'], ['10:10', '10:50'], ['11:00', '11:40'],
   ['12:30', '13:10'], ['13:20', '14:00'], ['14:10', '14:50'], ['15:00', '15:40'],
 ];
