@@ -7,6 +7,11 @@ let bugun = '';
 let veri = null;
 let ders = null;      // açık ders: { atamaId, sinif, ders, dersSaati? }
 let sekme = 'ogrenciler';
+const DURUM_YAZI = {
+  tamam: d => `Tamamlandı · ${d.gelmedi} gelmedi`,
+  gecikti: () => 'Süresi geçti · tamamlanmadı',
+  bekliyor: () => 'Bekliyor',
+};
 let gorunum = 'gun';   // 'gun' | 'hafta'
 
 function mesaj(metin, tur = '') {
@@ -57,40 +62,28 @@ async function haftaYukle() {
   const son = r.veri.gunler[4].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('gizli', r.veri.gunler.some(g => g.tarih === bugun));
-  const t = el('table', undefined, 'program');
-  const bas = document.createElement('tr');
-  bas.appendChild(el('th', 'Ders'));
+  const izgara = el('div', undefined, 'hafta-izgara');
   for (const g of r.veri.gunler) {
-    const th = el('th', `${GUN[g.gun]} ${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`);
-    if (g.tarih === bugun) th.className = 'bugun-sutun';
-    bas.appendChild(th);
-  }
-  t.appendChild(bas);
-  const saatler = Math.max(r.veri.zamanlar.length, 1);
-  for (let p = 1; p <= saatler; p++) {
-    const tr = document.createElement('tr');
-    const z = el('th', undefined, 'saat-hucre');
-    z.append(el('strong', `${p}.`), el('span', r.veri.zamanlar[p - 1] || ''));
-    tr.appendChild(z);
-    for (const g of r.veri.gunler) {
-      const td = document.createElement('td');
-      const d = g.dersler.find(x => x.dersSaati === p);
-      if (g.tarih === bugun) td.className = 'bugun-sutun';
-      if (d) {
-        const b = el('button', undefined, 'hucre-ders ' + d.durum);
-        b.type = 'button';
-        b.append(el('strong', d.ders), el('span', d.sinif));
-        b.addEventListener('click', () => {
-          tarih = g.tarih;
-          gorunumSec('gun', d);
-        });
-        td.appendChild(b);
-      }
-      tr.appendChild(td);
+    const sutun = el('section', undefined, 'hafta-gun' + (g.tarih === bugun ? ' bugun' : ''));
+    const ust = el('div', undefined, 'hafta-gun-ust');
+    ust.append(el('strong', GUN[g.gun]), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
+    if (g.tarih === bugun) ust.appendChild(el('em', 'Bugün'));
+    sutun.appendChild(ust);
+    if (!g.dersler.length) sutun.appendChild(el('p', 'Ders yok', 'hafta-bos'));
+    for (const d of g.dersler) {
+      const b = el('button', undefined, 'hafta-ders ' + d.durum);
+      b.type = 'button';
+      const zaman = el('div', undefined, 'hafta-zaman');
+      zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]));
+      const orta = el('div', undefined, 'hafta-orta');
+      orta.append(el('strong', `${d.sinif} · ${d.ders}`), el('span', DURUM_YAZI[d.durum](d)));
+      b.append(zaman, orta);
+      b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
+      sutun.appendChild(b);
     }
-    t.appendChild(tr);
+    izgara.appendChild(sutun);
   }
-  $('hafta').replaceChildren(t);
+  $('hafta').replaceChildren(izgara);
   atamaCiz();
 }
 
