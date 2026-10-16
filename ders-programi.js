@@ -1,7 +1,7 @@
 import { db } from './db.js';
 
 export const GUN_SAYISI = 5;
-export const DERS_SAATI = 8;
+export const DERS_SAATI = 9;
 export const KADEMELER = ['Anasınıfı', 'İlkokul', 'Ortaokul', 'Lise'];
 
 // Başlangıç ders listesi (yönetim sonradan ekleyebilir).
