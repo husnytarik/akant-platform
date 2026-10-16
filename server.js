@@ -42,7 +42,8 @@ const MODULLER = [
   { id: 'notlarim', ad: 'Notlarım', aciklama: 'Sınav sonuçları ve gelişim', roller: ['ogrenci'] },
   { id: 'duyurular', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogrenci', 'veli'] },
   { id: 'ogrencim', ad: 'Öğrencim', aciklama: 'Çocuğumun bilgileri ve durumu', roller: ['veli'] },
-  { id: 'devamsizlik-not', ad: 'Devamsızlık ve notlar', aciklama: 'Çocuğumun devam ve başarı durumu', roller: ['veli'] },
+  { id: 'devamsizlik-veli', ad: 'Devamsızlık', aciklama: 'Çocuğumun ders devamsızlıkları', roller: ['veli'], yol: '/devamsizlik' },
+  { id: 'devamsizlik-ogrenci', ad: 'Devamsızlığım', aciklama: 'Ders devam durumum', roller: ['ogrenci'], yol: '/devamsizlik' },
   { id: 'teslim', ad: 'Teslim yetkileri', aciklama: 'Öğrenciyi teslim alabilecek kişiler', roller: ['veli'] },
 ];
 
@@ -322,6 +323,7 @@ function statik(req, res, url) {
   if (ad === '/kurulum') ad = '/kurulum.html';
   if (ad === '/etut') ad = '/etut.html';
   if (ad === '/yoklama') ad = '/yoklama.html';
+  if (ad === '/devamsizlik') ad = '/devamsizlik.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

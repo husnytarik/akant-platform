@@ -37,6 +37,33 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
   const yol = url.pathname;
   if (!yol.startsWith('/api/yoklama/')) return false;
   const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
+
+  // Öğrenci kendi, veli bağlı çocuklarının ders devamını görür
+  if (req.method === 'GET' && yol === '/api/yoklama/devam') {
+    let cocuklar;
+    if (o.role === 'ogrenci') {
+      cocuklar = db.prepare(`SELECT m.id, u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?`).all(o.membership_id);
+    } else if (o.role === 'veli') {
+      cocuklar = db.prepare(`SELECT m.id, u.full_name AS ad FROM guardians g
+        JOIN memberships m ON m.id = g.student_membership_id JOIN users u ON u.id = m.user_id
+        WHERE g.parent_membership_id = ? ORDER BY u.full_name`).all(o.membership_id);
+    } else return hata(403, 'Bu işlem için yetkiniz yok');
+    const kayit = db.prepare(`
+      SELECT y.date AS tarih, y.period AS dersSaati, co.name AS ders, k.status AS durum
+      FROM yoklama_kayit k JOIN yoklama y ON y.id = k.yoklama_id
+      JOIN assignments a ON a.id = y.assignment_id JOIN courses co ON co.id = a.course_id
+      WHERE k.student_membership_id = ? ORDER BY y.date DESC, y.period DESC`);
+    json(res, 200, {
+      cocuklar: cocuklar.map(c => {
+        const tum = kayit.all(c.id);
+        const say = { geldi: 0, gelmedi: 0, gec: 0, izinli: 0 };
+        for (const r of tum) say[r.durum]++;
+        return { ad: c.ad, say, toplam: tum.length, kayitlar: tum.filter(r => r.durum !== 'geldi').slice(0, 60) };
+      }),
+    });
+    return true;
+  }
+
   if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
 
   // Seçilen günde öğretmenin dersleri (ders programından)
