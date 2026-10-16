@@ -149,9 +149,12 @@ function atamaCiz() {
 function dersAc(d, programdan) {
   ders = { atamaId: d.atamaId, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
   $('p-baslik').textContent = `${d.sinif} · ${d.ders}`;
-  $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Haftalık ders genel görünümü';
+  $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
   $('panel').classList.remove('gizli');
   zamanCiz();
+  const bitirVar = ders.dersSaati !== null;
+  $('sekmeler').querySelector('[data-sekme="yoklama"]').classList.toggle('gizli', !bitirVar);
+  if (!bitirVar && sekme === 'yoklama') sekme = 'ogrenciler';
   sekmeAc(sekme);
   $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
