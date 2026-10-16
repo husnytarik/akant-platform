@@ -91,22 +91,48 @@ async function secenekYukle() {
   ozetGuncelle();
 }
 
-$('etut-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const r = await api('/api/etut/ekle', {
+function cakismaGoster(v) {
+  const ul = $('cakisma-liste');
+  ul.replaceChildren();
+  for (const c of v.ogrenci) {
+    ul.appendChild(el('li', `${c.sinif} sınıfı, ${c.gun} ${c.dersSaati}. ders (${c.aralik}) ${c.ders} dersi: ${c.ogrenciSayisi} davetli öğrenci derste`));
+  }
+  for (const c of v.ogretmen) {
+    ul.appendChild(el('li', `Sizin dersiniz: ${c.gun} ${c.dersSaati}. ders (${c.aralik}) ${c.sinif} ${c.ders}`));
+  }
+  $('cakisma').classList.remove('gizli');
+}
+
+function formVerisi(onayla) {
+  return {
     konu: $('konu').value, dersId: $('ders').value, yer: $('yer').value, not: $('not').value,
     tarih: $('tarih').value, saat: $('saat').value, sureDk: Number($('sure').value),
-    sinifIds: [...seciliSiniflar], ogrenciIds: [...seciliOgrenciler],
-  });
+    sinifIds: [...seciliSiniflar], ogrenciIds: [...seciliOgrenciler], cakismayiOnayla: onayla,
+  };
+}
+
+async function gonder(onayla) {
+  const r = await api('/api/etut/ekle', formVerisi(onayla));
+  if (r.veri.cakisma) {
+    mesaj('Ders programıyla çakışma var, aşağıdaki uyarıyı inceleyin.', 'hata');
+    cakismaGoster(r.veri);
+    return;
+  }
+  $('cakisma').classList.add('gizli');
   if (!r.ok) return mesaj(r.veri.hata || 'Bir hata oluştu', 'hata');
-  mesaj(`Etüt oluşturuldu, ${r.veri.ogrenciSayisi} öğrencinin velisine onay isteği gitti.`, 'tamam');
+  mesaj(`Etüt oluşturuldu, ${r.veri.ogrenciSayisi} öğrencinin velisine onay isteği iletildi.`, 'tamam');
   $('etut-form').reset();
   $('sure').value = '40';
   seciliSiniflar.clear();
   seciliOgrenciler.clear();
   await secenekYukle();
   await listeYukle();
-});
+}
+
+$('etut-form').addEventListener('submit', e => { e.preventDefault(); gonder(false); });
+$('yine-de').addEventListener('click', () => gonder(true));
+// Form değişince eski uyarı geçersiz olur
+$('etut-form').addEventListener('input', () => $('cakisma').classList.add('gizli'));
 
 // ---- Listeler ----
 function bilgiSatiri(e) {

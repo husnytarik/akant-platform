@@ -8,6 +8,49 @@ const dk = s => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5));
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const SURELER = [30, 40, 45, 60, 80, 90, 120];
 
+// Ders saatlerinin gün içindeki saatleri (varsayım; okulun gerçek zil saatlerine göre güncellenmeli)
+const DERS_ZAMANLARI = [
+  ['08:30', '09:10'], ['09:20', '10:00'], ['10:10', '10:50'], ['11:00', '11:40'],
+  ['12:30', '13:10'], ['13:20', '14:00'], ['14:10', '14:50'], ['15:00', '15:40'],
+];
+const GUN_ADLARI = ['', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+
+// Etüt aralığıyla çakışan dersleri bulur: davetli öğrencilerin sınıf dersleri ve öğretmenin kendi dersleri.
+function programCakismalari(ogretmenUyelikId, tarih, bas, bit, ogrenciler) {
+  const gun = new Date(tarih + 'T00:00:00Z').getUTCDay(); // 1=Pazartesi ... 5=Cuma
+  const bos = { ogrenci: [], ogretmen: [] };
+  if (gun < 1 || gun > 5) return bos;
+  const cakisan = DERS_ZAMANLARI.map((z, i) => ({ ders: i + 1, bas: dk(z[0]), bit: dk(z[1]), z }))
+    .filter(p => p.bas < bit && bas < p.bit);
+  if (!cakisan.length) return bos;
+  const saatler = cakisan.map(p => p.ders);
+  const yer = saatler.map(() => '?').join(',');
+
+  // Sınıf bazında kaç davetli öğrenci etkileniyor
+  const sinifOgr = new Map();
+  for (const mid of ogrenciler) {
+    const r = db.prepare('SELECT class_id FROM class_students WHERE student_membership_id = ?').get(mid);
+    if (r) sinifOgr.set(r.class_id, (sinifOgr.get(r.class_id) || 0) + 1);
+  }
+  const satirlar = db.prepare(`
+    SELECT s.period, a.class_id, a.teacher_membership_id AS ogr, c.name AS sinif, co.name AS ders
+    FROM schedule s JOIN assignments a ON a.id = s.assignment_id
+    JOIN classes c ON c.id = s.class_id JOIN courses co ON co.id = a.course_id
+    WHERE s.day = ? AND s.period IN (${yer})
+    ORDER BY s.period, c.name`).all(gun, ...saatler);
+  const aralik = p => DERS_ZAMANLARI[p - 1].join('–');
+  const sonuc = { ogrenci: [], ogretmen: [] };
+  for (const r of satirlar) {
+    if (sinifOgr.has(r.class_id)) {
+      sonuc.ogrenci.push({ sinif: r.sinif, ders: r.ders, gun: GUN_ADLARI[gun], dersSaati: r.period, aralik: aralik(r.period), ogrenciSayisi: sinifOgr.get(r.class_id) });
+    }
+    if (r.ogr === ogretmenUyelikId) {
+      sonuc.ogretmen.push({ sinif: r.sinif, ders: r.ders, gun: GUN_ADLARI[gun], dersSaati: r.period, aralik: aralik(r.period) });
+    }
+  }
+  return sonuc;
+}
+
 function islem(fn) {
   db.exec('BEGIN');
   try { const s = fn(); db.exec('COMMIT'); return s; } catch (e) { db.exec('ROLLBACK'); throw e; }
@@ -164,6 +207,15 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
     const cakisan = db.prepare("SELECT start_time, duration_min FROM etutler WHERE teacher_membership_id = ? AND date = ? AND status = 'planli'")
       .all(o.membership_id, tarih).find(x => dk(x.start_time) < bit && bas < dk(x.start_time) + x.duration_min);
     if (cakisan) return hata(409, `Bu saatte başka bir etütünüz var (${cakisan.start_time}, ${cakisan.duration_min} dk)`);
+
+    // Ders programı çakışması: uyarı verilir, öğretmen onaylarsa etüt yine de açılır.
+    if (b.cakismayiOnayla !== true) {
+      const c = programCakismalari(o.membership_id, tarih, bas, bit, ogrenciler);
+      if (c.ogrenci.length || c.ogretmen.length) {
+        json(res, 409, { hata: 'Seçilen saat ders programıyla çakışıyor', cakisma: true, ogrenci: c.ogrenci, ogretmen: c.ogretmen });
+        return true;
+      }
+    }
 
     const id = islem(() => {
       const eid = Number(db.prepare(`INSERT INTO etutler (teacher_membership_id, course_id, topic, date, start_time, duration_min, place, note, created_at)
