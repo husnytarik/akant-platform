@@ -54,6 +54,26 @@ function kisaTarih(t) {
   return `${g}.${a}.${y}`;
 }
 
+function detayCiz(k, g, d) {
+  k.replaceChildren();
+  k.classList.remove('gizli');
+  k.appendChild(el('strong', `${d.sinif} · ${d.ders}`));
+  k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}`, 'alt'));
+  k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
+  const butonlar = el('div', undefined, 'hafta-butonlar');
+  if (g.tarih <= bugun) {
+    const a = el('a', d.durum === 'tamam' ? 'Dersi düzenle' : 'Dersi bitir', 'dugme-link');
+    a.href = `/yoklama?tarih=${g.tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
+    butonlar.appendChild(a);
+  }
+  const b = el('button', 'Öğrenciler, konu, ödev', 'ikincil');
+  b.type = 'button';
+  b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
+  butonlar.appendChild(b);
+  k.appendChild(butonlar);
+  k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 async function haftaYukle() {
   const r = await api('/api/ders/hafta?tarih=' + encodeURIComponent(tarih));
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
@@ -62,28 +82,47 @@ async function haftaYukle() {
   const son = r.veri.gunler[4].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('gizli', r.veri.gunler.some(g => g.tarih === bugun));
-  const izgara = el('div', undefined, 'hafta-izgara');
+  const t = el('table', undefined, 'hafta-tablo');
+  const bas = document.createElement('tr');
+  bas.appendChild(el('th'));
   for (const g of r.veri.gunler) {
-    const sutun = el('section', undefined, 'hafta-gun' + (g.tarih === bugun ? ' bugun' : ''));
-    const ust = el('div', undefined, 'hafta-gun-ust');
-    ust.append(el('strong', GUN[g.gun]), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
-    if (g.tarih === bugun) ust.appendChild(el('em', 'Bugün'));
-    sutun.appendChild(ust);
-    if (!g.dersler.length) sutun.appendChild(el('p', 'Ders yok', 'hafta-bos'));
-    for (const d of g.dersler) {
-      const b = el('button', undefined, 'hafta-ders ' + d.durum);
-      b.type = 'button';
-      const zaman = el('div', undefined, 'hafta-zaman');
-      zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]));
-      const orta = el('div', undefined, 'hafta-orta');
-      orta.append(el('strong', `${d.sinif} · ${d.ders}`), el('span', DURUM_YAZI[d.durum](d)));
-      b.append(zaman, orta);
-      b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
-      sutun.appendChild(b);
-    }
-    izgara.appendChild(sutun);
+    const th = el('th', undefined, g.tarih === bugun ? 'bugun-sutun' : '');
+    th.append(el('strong', GUN[g.gun].slice(0, 3)), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
+    bas.appendChild(th);
   }
-  $('hafta').replaceChildren(izgara);
+  t.appendChild(bas);
+  const detay = el('div', undefined, 'hafta-detay gizli');
+  let secilen = null;
+  for (let p = 1; p <= r.veri.zamanlar.length; p++) {
+    const dolu = r.veri.gunler.some(g => g.dersler.some(x => x.dersSaati === p));
+    if (!dolu) continue;
+    const tr = document.createElement('tr');
+    const z = el('th', undefined, 'saat-hucre');
+    z.append(el('strong', String(p)), el('span', r.veri.zamanlar[p - 1].split('–')[0]));
+    tr.appendChild(z);
+    for (const g of r.veri.gunler) {
+      const td = document.createElement('td');
+      if (g.tarih === bugun) td.className = 'bugun-sutun';
+      const d = g.dersler.find(x => x.dersSaati === p);
+      if (d) {
+        const b = el('button', undefined, 'hucre ' + d.durum);
+        b.type = 'button';
+        b.append(el('strong', d.sinif), el('span', d.ders));
+        b.addEventListener('click', () => {
+          secilen?.classList.remove('secili');
+          secilen = b;
+          b.classList.add('secili');
+          detayCiz(detay, g, d);
+        });
+        td.appendChild(b);
+      }
+      tr.appendChild(td);
+    }
+    t.appendChild(tr);
+  }
+  const aciklama = el('p', undefined, 'hafta-not');
+  aciklama.append(el('span', 'Koyu dolgu: süresi geçti, tamamlanmadı', 'not-gecikti'), el('span', 'Sol çizgi: tamamlandı'));
+  $('hafta').replaceChildren(t, aciklama, detay);
   atamaCiz();
 }
 

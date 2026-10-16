@@ -214,3 +214,36 @@ th.bugun-sutun { border-bottom-width: 3px; }
   .dugme-link { display: block; text-align: center; padding: 12px; }
   .ikincil { padding: 8px 0; }
 }
+
+/* Haftalık program: tek ekrana sığan zaman çizelgesi */
+.hafta-tablo { table-layout: fixed; width: 100%; border-collapse: collapse; }
+.hafta-tablo th, .hafta-tablo td { border: 1px solid var(--border); padding: 3px; text-align: center; vertical-align: middle; }
+.hafta-tablo th { font-weight: 400; color: var(--muted); font-size: .78rem; background: var(--bg); border-bottom: 1px solid var(--text); }
+.hafta-tablo th strong { display: block; color: var(--text); font-size: .85rem; }
+.hafta-tablo th:first-child { width: 44px; }
+.hafta-tablo .saat-hucre { background: var(--soft); white-space: normal; }
+.hafta-tablo .saat-hucre strong { display: block; color: var(--text); font-size: .95rem; }
+.hafta-tablo .saat-hucre span { font-size: .7rem; }
+.hafta-tablo .bugun-sutun { background: var(--soft); }
+.hafta-tablo th.bugun-sutun { border-bottom: 3px solid var(--text); }
+.hucre { display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: 48px; padding: 4px 2px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-left: 1px solid var(--border); line-height: 1.2; }
+.hucre strong { font-size: .95rem; }
+.hucre span { font-size: .7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hucre:hover { border-color: var(--text); }
+.hucre.tamam { border-left: 4px solid var(--text); }
+.hucre.gecikti { background: var(--text); color: var(--bg); border-color: var(--text); }
+.hucre.gecikti span { color: #ccc; }
+.hucre.secili { outline: 2px solid var(--text); outline-offset: 1px; }
+.hafta-not { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; font-size: .78rem; color: var(--muted); }
+.hafta-detay { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--text); }
+.hafta-detay p { margin: 4px 0; }
+.hafta-detay .alt { margin: 2px 0 6px; }
+.hafta-butonlar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin-top: 8px; }
+.hafta-butonlar .dugme-link { margin-top: 0; }
+@media (max-width: 600px) {
+  .hafta-tablo th:first-child { width: 32px; }
+  .hucre { min-height: 44px; padding: 3px 0; }
+  .hucre strong { font-size: .85rem; }
+  .hucre span { display: none; }
+  .hafta-tablo .saat-hucre span { font-size: .62rem; }
+}
