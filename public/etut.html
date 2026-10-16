@@ -52,14 +52,11 @@
         <input id="not" maxlength="300">
 
         <fieldset class="kutu">
-          <legend>Sınıf seç (tüm öğrencileri davet edilir)</legend>
-          <div class="onay-liste" id="sinif-liste"></div>
-        </fieldset>
-
-        <fieldset class="kutu">
-          <legend>Veya tek tek öğrenci seç</legend>
-          <label for="ogrenci-sinif">Listeyi süz</label>
+          <legend>Öğrenciler</legend>
+          <label for="ogrenci-sinif">Sınıf</label>
           <select id="ogrenci-sinif"></select>
+          <p class="alt">Sınıfı seçin, listeden öğrencileri işaretleyin. Başka sınıfa geçseniz de işaretlediğiniz öğrenciler korunur.</p>
+          <label class="onay"><input type="checkbox" id="hepsi"> <strong>Hepsini seç</strong></label>
           <div class="onay-liste" id="ogrenci-liste"></div>
         </fieldset>
 

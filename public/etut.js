@@ -2,7 +2,6 @@ const $ = id => document.getElementById(id);
 const YANIT_ADI = { bekliyor: 'Bekliyor', gelecek: 'Gelecek', gelmeyecek: 'Gelmeyecek' };
 let rol = null;
 let secenek = null;
-const seciliSiniflar = new Set();
 const seciliOgrenciler = new Set();
 
 function mesaj(metin, tur = '') {
@@ -52,21 +51,32 @@ function onayKutusu(metin, kume, id, degisti) {
   return l;
 }
 
+function gorunenOgrenciler() {
+  const f = $('ogrenci-sinif').value;
+  return secenek.ogrenciler.filter(o => String(o.sinifId) === f);
+}
+
 function ozetGuncelle() {
-  const sinifOgrenci = secenek.ogrenciler.filter(o => seciliSiniflar.has(o.sinifId)).map(o => o.id);
-  const toplam = new Set([...sinifOgrenci, ...seciliOgrenciler]).size;
-  $('secim-ozet').textContent = toplam ? `Davet edilecek öğrenci: ${toplam}` : 'Henüz öğrenci seçilmedi.';
+  const g = gorunenOgrenciler();
+  const secili = g.filter(o => seciliOgrenciler.has(o.id)).length;
+  const hepsi = $('hepsi');
+  hepsi.checked = g.length > 0 && secili === g.length;
+  hepsi.indeterminate = secili > 0 && secili < g.length;
+  hepsi.disabled = !g.length;
+  const n = seciliOgrenciler.size;
+  $('secim-ozet').textContent = n ? `Davet edilecek öğrenci: ${n}` : 'Henüz öğrenci seçilmedi.';
 }
 
 function ogrenciListesiCiz() {
-  const f = $('ogrenci-sinif').value;
   const liste = $('ogrenci-liste');
   liste.replaceChildren();
-  const gorunen = secenek.ogrenciler.filter(o => f === '' || String(o.sinifId) === f);
-  for (const o of gorunen) liste.appendChild(onayKutusu(o.ad, seciliOgrenciler, o.id, ozetGuncelle));
-  if (!gorunen.length) liste.appendChild(el('p', 'Bu süzmede öğrenci yok.', 'alt'));
+  const g = gorunenOgrenciler();
+  for (const o of g) liste.appendChild(onayKutusu(o.ad, seciliOgrenciler, o.id, ozetGuncelle));
+  if (!g.length) liste.appendChild(el('p', 'Bu sınıfta öğrenci yok.', 'alt'));
+  ozetGuncelle();
 }
 
+let dinleyiciVar = false;
 async function secenekYukle() {
   const r = await api('/api/etut/secenek');
   secenek = r.veri;
@@ -78,17 +88,19 @@ async function secenekYukle() {
   for (const s of secenek.sureler) sure.appendChild(new Option(`${s} dakika`, s));
   sure.value = '40';
 
-  const sl = $('sinif-liste');
-  sl.replaceChildren();
-  for (const s of secenek.siniflar) sl.appendChild(onayKutusu(s.ad, seciliSiniflar, s.id, ozetGuncelle));
-  if (!secenek.siniflar.length) sl.appendChild(el('p', 'Şubenizde sınıf yok.', 'alt'));
-
   const f = $('ogrenci-sinif');
-  f.replaceChildren(new Option('Tüm öğrenciler', ''));
+  f.replaceChildren();
   for (const s of secenek.siniflar) f.appendChild(new Option(s.ad, s.id));
-  f.addEventListener('change', ogrenciListesiCiz);
+  if (!secenek.siniflar.length) f.appendChild(new Option('Şubenizde sınıf yok', ''));
+  if (!dinleyiciVar) {
+    dinleyiciVar = true;
+    f.addEventListener('change', ogrenciListesiCiz);
+    $('hepsi').addEventListener('change', () => {
+      for (const o of gorunenOgrenciler()) $('hepsi').checked ? seciliOgrenciler.add(o.id) : seciliOgrenciler.delete(o.id);
+      ogrenciListesiCiz();
+    });
+  }
   ogrenciListesiCiz();
-  ozetGuncelle();
 }
 
 function cakismaGoster(v) {
@@ -107,7 +119,7 @@ function formVerisi(onayla) {
   return {
     konu: $('konu').value, dersId: $('ders').value, yer: $('yer').value, not: $('not').value,
     tarih: $('tarih').value, saat: $('saat').value, sureDk: Number($('sure').value),
-    sinifIds: [...seciliSiniflar], ogrenciIds: [...seciliOgrenciler], cakismayiOnayla: onayla,
+    sinifIds: [], ogrenciIds: [...seciliOgrenciler], cakismayiOnayla: onayla,
   };
 }
 
@@ -123,7 +135,6 @@ async function gonder(onayla) {
   mesaj(`Etüt oluşturuldu, ${r.veri.ogrenciSayisi} öğrencinin velisine onay isteği iletildi.`, 'tamam');
   $('etut-form').reset();
   $('sure').value = '40';
-  seciliSiniflar.clear();
   seciliOgrenciler.clear();
   await secenekYukle();
   await listeYukle();
