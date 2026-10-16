@@ -1,4 +1,6 @@
 const $ = id => document.getElementById(id);
+const DEVAM_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
+const DEVAM_ADI = { geldi: 'Geldi', gelmedi: 'Gelmedi', izinli: 'İzinli' };
 const YANIT_ADI = { bekliyor: 'Bekliyor', gelecek: 'Gelecek', gelmeyecek: 'Gelmeyecek' };
 let rol = null;
 let secenek = null;
@@ -162,14 +164,50 @@ function ogretmenKarti(e) {
   kart.appendChild(el('p', `Davetli ${e.katilimcilar.length} · Gelecek ${say.gelecek} · Gelmeyecek ${say.gelmeyecek} · Bekliyor ${say.bekliyor}`));
 
   const d = document.createElement('details');
-  d.appendChild(el('summary', 'Öğrenci durumları'));
+  const alinan = e.katilimcilar.filter(k => k.devam).length;
+  d.appendChild(el('summary', alinan ? `Öğrenci durumları ve yoklama (${alinan}/${e.katilimcilar.length} işaretli)` : 'Öğrenci durumları ve yoklama'));
+  const bugun = new Date().toLocaleDateString('sv-SE');
+  const yoklamaAcik = !iptal && e.tarih <= bugun;
+  const durum = new Map(e.katilimcilar.map(k => [k.ogrenciId, k.devam || 'geldi']));
   const t = el('table');
+  const bas = document.createElement('tr');
+  bas.append(el('th', 'Öğrenci'), el('th', 'Veli yanıtı'), el('th', 'Yoklama'));
+  t.appendChild(bas);
   for (const k of e.katilimcilar) {
     const tr = document.createElement('tr');
-    tr.append(el('td', k.ad), el('td', YANIT_ADI[k.yanit]));
+    const td = document.createElement('td');
+    if (yoklamaAcik) {
+      const grup = el('div', undefined, 'cipler');
+      for (const [deger, ad] of DEVAM_SECENEK) {
+        const l = el('label', undefined, 'onay');
+        const r = document.createElement('input');
+        r.type = 'radio';
+        r.name = `e${e.id}-${k.ogrenciId}`;
+        r.checked = durum.get(k.ogrenciId) === deger;
+        r.addEventListener('change', () => durum.set(k.ogrenciId, deger));
+        l.append(r, document.createTextNode(' ' + ad));
+        grup.appendChild(l);
+      }
+      td.appendChild(grup);
+    } else {
+      td.textContent = k.devam ? DEVAM_ADI[k.devam] : '-';
+    }
+    tr.append(el('td', k.ad), el('td', YANIT_ADI[k.yanit]), td);
     t.appendChild(tr);
   }
   d.appendChild(t);
+  if (yoklamaAcik) {
+    d.appendChild(dugme('Yoklamayı kaydet', async () => {
+      const r = await api('/api/etut/yoklama', {
+        etutId: e.id, kayitlar: e.katilimcilar.map(k => ({ ogrenciId: k.ogrenciId, durum: durum.get(k.ogrenciId) })),
+      });
+      if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+      mesaj(`Yoklama kaydedildi: ${r.veri.geldi} geldi, ${r.veri.gelmedi} gelmedi, ${r.veri.izinli} izinli.`, 'tamam');
+      listeYukle();
+    }, 'birincil kucuk'));
+  } else if (!iptal) {
+    d.appendChild(el('p', 'Yoklama etüt günü açılır.', 'alt'));
+  }
   kart.appendChild(d);
   if (!iptal) {
     kart.appendChild(dugme('Etüdü iptal et', async () => {
@@ -190,6 +228,7 @@ function veliKarti(e) {
   kart.appendChild(el('p', ['Öğretmen: ' + e.ogretmen, e.ders, e.yer].filter(Boolean).join(' · '), 'alt'));
   if (e.not) kart.appendChild(el('p', 'Not: ' + e.not));
   kart.appendChild(el('p', 'Durum: ' + YANIT_ADI[e.yanit]));
+  if (e.devam) kart.appendChild(el('p', 'Etüt yoklaması: ' + DEVAM_ADI[e.devam]));
   if (!iptal) {
     const yanitla = yanit => async () => {
       const r = await api('/api/etut/yanit', { etutId: e.id, ogrenciId: e.ogrenciId, yanit });
@@ -213,6 +252,7 @@ function ogrenciKarti(e) {
   kart.appendChild(el('p', ['Öğretmen: ' + e.ogretmen, e.ders, e.yer].filter(Boolean).join(' · '), 'alt'));
   if (e.not) kart.appendChild(el('p', 'Not: ' + e.not));
   kart.appendChild(el('p', 'Veli yanıtı: ' + YANIT_ADI[e.yanit]));
+  if (e.devam) kart.appendChild(el('p', 'Etüt yoklaması: ' + DEVAM_ADI[e.devam]));
   return kart;
 }
 

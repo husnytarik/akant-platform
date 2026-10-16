@@ -102,12 +102,12 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
       const etutler = db.prepare(`${ETUT_SELECT} WHERE e.teacher_membership_id = ? ORDER BY e.date DESC, e.start_time DESC`)
         .all(o.membership_id);
       const kat = db.prepare(`
-        SELECT k.etut_id, k.student_membership_id AS ogrenciId, u.full_name AS ad, k.parent_response AS yanit
+        SELECT k.etut_id, k.student_membership_id AS ogrenciId, u.full_name AS ad, k.parent_response AS yanit, k.attendance AS devam
         FROM etut_katilimcilar k JOIN memberships m ON m.id = k.student_membership_id JOIN users u ON u.id = m.user_id
         WHERE k.etut_id IN (SELECT id FROM etutler WHERE teacher_membership_id = ?) ORDER BY u.full_name`).all(o.membership_id);
       json(res, 200, {
         etutler: etutler.map(e => ({ ...etutSatiri(e), katilimcilar: kat.filter(k => k.etut_id === e.id)
-          .map(({ ogrenciId, ad, yanit }) => ({ ogrenciId, ad, yanit })) })),
+          .map(({ ogrenciId, ad, yanit, devam }) => ({ ogrenciId, ad, yanit, devam })) })),
       });
       return true;
     }
@@ -119,7 +119,7 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
       const kayitlar = db.prepare(`
         SELECT e.id, e.topic, e.date, e.start_time, e.duration_min, e.place, e.note, e.status,
                co.name AS ders, tu.full_name AS ogretmen,
-               k.student_membership_id AS ogrenciId, k.parent_response AS yanit
+               k.student_membership_id AS ogrenciId, k.parent_response AS yanit, k.attendance AS devam
         FROM etut_katilimcilar k
         JOIN guardians g ON g.student_membership_id = k.student_membership_id AND g.parent_membership_id = ?
         JOIN etutler e ON e.id = k.etut_id
@@ -132,7 +132,7 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
         etutler: kayitlar.map(r => ({
           id: r.id, ders: r.ders, konu: r.topic, tarih: r.date, saat: r.start_time, sureDk: r.duration_min,
           yer: r.place, not: r.note, durum: r.status, ogretmen: r.ogretmen,
-          ogrenciId: r.ogrenciId, ogrenci: ad.get(r.ogrenciId), yanit: r.yanit,
+          ogrenciId: r.ogrenciId, ogrenci: ad.get(r.ogrenciId), yanit: r.yanit, devam: r.devam,
         })),
       });
       return true;
@@ -140,7 +140,7 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
     if (o.role === 'ogrenci') {
       const kayitlar = db.prepare(`
         SELECT e.id, e.topic, e.date, e.start_time, e.duration_min, e.place, e.note, e.status,
-               co.name AS ders, tu.full_name AS ogretmen, k.parent_response AS yanit
+               co.name AS ders, tu.full_name AS ogretmen, k.parent_response AS yanit, k.attendance AS devam
         FROM etut_katilimcilar k
         JOIN etutler e ON e.id = k.etut_id
         JOIN memberships tm ON tm.id = e.teacher_membership_id JOIN users tu ON tu.id = tm.user_id
@@ -149,7 +149,7 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
       json(res, 200, {
         etutler: kayitlar.map(r => ({
           id: r.id, ders: r.ders, konu: r.topic, tarih: r.date, saat: r.start_time, sureDk: r.duration_min,
-          yer: r.place, not: r.note, durum: r.status, ogretmen: r.ogretmen, yanit: r.yanit,
+          yer: r.place, not: r.note, durum: r.status, ogretmen: r.ogretmen, yanit: r.yanit, devam: r.devam,
         })),
       });
       return true;
@@ -239,6 +239,28 @@ export async function etutApi({ req, res, url, o, json, govde, denetle }) {
     db.prepare("UPDATE etutler SET status = 'iptal' WHERE id = ?").run(id);
     denetle(o.user_id, 'etut-iptal', { etutId: id });
     json(res, 200, { tamam: true });
+    return true;
+  }
+
+  // ---- Öğretmen: etüt yoklaması (geldi / gelmedi / izinli) ----
+  if (yol === '/api/etut/yoklama') {
+    if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
+    const id = tamSayi(b.etutId, 1, 1e9);
+    const et = id && db.prepare('SELECT id, teacher_membership_id, status, date FROM etutler WHERE id = ?').get(id);
+    if (!et || et.teacher_membership_id !== o.membership_id) return hata(404, 'Etüt bulunamadı');
+    if (et.status !== 'planli') return hata(409, 'İptal edilmiş etütte yoklama alınamaz');
+    if (et.date > bugun()) return hata(409, 'Etüt günü gelmeden yoklama alınamaz');
+    if (!Array.isArray(b.kayitlar) || !b.kayitlar.length) return hata(400, 'Yoklama bilgisi boş');
+    const davetli = new Set(db.prepare('SELECT student_membership_id AS id FROM etut_katilimcilar WHERE etut_id = ?').all(id).map(r => r.id));
+    const guncelle = db.prepare('UPDATE etut_katilimcilar SET attendance = ? WHERE etut_id = ? AND student_membership_id = ?');
+    for (const k of b.kayitlar) {
+      const m = tamSayi(k?.ogrenciId, 1, 1e9);
+      if (!m || !davetli.has(m) || !['geldi', 'gelmedi', 'izinli'].includes(k.durum)) return hata(400, 'Yoklama bilgisi geçersiz');
+    }
+    const say = { geldi: 0, gelmedi: 0, izinli: 0 };
+    islem(() => { for (const k of b.kayitlar) { guncelle.run(k.durum, id, Number(k.ogrenciId)); say[k.durum]++; } });
+    denetle(o.user_id, 'etut-yoklama', { etutId: id, ...say });
+    json(res, 200, { tamam: true, ...say });
     return true;
   }
 

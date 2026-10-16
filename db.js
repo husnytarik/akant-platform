@@ -148,6 +148,10 @@ const sutunlar = t => db.prepare(`PRAGMA table_info(${t})`).all();
 if (!sutunlar('classes').some(c => c.name === 'homeroom_membership_id')) {
   db.exec('ALTER TABLE classes ADD COLUMN homeroom_membership_id INTEGER REFERENCES memberships(id)');
 }
+if (!sutunlar('etut_katilimcilar').some(c => c.name === 'attendance')) {
+  // Etüt yoklaması: NULL = henüz alınmadı
+  db.exec("ALTER TABLE etut_katilimcilar ADD COLUMN attendance TEXT CHECK (attendance IN ('geldi','gelmedi','izinli'))");
+}
 if (sutunlar('assignments').find(c => c.name === 'teacher_membership_id')?.notnull === 1) {
   // Öğretmen, sınıfa ders eklendikten sonra atanabilsin: sütun NULL'a izin vermeli.
   db.exec('PRAGMA foreign_keys = OFF');
