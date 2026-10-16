@@ -128,6 +128,23 @@ CREATE TABLE IF NOT EXISTS yoklama_kayit (
   status                TEXT NOT NULL CHECK (status IN ('geldi','gelmedi','gec','izinli')),
   PRIMARY KEY (yoklama_id, student_membership_id)
 );
+-- Ders (sınıf+ders ataması) için işlenen konular ve verilen ödevler
+CREATE TABLE IF NOT EXISTS konular (
+  id            INTEGER PRIMARY KEY,
+  assignment_id INTEGER NOT NULL REFERENCES assignments(id),
+  date          TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  note          TEXT,
+  created_at    INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS odevler (
+  id            INTEGER PRIMARY KEY,
+  assignment_id INTEGER NOT NULL REFERENCES assignments(id),
+  title         TEXT NOT NULL,
+  note          TEXT,
+  due_date      TEXT NOT NULL,
+  created_at    INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

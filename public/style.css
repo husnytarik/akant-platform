@@ -118,3 +118,34 @@ a.modul-kart.hazir .durum { color: var(--text); text-decoration: underline; }
   body { padding: 16px 12px 40px; }
   .sekmeler { gap: 0 16px; }
 }
+
+/* Ders merkezi */
+.gun-seridi { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; align-items: stretch; margin-bottom: 16px; }
+.gun-seridi > button { border: 1px solid var(--border); background: var(--bg); font-size: 1.1rem; height: 44px; }
+.gun-seridi > button:hover { background: var(--soft); }
+.gun-baslik { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border); min-height: 44px; padding: 4px; }
+.ders-satir { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: -1px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.ders-satir:hover { background: var(--soft); }
+.ders-satir.secili { border-color: var(--text); position: relative; background: var(--soft); }
+.ders-zaman { display: flex; flex-direction: column; font-size: .8rem; color: var(--muted); line-height: 1.3; }
+.ders-zaman strong { font-size: 1rem; color: var(--text); }
+.ders-orta { display: flex; flex-direction: column; }
+.ders-orta span { font-size: .88rem; color: var(--muted); }
+.durum-etiket { font-size: .8rem; color: var(--muted); border: 1px solid var(--border); padding: 1px 8px; white-space: nowrap; }
+.durum-etiket.tamam { color: var(--text); border-color: var(--text); }
+.ders-panel { margin-top: 24px; border: 1px solid var(--text); padding: 16px 16px 20px; }
+.ders-panel-ust { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.ders-panel h2 { font-size: 1.1rem; margin: 0; }
+.ders-panel .alt { margin: 2px 0 14px; }
+.dugme-link { display: inline-block; text-decoration: none; background: var(--text); color: var(--bg); padding: 7px 14px; font-size: .9rem; margin-top: 8px; }
+.dugme-link:hover { background: #333; }
+.ekle-form { margin: 12px 0 8px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.not-kart { border: 1px solid var(--border); padding: 10px 14px; margin-top: 8px; }
+.not-kart p { margin: 4px 0; font-size: .92rem; }
+.not-kart.soluk { color: var(--muted); }
+.not-ust { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.not-ust .alt { margin: 0; white-space: nowrap; }
+@media (max-width: 600px) {
+  .ders-satir { grid-template-columns: 52px 1fr; }
+  .ders-satir .durum-etiket { grid-column: 2; justify-self: start; }
+}

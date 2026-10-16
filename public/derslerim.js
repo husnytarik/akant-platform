@@ -1,0 +1,247 @@
+const $ = id => document.getElementById(id);
+const GUN = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+let tarih = '';
+let bugun = '';
+let veri = null;
+let ders = null;      // açık ders: { atamaId, sinif, ders, dersSaati? }
+let sekme = 'ogrenciler';
+
+function mesaj(metin, tur = '') {
+  $('mesaj').textContent = metin;
+  $('mesaj').className = 'mesaj ' + tur;
+}
+
+async function api(yol, govde) {
+  const r = await fetch(yol, govde === undefined ? {} : {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(govde),
+  });
+  if (r.status === 401) { location.href = '/'; throw new Error('oturum'); }
+  if (r.status === 403) { location.href = '/panel'; throw new Error('yetki'); }
+  const v = await r.json().catch(() => ({}));
+  return { ok: r.ok, veri: v };
+}
+
+function el(tag, metin, sinif) {
+  const e = document.createElement(tag);
+  if (metin !== undefined) e.textContent = metin;
+  if (sinif) e.className = sinif;
+  return e;
+}
+
+function gunKaydir(t, n) {
+  const d = new Date(t + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function tarihYaz(t) {
+  const d = new Date(t + 'T00:00:00Z');
+  return `${d.getUTCDate()} ${AY[d.getUTCMonth()]} ${GUN[d.getUTCDay()]}`;
+}
+
+function kisaTarih(t) {
+  const [y, a, g] = t.split('-');
+  return `${g}.${a}.${y}`;
+}
+
+async function gunYukle() {
+  const r = await api('/api/ders/liste?tarih=' + encodeURIComponent(tarih));
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  mesaj('');
+  veri = r.veri;
+  bugun = veri.bugun;
+  $('gun-adi').textContent = tarihYaz(tarih) + (tarih === bugun ? ' · bugün' : '');
+  $('bugun').classList.toggle('gizli', tarih === bugun);
+  zamanCiz();
+  atamaCiz();
+}
+
+function zamanCiz() {
+  const k = $('zaman');
+  k.replaceChildren();
+  if (veri.hafta_sonu) return k.appendChild(el('p', 'Hafta sonu ders yok.', 'alt'));
+  if (!veri.gunluk.length) return k.appendChild(el('p', 'Bu günde dersiniz yok.', 'alt'));
+  for (const d of veri.gunluk) {
+    const satir = el('button', undefined, 'ders-satir');
+    satir.type = 'button';
+    if (ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
+    const zaman = el('div', undefined, 'ders-zaman');
+    zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]), el('span', d.aralik.split('–')[1]));
+    const orta = el('div', undefined, 'ders-orta');
+    orta.append(el('strong', d.ders), el('span', d.sinif));
+    const durum = tarih > bugun ? '' : d.alindi ? `Yoklama alındı · ${d.gelmedi} gelmedi` : 'Yoklama bekliyor';
+    const rozet = el('span', durum, d.alindi ? 'durum-etiket tamam' : 'durum-etiket');
+    satir.append(zaman, orta, rozet);
+    satir.addEventListener('click', () => dersAc(d, true));
+    k.appendChild(satir);
+  }
+}
+
+function atamaCiz() {
+  const k = $('atamalar');
+  k.replaceChildren();
+  if (!veri.atamalar.length) return k.appendChild(el('p', 'Size atanmış ders yok.', 'alt'));
+  for (const a of veri.atamalar) {
+    const b = el('button', undefined, 'modul-kart hazir');
+    b.type = 'button';
+    b.append(el('strong', `${a.sinif} · ${a.ders}`), el('p', `${a.ogrenciSayisi} öğrenci`));
+    b.addEventListener('click', () => dersAc(a, false));
+    k.appendChild(b);
+  }
+}
+
+function dersAc(d, programdan) {
+  ders = { atamaId: d.atamaId, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
+  $('p-baslik').textContent = `${d.sinif} · ${d.ders}`;
+  $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Haftalık ders genel görünümü';
+  $('panel').classList.remove('gizli');
+  zamanCiz();
+  sekmeAc(sekme);
+  $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sekmeAc(ad) {
+  sekme = ad;
+  for (const b of $('sekmeler').children) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
+  const yukle = { ogrenciler: ogrencilerCiz, yoklama: yoklamaCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
+  yukle();
+}
+
+async function ogrencilerCiz() {
+  const k = $('icerik');
+  k.replaceChildren();
+  const r = await api('/api/ders/ogrenciler?atamaId=' + ders.atamaId);
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  k.appendChild(el('p', `${r.veri.ogrenciler.length} öğrenci`, 'alt'));
+  const t = el('table');
+  const bas = document.createElement('tr');
+  bas.append(el('th', '#'), el('th', 'Öğrenci'), el('th', 'Bu derste devamsızlık'));
+  t.appendChild(bas);
+  r.veri.ogrenciler.forEach((o, i) => {
+    const tr = document.createElement('tr');
+    tr.append(el('td', String(i + 1)), el('td', o.ad), el('td', o.devamsiz ? `${o.devamsiz} gün` : '-'));
+    t.appendChild(tr);
+  });
+  const sar = el('div', undefined, 'tablo-sar');
+  sar.appendChild(t);
+  k.appendChild(sar);
+}
+
+function yoklamaCiz() {
+  const k = $('icerik');
+  k.replaceChildren();
+  const tar = tarih > bugun ? bugun : tarih;
+  if (!ders.dersSaati) {
+    k.appendChild(el('p', 'Yoklama için yukarıdaki günlük programdan bir ders saati seçin.', 'alt'));
+    return;
+  }
+  if (tarih > bugun) k.appendChild(el('p', 'Gelecek tarih için yoklama alınamaz.', 'alt'));
+  else {
+    k.appendChild(el('p', 'Bu ders saati için yoklama sayfasında öğrencileri işaretleyin.', 'alt'));
+    const a = el('a', 'Devamsızlık gir', 'birincil kucuk');
+    a.href = `/yoklama?tarih=${tar}&sinifId=${ders.sinifId}&dersSaati=${ders.dersSaati}`;
+    a.className = 'dugme-link';
+    k.appendChild(a);
+  }
+}
+
+function listeKart(baslik, alt, aciklama, sil) {
+  const kart = el('div', undefined, 'not-kart');
+  const ust = el('div', undefined, 'not-ust');
+  ust.append(el('strong', baslik), el('span', alt, 'alt'));
+  kart.appendChild(ust);
+  if (aciklama) kart.appendChild(el('p', aciklama));
+  const s = el('button', 'Sil', 'ikincil kucuk');
+  s.type = 'button';
+  s.addEventListener('click', sil);
+  kart.appendChild(s);
+  return kart;
+}
+
+function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder }) {
+  const f = el('form', undefined, 'ekle-form');
+  const satir = el('div', undefined, 'form-satir');
+  const sol = document.createElement('div');
+  const l1 = el('label', 'Başlık'); l1.htmlFor = 'f-baslik';
+  const baslik = el('input'); baslik.id = 'f-baslik'; baslik.maxLength = 120; baslik.required = true;
+  sol.append(l1, baslik);
+  const sag = document.createElement('div');
+  const l2 = el('label', tarihEtiket); l2.htmlFor = 'f-tarih';
+  const t = el('input'); t.id = 'f-tarih'; t.type = 'date'; t.required = true; t.value = tarihDeger;
+  if (tarihMax) t.max = tarihMax;
+  if (tarihMin) t.min = tarihMin;
+  sag.append(l2, t);
+  satir.append(sol, sag);
+  const l3 = el('label', 'Açıklama (isteğe bağlı)'); l3.htmlFor = 'f-aciklama';
+  const ac = el('input'); ac.id = 'f-aciklama'; ac.maxLength = 500;
+  const b = el('button', buton, 'birincil kucuk'); b.type = 'submit';
+  f.append(satir, l3, ac, b);
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const r = await gonder({ atamaId: ders.atamaId, baslik: baslik.value, tarih: t.value, aciklama: ac.value });
+    if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+    mesaj('Kaydedildi.', 'tamam');
+    sekmeAc(sekme);
+  });
+  return f;
+}
+
+async function konularCiz() {
+  const k = $('icerik');
+  k.replaceChildren();
+  k.appendChild(ekleForm({
+    tarihEtiket: 'İşlendiği tarih', tarihDeger: tarih > bugun ? bugun : tarih, tarihMax: bugun,
+    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g),
+  }));
+  const r = await api('/api/ders/konular?atamaId=' + ders.atamaId);
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  k.appendChild(el('h3', 'İşlenen konular', 'baslik3'));
+  if (!r.veri.konular.length) k.appendChild(el('p', 'Henüz konu girilmemiş.', 'alt'));
+  for (const x of r.veri.konular) {
+    k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), x.aciklama, async () => {
+      const s = await api('/api/ders/konu-sil', { id: x.id });
+      if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
+      sekmeAc(sekme);
+    }));
+  }
+}
+
+async function odevlerCiz() {
+  const k = $('icerik');
+  k.replaceChildren();
+  k.appendChild(ekleForm({
+    tarihEtiket: 'Son teslim tarihi', tarihDeger: gunKaydir(bugun, 7), tarihMin: bugun,
+    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g),
+  }));
+  const r = await api('/api/ders/odevler?atamaId=' + ders.atamaId);
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  k.appendChild(el('h3', 'Verilen ödevler', 'baslik3'));
+  if (!r.veri.odevler.length) k.appendChild(el('p', 'Henüz ödev verilmemiş.', 'alt'));
+  for (const x of r.veri.odevler) {
+    k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), x.aciklama, async () => {
+      const s = await api('/api/ders/odev-sil', { id: x.id });
+      if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
+      sekmeAc(sekme);
+    }));
+  }
+}
+
+$('geri').addEventListener('click', () => { tarih = gunKaydir(tarih, -1); gunYukle(); });
+$('ileri').addEventListener('click', () => { tarih = gunKaydir(tarih, 1); gunYukle(); });
+$('bugun').addEventListener('click', () => { tarih = bugun; gunYukle(); });
+$('p-kapat').addEventListener('click', () => { ders = null; $('panel').classList.add('gizli'); zamanCiz(); });
+$('sekmeler').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b && ders) sekmeAc(b.dataset.sekme);
+});
+
+(async () => {
+  const ben = await fetch('/api/ben');
+  if (!ben.ok) { location.href = '/'; return; }
+  tarih = new Date().toLocaleDateString('sv-SE');
+  await gunYukle();
+})();

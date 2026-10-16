@@ -3,6 +3,7 @@ const SECENEKLER = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['gec', 'Geç'],
 let secili = null;     // { sinifId, dersSaati, sinif, ders }
 let durumlar = new Map();
 let ogrenciler = [];
+let gunDersleri = [];
 
 function mesaj(metin, tur = '') {
   $('mesaj').textContent = metin;
@@ -76,6 +77,7 @@ async function dersleriYukle() {
     liste.appendChild(el('p', 'Bu tarihte ders programınızda ders yok.', 'alt'));
     return;
   }
+  gunDersleri = r.veri.dersler;
   for (const d of r.veri.dersler) {
     const b = el('button', undefined, 'modul-kart hazir');
     b.type = 'button';
@@ -128,6 +130,11 @@ $('tarih').addEventListener('change', dersleriYukle);
   if (!ben.ok) { location.href = '/'; return; }
   const bugun = new Date().toLocaleDateString('sv-SE');
   $('tarih').max = bugun;
-  $('tarih').value = bugun;
+  const q = new URLSearchParams(location.search);
+  const t = q.get('tarih');
+  $('tarih').value = /^\d{4}-\d{2}-\d{2}$/.test(t || '') && t <= bugun ? t : bugun;
   await dersleriYukle();
+  const sinifId = Number(q.get('sinifId')), dersSaati = Number(q.get('dersSaati'));
+  const hedef = gunDersleri.find(d => d.sinifId === sinifId && d.dersSaati === dersSaati);
+  if (hedef) dersAc(hedef);
 })();

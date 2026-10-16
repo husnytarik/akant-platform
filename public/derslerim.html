@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Derslerim</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Derslerim</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <div class="gun-seridi">
+      <button type="button" id="geri" aria-label="Önceki gün">&larr;</button>
+      <div class="gun-baslik">
+        <strong id="gun-adi"></strong>
+        <button type="button" id="bugun" class="ikincil">Bugün</button>
+      </div>
+      <button type="button" id="ileri" aria-label="Sonraki gün">&rarr;</button>
+    </div>
+
+    <div id="zaman"></div>
+
+    <section id="panel" class="ders-panel gizli">
+      <div class="ders-panel-ust">
+        <div>
+          <h2 id="p-baslik"></h2>
+          <p id="p-alt" class="alt"></p>
+        </div>
+        <button type="button" id="p-kapat" class="ikincil">Kapat</button>
+      </div>
+      <div class="sekmeler" id="sekmeler">
+        <button type="button" data-sekme="ogrenciler" aria-pressed="true">Öğrenciler</button>
+        <button type="button" data-sekme="yoklama" aria-pressed="false">Devamsızlık</button>
+        <button type="button" data-sekme="konular" aria-pressed="false">Konular</button>
+        <button type="button" data-sekme="odevler" aria-pressed="false">Ödevler</button>
+      </div>
+      <div id="icerik"></div>
+    </section>
+
+    <h2 class="baslik2">Tüm derslerim</h2>
+    <div id="atamalar" class="modul-grid"></div>
+  </main>
+  <script src="/derslerim.js"></script>
+</body>
+</html>
