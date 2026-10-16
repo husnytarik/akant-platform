@@ -16,6 +16,11 @@
     </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
+    <div class="sekmeler" id="gorunum">
+      <button type="button" data-gorunum="gun" aria-pressed="true">Günlük</button>
+      <button type="button" data-gorunum="hafta" aria-pressed="false">Haftalık</button>
+    </div>
+
     <div class="gun-seridi">
       <button type="button" id="geri" aria-label="Önceki gün">&larr;</button>
       <div class="gun-baslik">
@@ -26,6 +31,7 @@
     </div>
 
     <div id="zaman"></div>
+    <div id="hafta" class="tablo-sar gizli"></div>
 
     <section id="panel" class="ders-panel gizli">
       <div class="ders-panel-ust">
@@ -37,7 +43,7 @@
       </div>
       <div class="sekmeler" id="sekmeler">
         <button type="button" data-sekme="ogrenciler" aria-pressed="true">Öğrenciler</button>
-        <button type="button" data-sekme="yoklama" aria-pressed="false">Devamsızlık</button>
+        <button type="button" data-sekme="yoklama" aria-pressed="false">Dersi bitir</button>
         <button type="button" data-sekme="konular" aria-pressed="false">Konular</button>
         <button type="button" data-sekme="odevler" aria-pressed="false">Ödevler</button>
       </div>

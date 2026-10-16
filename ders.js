@@ -8,6 +8,22 @@ const tamSayi = (v, min, max) => {
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const tarihGecerli = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !Number.isNaN(Date.parse(t));
 const gunNo = t => new Date(t + 'T00:00:00Z').getUTCDay();
+const simdiSaat = () => new Date().toLocaleTimeString('sv-SE', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+const kaydir = (t, n) => {
+  const d = new Date(t + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+// Dersin durumu: tamam | bekliyor (henüz bitmedi/gelecek) | gecikti (süresi geçti, tamamlanmadı)
+function dersDurumu(tarih, dersSaati, tamamlandi) {
+  if (tamamlandi) return 'tamam';
+  const t = bugun();
+  if (tarih > t) return 'bekliyor';
+  if (tarih < t) return 'gecikti';
+  const bitis = DERS_ZAMANLARI[dersSaati - 1]?.[1];
+  return bitis && simdiSaat() > bitis ? 'gecikti' : 'bekliyor';
+}
 
 // Ders merkezi: öğretmen kendi sınıf+ders atamaları için öğrenci, konu ve ödev işlemlerini yapar.
 export async function dersApi({ req, res, url, o, json, govde, denetle }) {
@@ -51,7 +67,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const gun = gunNo(tarih);
     const gunluk = gun >= 1 && gun <= 5 ? db.prepare(`
       SELECT s.period AS dersSaati, a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
-             y.id AS yoklamaId,
+             y.id AS yoklamaId, y.completed_at AS tamamlandi,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi
       FROM schedule s JOIN assignments a ON a.id = s.assignment_id
       JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
@@ -68,9 +84,63 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       gunluk: gunluk.map(r => ({
         dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', alindi: !!r.yoklamaId, gelmedi: r.gelmedi,
+        durum: dersDurumu(tarih, r.dersSaati, !!r.tamamlandi),
       })),
       atamalar,
     });
+    return true;
+  }
+
+  // Haftalık program: seçilen tarihin haftası (Pzt-Cum), her hücrede dersin tamamlanma durumu
+  if (req.method === 'GET' && yol === '/api/ders/hafta') {
+    const tarih = url.searchParams.get('tarih') || bugun();
+    if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
+    const pazartesi = kaydir(tarih, -((gunNo(tarih) + 6) % 7));
+    const satir = db.prepare(`
+      SELECT s.period AS dersSaati, a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
+             y.completed_at AS tamamlandi,
+             (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi
+      FROM schedule s JOIN assignments a ON a.id = s.assignment_id
+      JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
+      LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
+      WHERE s.day = ? AND a.teacher_membership_id = ? ORDER BY s.period`);
+    const gunler = [];
+    for (let g = 1; g <= 5; g++) {
+      const t = kaydir(pazartesi, g - 1);
+      gunler.push({
+        tarih: t, gun: g,
+        dersler: satir.all(t, g, o.membership_id).map(r => ({
+          dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
+          aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', gelmedi: r.gelmedi,
+          durum: dersDurumu(t, r.dersSaati, !!r.tamamlandi),
+        })),
+      });
+    }
+    json(res, 200, { bugun: bugun(), pazartesi, gunler, zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) });
+    return true;
+  }
+
+  // Süresi geçip tamamlanmamış dersler (son 14 gün) — ileride hatırlatma bildirimi bu listeden üretilecek
+  if (req.method === 'GET' && yol === '/api/ders/gecikenler') {
+    const satir = db.prepare(`
+      SELECT a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders, s.period AS dersSaati,
+             y.completed_at AS tamamlandi
+      FROM schedule s JOIN assignments a ON a.id = s.assignment_id
+      JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
+      LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
+      WHERE s.day = ? AND a.teacher_membership_id = ? ORDER BY s.period`);
+    const liste = [];
+    for (let n = 0; n <= 14; n++) {
+      const t = kaydir(bugun(), -n);
+      const gun = gunNo(t);
+      if (gun < 1 || gun > 5) continue;
+      for (const r of satir.all(t, gun, o.membership_id)) {
+        if (dersDurumu(t, r.dersSaati, !!r.tamamlandi) !== 'gecikti') continue;
+        liste.push({ tarih: t, dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
+          aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '' });
+      }
+    }
+    json(res, 200, { sayi: liste.length, dersler: liste });
     return true;
   }
 

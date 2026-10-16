@@ -149,3 +149,23 @@ a.modul-kart.hazir .durum { color: var(--text); text-decoration: underline; }
   .ders-satir { grid-template-columns: 52px 1fr; }
   .ders-satir .durum-etiket { grid-column: 2; justify-self: start; }
 }
+
+a.ders-satir { text-decoration: none; }
+.durum-etiket.gecikti { color: var(--bg); background: var(--text); border-color: var(--text); }
+.uyari { border: 1px solid var(--text); border-left-width: 4px; padding: 10px 14px; margin-bottom: 16px; }
+.uyari-liste { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-size: .9rem; }
+
+/* Haftalık program */
+table.program .saat-hucre { white-space: nowrap; font-weight: 400; vertical-align: middle; background: var(--soft); }
+table.program .saat-hucre strong { display: block; color: var(--text); }
+table.program .saat-hucre span { font-size: .75rem; color: var(--muted); }
+table.program td { min-width: 120px; padding: 4px; height: 56px; vertical-align: middle; }
+table.program th { text-align: center; }
+.bugun-sutun { background: var(--soft); }
+th.bugun-sutun { border-bottom-width: 3px; }
+.hucre-ders { display: flex; flex-direction: column; width: 100%; text-align: left; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: .85rem; line-height: 1.3; }
+.hucre-ders span { color: var(--muted); font-size: .8rem; }
+.hucre-ders:hover { border-color: var(--text); }
+.hucre-ders.tamam { border-left: 3px solid var(--text); }
+.hucre-ders.gecikti { background: var(--text); color: var(--bg); border-color: var(--text); }
+.hucre-ders.gecikti span { color: #ccc; }

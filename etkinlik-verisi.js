@@ -35,7 +35,7 @@ function calistir() {
   try {
     // Son 3 haftanın geçmiş iş günleri için yoklama
     const programlar = db.prepare('SELECT class_id, day, period, assignment_id FROM schedule').all();
-    const yEkle = db.prepare('INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)');
+    const yEkle = db.prepare('INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at, topic, completed_at) VALUES (?,?,?,?,?,?,?,?,?)');
     const kEkle = db.prepare('INSERT INTO yoklama_kayit (yoklama_id, student_membership_id, status) VALUES (?,?,?)');
     const ogrOf = new Map(atamalar.map(a => [a.id, a.ogr]));
     // Her öğrenci için hafif bir devamsızlık eğilimi: çoğu öğrenci neredeyse hiç, bazıları sık
@@ -48,7 +48,8 @@ function calistir() {
       const gun = gunNo(t);
       if (gun < 1 || gun > 5) continue;
       for (const p of programlar.filter(p => p.day === gun)) {
-        const yid = Number(yEkle.run(p.class_id, t, p.period, p.assignment_id, ogrOf.get(p.assignment_id), simdi, simdi).lastInsertRowid);
+        const bitti = Math.random() < 0.92; // %8 ders tamamlanmamış (süresi geçen ders hatırlatması için örnek)
+        const yid = Number(yEkle.run(p.class_id, t, p.period, p.assignment_id, ogrOf.get(p.assignment_id), simdi, simdi, bitti ? sec(KONULAR) : null, bitti ? simdi : null).lastInsertRowid);
         for (const id of sinifOgr.get(p.class_id) || []) {
           const x = Math.random();
           const e = egilim.get(id) || 0.02;

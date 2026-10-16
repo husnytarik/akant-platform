@@ -75,7 +75,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (gun < 1 || gun > 5) return json(res, 200, { dersler: [], hafta_sonu: true }), true;
     const satirlar = db.prepare(`
       SELECT s.period AS dersSaati, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
-             y.id AS yoklamaId,
+             y.id AS yoklamaId, y.completed_at AS tamamlandi,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id) AS toplam
       FROM schedule s JOIN assignments a ON a.id = s.assignment_id
@@ -87,7 +87,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
       dersler: satirlar.map(r => ({
         sinifId: r.sinifId, sinif: r.sinif, ders: r.ders, dersSaati: r.dersSaati,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
-        alindi: !!r.yoklamaId, gelmedi: r.gelmedi, toplam: r.toplam,
+        alindi: !!r.yoklamaId, tamam: !!r.tamamlandi, gelmedi: r.gelmedi, toplam: r.toplam,
       })),
     });
     return true;
@@ -102,11 +102,12 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
-    const y = db.prepare('SELECT id FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(sinifId, tarih, dersSaati);
+    const y = db.prepare('SELECT id, topic, kazanim, completed_at FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(sinifId, tarih, dersSaati);
     const mevcut = new Map(y ? db.prepare('SELECT student_membership_id AS id, status FROM yoklama_kayit WHERE yoklama_id = ?')
       .all(y.id).map(r => [r.id, r.status]) : []);
     json(res, 200, {
-      ders: ders.ders, sinif: ders.sinif, alindi: !!y,
+      ders: ders.ders, sinif: ders.sinif, alindi: !!y, tamam: !!y?.completed_at,
+      konu: y?.topic || '', kazanim: y?.kazanim || '',
       ogrenciler: sinifOgrencileri(sinifId).map(s => ({ ...s, durum: mevcut.get(s.ogrenciId) || 'geldi' })),
     });
     return true;
@@ -121,6 +122,9 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
+    const konu = String(b.konu || '').trim();
+    const kazanim = String(b.kazanim || '').trim().slice(0, 300);
+    if (konu.length < 2 || konu.length > 120) return hata(400, 'İşlenen konu 2-120 karakter olmalı');
 
     const ogrenciler = sinifOgrencileri(sinifId);
     const durum = new Map();
@@ -135,13 +139,17 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
       const var_ = db.prepare('SELECT id FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(sinifId, tarih, dersSaati);
       let id = var_?.id;
       if (id) {
-        db.prepare('UPDATE yoklama SET teacher_membership_id = ?, assignment_id = ?, updated_at = ? WHERE id = ?')
-          .run(o.membership_id, ders.atamaId, simdi, id);
+        db.prepare('UPDATE yoklama SET teacher_membership_id = ?, assignment_id = ?, updated_at = ?, topic = ?, kazanim = ?, completed_at = ? WHERE id = ?')
+          .run(o.membership_id, ders.atamaId, simdi, konu, kazanim || null, simdi, id);
         db.prepare('DELETE FROM yoklama_kayit WHERE yoklama_id = ?').run(id);
       } else {
-        id = Number(db.prepare(`INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at)
-                                VALUES (?,?,?,?,?,?,?)`).run(sinifId, tarih, dersSaati, ders.atamaId, o.membership_id, simdi, simdi).lastInsertRowid);
+        id = Number(db.prepare(`INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at, topic, kazanim, completed_at)
+                                VALUES (?,?,?,?,?,?,?,?,?,?)`).run(sinifId, tarih, dersSaati, ders.atamaId, o.membership_id, simdi, simdi, konu, kazanim || null, simdi).lastInsertRowid);
       }
+      // Konu, Derslerim > Konular listesinde de görünsün
+      db.prepare('DELETE FROM konular WHERE yoklama_id = ?').run(id);
+      db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id) VALUES (?,?,?,?,?,?)')
+        .run(ders.atamaId, tarih, konu, kazanim ? 'Kazanım: ' + kazanim : null, simdi, id);
       const ekle = db.prepare('INSERT INTO yoklama_kayit (yoklama_id, student_membership_id, status) VALUES (?,?,?)');
       // Gönderilmeyen öğrenci "geldi" sayılır
       for (const s of ogrenciler) ekle.run(id, s.ogrenciId, durum.get(s.ogrenciId) || 'geldi');
@@ -149,7 +157,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     });
     const say = { geldi: 0, gelmedi: 0, gec: 0, izinli: 0 };
     for (const s of ogrenciler) say[durum.get(s.ogrenciId) || 'geldi']++;
-    denetle(o.user_id, 'yoklama-kaydet', { yoklamaId: yid, sinifId, tarih, dersSaati, ...say });
+    denetle(o.user_id, 'ders-bitir', { yoklamaId: yid, sinifId, tarih, dersSaati, ...say });
     json(res, 200, { tamam: true, ...say });
     return true;
   }

@@ -169,6 +169,16 @@ if (!sutunlar('etut_katilimcilar').some(c => c.name === 'attendance')) {
   // Etüt yoklaması: NULL = henüz alınmadı
   db.exec("ALTER TABLE etut_katilimcilar ADD COLUMN attendance TEXT CHECK (attendance IN ('geldi','gelmedi','izinli'))");
 }
+if (!sutunlar('yoklama').some(c => c.name === 'completed_at')) {
+  // "Dersi bitir": yoklama + işlenen konu + kazanım tek kayıtta; completed_at dolu = ders tamamlandı
+  db.exec('ALTER TABLE yoklama ADD COLUMN topic TEXT');
+  db.exec('ALTER TABLE yoklama ADD COLUMN kazanim TEXT');
+  db.exec('ALTER TABLE yoklama ADD COLUMN completed_at INTEGER');
+  db.exec('UPDATE yoklama SET completed_at = updated_at');
+}
+if (!sutunlar('konular').some(c => c.name === 'yoklama_id')) {
+  db.exec('ALTER TABLE konular ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
+}
 if (sutunlar('assignments').find(c => c.name === 'teacher_membership_id')?.notnull === 1) {
   // Öğretmen, sınıfa ders eklendikten sonra atanabilsin: sütun NULL'a izin vermeli.
   db.exec('PRAGMA foreign_keys = OFF');

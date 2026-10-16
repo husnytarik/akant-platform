@@ -84,7 +84,7 @@ async function dersleriYukle() {
     b.append(
       el('strong', `${d.dersSaati}. ders · ${d.sinif} · ${d.ders}`),
       el('p', d.aralik),
-      el('span', d.alindi ? `Alındı · ${d.gelmedi} devamsız` : 'Yoklama alınmadı', 'durum'),
+      el('span', d.tamam ? `Tamamlandı · ${d.gelmedi} devamsız` : 'Tamamlanmadı', 'durum'),
     );
     b.addEventListener('click', () => dersAc(d));
     liste.appendChild(b);
@@ -99,7 +99,9 @@ async function dersAc(d) {
   secili = d;
   ogrenciler = r.veri.ogrenciler;
   durumlar = new Map(ogrenciler.map(o => [o.ogrenciId, o.durum]));
-  $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.alindi ? ' (kayıtlı yoklama düzenleniyor)' : '');
+  $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.tamam ? ' (tamamlanmış ders düzenleniyor)' : '');
+  $('konu').value = r.veri.konu;
+  $('kazanim').value = r.veri.kazanim;
   $('yoklama').classList.remove('gizli');
   if (!ogrenciler.length) $('ozet').textContent = 'Bu sınıfta aktif öğrenci yok.';
   tabloCiz();
@@ -117,9 +119,11 @@ $('kaydet').addEventListener('click', async () => {
   const r = await api('/api/yoklama/kaydet', {
     tarih: $('tarih').value, sinifId: secili.sinifId, dersSaati: secili.dersSaati,
     kayitlar: ogrenciler.map(o => ({ ogrenciId: o.ogrenciId, durum: durumlar.get(o.ogrenciId) })),
+    konu: $('konu').value, kazanim: $('kazanim').value,
   });
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  mesaj(`Kaydedildi: ${r.veri.gelmedi} gelmedi, ${r.veri.gec} geç, ${r.veri.izinli} izinli.`, 'tamam');
+  mesaj(`Ders tamamlandı: ${r.veri.gelmedi} gelmedi, ${r.veri.gec} geç, ${r.veri.izinli} izinli.`, 'tamam');
+  $('yoklama').classList.add('gizli');
   await dersleriYukle();
 });
 

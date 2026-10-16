@@ -38,7 +38,7 @@ const MODULLER = [
   { id: 'siniflarim', ad: 'Sınıflarım', aciklama: 'Sorumlu olduğum sınıf ve öğrenciler', roller: ['ogretmen'] },
   { id: 'derslerim', ad: 'Derslerim', aciklama: 'Günlük program; devamsızlık, konu ve ödev işlemleri', roller: ['ogretmen'], yol: '/derslerim' },
   { id: 'odev-takip', ad: 'Ödevler', aciklama: 'Verilen ödevler ve son tarihleri', roller: ['ogrenci', 'veli'], yol: '/odevler' },
-  { id: 'yoklama', ad: 'Devamsızlık / yoklama', aciklama: 'Girdiğim derslerde öğrenci devamsızlığı gir', roller: ['ogretmen'], yol: '/yoklama' },
+  { id: 'yoklama', ad: 'Dersi bitir', aciklama: 'Yoklama, işlenen konu ve kazanımı gir', roller: ['ogretmen'], yol: '/yoklama' },
   { id: 'not-girisi', ad: 'Not girişi', aciklama: 'Sınav ve değerlendirme notları', roller: ['ogretmen'] },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
   { id: 'ders-programi', ad: 'Ders programım', aciklama: 'Haftalık ders çizelgesi', roller: ['ogrenci'] },

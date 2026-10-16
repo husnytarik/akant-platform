@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Akant Koleji - Devamsızlık</title>
+  <title>Akant Koleji - Dersi bitir</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main class="kart panel genis">
     <div class="panel-ust">
       <div>
-        <h1>Devamsızlık / yoklama</h1>
+        <h1>Dersi bitir</h1>
         <a href="/panel" class="alt">&larr; Panele dön</a>
       </div>
     </div>
@@ -29,11 +29,19 @@
 
     <section id="yoklama" class="gizli">
       <h2 class="baslik2" id="yoklama-baslik"></h2>
+      <h3 class="baslik3">1. Yoklama</h3>
       <p class="alt">Varsayılan "Geldi" işaretlidir; yalnızca gelmeyenleri değiştirin.</p>
       <label class="onay"><input type="checkbox" id="hepsi-geldi" checked> <strong>Hepsi geldi</strong></label>
       <div class="tablo-sar"><table id="ogrenci-tablo"></table></div>
       <p id="ozet" class="alt"></p>
-      <button class="birincil kucuk" type="button" id="kaydet">Yoklamayı kaydet</button>
+      <h3 class="baslik3">2. İşlenen konu</h3>
+      <label for="konu">Konu</label>
+      <input id="konu" maxlength="120" placeholder="Örn. Doğal sayılarla işlemler">
+      <h3 class="baslik3">3. Kazanım</h3>
+      <label for="kazanim">Kazanım (isteğe bağlı)</label>
+      <input id="kazanim" maxlength="300" placeholder="Örn. MAT.5.1.2">
+      <p class="alt">Kazanım listesi eklendiğinde buradan seçilecek.</p>
+      <button class="birincil kucuk" type="button" id="kaydet">Dersi bitir</button>
     </section>
   </main>
   <script src="/yoklama.js"></script>
