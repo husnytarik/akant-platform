@@ -352,3 +352,11 @@ th { border-bottom-color: var(--navy); }
   .hucre span { display: block; font-size: .58rem; }
   .ders-satir { grid-template-columns: 62px auto 1fr auto; }
 }
+
+.hucre.iptal { opacity: .45; text-decoration: line-through; }
+.lejant { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+.lejant-dersler { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: .85rem; }
+.lejant-oge { display: inline-flex; align-items: center; gap: 6px; }
+
+.hucre { align-items: center; text-align: center; }
+.hucre strong, .hucre span { text-align: center; }

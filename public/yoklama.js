@@ -84,7 +84,7 @@ async function dersleriYukle() {
     b.append(
       el('strong', `${d.dersSaati}. ders · ${d.sinif} · ${d.ders}`),
       el('p', d.aralik),
-      el('span', d.tamam ? `Tamamlandı · ${d.gelmedi} devamsız` : 'Tamamlanmadı', 'durum'),
+      el('span', d.iptal ? 'Ders iptal edildi' : d.tamam ? `Tamamlandı · ${d.gelmedi} devamsız` : 'Tamamlanmadı', 'durum'),
     );
     b.addEventListener('click', () => dersAc(d));
     liste.appendChild(b);
@@ -99,7 +99,7 @@ async function dersAc(d) {
   secili = d;
   ogrenciler = r.veri.ogrenciler;
   durumlar = new Map(ogrenciler.map(o => [o.ogrenciId, o.durum]));
-  $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.tamam ? ' (tamamlanmış ders düzenleniyor)' : '');
+  $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.iptal ? ' (iptal edilmiş ders)' : r.veri.tamam ? ' (tamamlanmış ders düzenleniyor)' : '');
   $('konu').value = r.veri.konu;
   $('kazanim').value = r.veri.kazanim;
   $('odev-baslik').value = r.veri.odev?.baslik || '';
@@ -128,6 +128,16 @@ $('kaydet').addEventListener('click', async () => {
   });
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   mesaj(`Ders tamamlandı: ${r.veri.gelmedi} gelmedi, ${r.veri.gec} geç, ${r.veri.izinli} izinli.`, 'tamam');
+  $('yoklama').classList.add('gizli');
+  await dersleriYukle();
+});
+
+$('iptal').addEventListener('click', async () => {
+  if (!secili) return;
+  if (!confirm('Bu ders iptal edilsin mi? Girilen yoklama, konu ve ödev silinir.')) return;
+  const r = await api('/api/yoklama/iptal', { tarih: $('tarih').value, sinifId: secili.sinifId, dersSaati: secili.dersSaati });
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  mesaj('Ders iptal edildi.', 'tamam');
   $('yoklama').classList.add('gizli');
   await dersleriYukle();
 });

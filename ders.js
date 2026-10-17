@@ -17,7 +17,8 @@ const kaydir = (t, n) => {
 };
 
 // Dersin durumu: tamam | bekliyor (henüz bitmedi/gelecek) | gecikti (süresi geçti, tamamlanmadı)
-function dersDurumu(tarih, dersSaati, tamamlandi) {
+function dersDurumu(tarih, dersSaati, tamamlandi, iptal = false) {
+  if (iptal) return 'iptal';
   if (tamamlandi) return 'tamam';
   const t = bugun();
   if (tarih > t) return 'bekliyor';
@@ -69,7 +70,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const sinif = db.prepare('SELECT c.id, c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(cocuk.id);
     const satir = db.prepare(`
       SELECT s.period AS dersSaati, a.id AS atamaId, co.name AS ders, u.full_name AS ogretmen,
-             y.completed_at AS tamamlandi, COALESCE(y.topic, (SELECT title FROM konular WHERE yoklama_id = y.id LIMIT 1)) AS konu,
+             y.completed_at AS tamamlandi, y.cancelled AS iptal, COALESCE(y.topic, (SELECT title FROM konular WHERE yoklama_id = y.id LIMIT 1)) AS konu,
              (SELECT k.status FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.student_membership_id = ?) AS devam
       FROM schedule s JOIN assignments a ON a.id = s.assignment_id JOIN courses co ON co.id = a.course_id
       LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
@@ -90,7 +91,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
         tarih: t, gun: g,
         dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => stilEkle({
           dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ogretmen, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
-          islendi: !!r.tamamlandi, konu: r.tamamlandi ? r.konu : null, devam: r.tamamlandi ? r.devam : null,
+          iptal: !!r.iptal, islendi: !!r.tamamlandi && !r.iptal, konu: r.tamamlandi && !r.iptal ? r.konu : null, devam: r.tamamlandi && !r.iptal ? r.devam : null,
           odevler: odev.all(r.atamaId, t < bugun() ? bugun() : t),
         }, st)) : [],
         etutler: etutOgr.all(cocuk.id, t).map(e => stilEkle(e, st)),
@@ -116,7 +117,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const gun = gunNo(tarih);
     const gunluk = gun >= 1 && gun <= 5 ? db.prepare(`
       SELECT s.period AS dersSaati, a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
-             y.id AS yoklamaId, y.completed_at AS tamamlandi,
+             y.id AS yoklamaId, y.completed_at AS tamamlandi, y.cancelled AS iptal,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi
       FROM schedule s JOIN assignments a ON a.id = s.assignment_id
       JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
@@ -133,7 +134,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       gunluk: gunluk.map(r => stilEkle({
         dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', alindi: !!r.yoklamaId, gelmedi: r.gelmedi,
-        durum: dersDurumu(tarih, r.dersSaati, !!r.tamamlandi),
+        durum: dersDurumu(tarih, r.dersSaati, !!r.tamamlandi, !!r.iptal),
       }, st)),
       atamalar: atamalar.map(a => stilEkle(a, st)),
       etutler: db.prepare(`
@@ -153,7 +154,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const pazartesi = kaydir(tarih, -((gunNo(tarih) + 6) % 7));
     const satir = db.prepare(`
       SELECT s.period AS dersSaati, a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
-             y.completed_at AS tamamlandi,
+             y.completed_at AS tamamlandi, y.cancelled AS iptal,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi
       FROM schedule s JOIN assignments a ON a.id = s.assignment_id
       JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
@@ -174,7 +175,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
         dersler: satir.all(t, g, o.membership_id).map(r => stilEkle({
           dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
           aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', gelmedi: r.gelmedi,
-          durum: dersDurumu(t, r.dersSaati, !!r.tamamlandi),
+          durum: dersDurumu(t, r.dersSaati, !!r.tamamlandi, !!r.iptal),
         }, st)),
       });
     }

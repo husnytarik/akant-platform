@@ -30,7 +30,7 @@ function tarihYaz(t) {
 const kisa = t => t.split('-').reverse().slice(0, 2).join('.');
 
 // Hücre/satır rengi: gelmedi → kırmızı, ders işlendi → sol çizgi
-const durumSinifi = d => (d.devam === 'gelmedi' ? 'gecikti' : d.islendi ? 'tamam' : 'bekliyor');
+const durumSinifi = d => (d.iptal ? 'iptal' : d.devam === 'gelmedi' ? 'gecikti' : d.islendi ? 'tamam' : 'bekliyor');
 
 function detayCiz(g, d) {
   const k = $('detay');
@@ -40,7 +40,9 @@ function detayCiz(g, d) {
   ust.append(dersChip(d.kisa, d.renk), el('strong', d.ders));
   k.appendChild(ust);
   k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}${d.ogretmen ? ' · ' + d.ogretmen : ''}`, 'alt'));
-  if (d.islendi) {
+  if (d.iptal) {
+    k.appendChild(el('p', 'Bu ders iptal edildi.'));
+  } else if (d.islendi) {
     k.appendChild(el('p', `İşlenen konu: ${d.konu || '—'}`));
     if (d.devam) k.appendChild(el('p', `Devam: ${DEVAM[d.devam] || d.devam}`));
   } else {
@@ -94,7 +96,8 @@ function gunCiz() {
     const orta = el('div', undefined, 'ders-orta');
     orta.append(el('strong', o.tur === 'ders' ? d.ders : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`), el('span', d.ogretmen || ''));
     satir.append(zaman, dersChip(d.kisa || 'E', d.renk), orta);
-    if (d.devam === 'gelmedi') satir.appendChild(el('span', 'Gelmedi', 'durum-etiket gecikti'));
+    if (d.iptal) satir.appendChild(el('span', 'İptal', 'durum-etiket'));
+    else if (d.devam === 'gelmedi') satir.appendChild(el('span', 'Gelmedi', 'durum-etiket gecikti'));
     else if (o.tur === 'ders' && d.islendi) satir.appendChild(el('span', 'İşlendi', 'durum-etiket tamam'));
     satir.addEventListener('click', () => (o.tur === 'ders' ? detayCiz(g, d) : etutDetayCiz(g, d)));
     k.appendChild(satir);
@@ -133,7 +136,7 @@ function haftaCiz() {
         const b = el('button', undefined, 'hucre ' + durumSinifi(d));
         b.type = 'button';
         b.style.setProperty('--ders', d.renk);
-        b.appendChild(el('strong', d.kisa + (d.devam === 'gelmedi' ? ' ✗' : d.islendi ? ' ✓' : '')));
+        b.appendChild(el('strong', d.kisa + (d.iptal ? ' ⊘' : d.devam === 'gelmedi' ? ' ✗' : d.islendi ? ' ✓' : '')));
         b.addEventListener('click', () => secim(b, g, d, false));
         td.appendChild(b);
       }
@@ -151,9 +154,7 @@ function haftaCiz() {
   }
   const ozet = el('p', undefined, 'hafta-ozet');
   ozet.append(el('strong', `${toplam} saat ders`), veri.sinif ? ` · ${veri.sinif}` : '');
-  const not = el('p', undefined, 'hafta-not');
-  not.append(el('span', '✓ ders işlendi'), el('span', '✗ derse gelmedi'), el('span', 'Kesikli çerçeve: etüt'));
-  $('hafta').replaceChildren(ozet, t, not);
+  $('hafta').replaceChildren(ozet, t);
   const son = veri.gunler[6].tarih;
   $('gun-adi').textContent = `${tarihYaz(veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', veri.gunler.some(g => g.tarih === bugun));
@@ -182,6 +183,30 @@ async function yukle() {
   $('zaman').classList.toggle('gizli', gorunum !== 'gun');
   $('hafta').classList.toggle('gizli', gorunum !== 'hafta');
   if (gorunum === 'gun') gunCiz(); else haftaCiz();
+  lejantCiz();
+}
+
+// Sayfa altı: durum işaretleri + görünen derslerin renkli adları
+function lejantCiz() {
+  const k = $('lejant');
+  k.replaceChildren();
+  const gorunen = gorunum === 'gun' ? veri.gunler.filter(x => x.tarih === tarih) : veri.gunler;
+  const dersler = new Map();
+  for (const g of gorunen) {
+    for (const d of g.dersler) dersler.set(d.ders, d);
+    for (const e of g.etutler || []) if (e.ders) dersler.set(e.ders, e);
+  }
+  const durum = el('p', undefined, 'hafta-not');
+  durum.append(el('span', '✓ ders işlendi'), el('span', '⊘ ders iptal'), el('span', '✗ devamsızlık (gelmedi)'), el('span', 'Kesik çizgi: etüt'));
+  k.appendChild(durum);
+  if (!dersler.size) return;
+  const liste = el('div', undefined, 'lejant-dersler');
+  for (const [ad, d] of dersler) {
+    const oge = el('span', undefined, 'lejant-oge');
+    oge.append(dersChip(d.kisa || '?', d.renk), el('span', ad));
+    liste.appendChild(oge);
+  }
+  k.appendChild(liste);
 }
 
 $('gorunum').addEventListener('click', e => {

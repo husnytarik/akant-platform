@@ -11,6 +11,7 @@ const DURUM_YAZI = {
   tamam: d => `Tamamlandı · ${d.gelmedi} gelmedi`,
   gecikti: () => 'Süresi geçti · tamamlanmadı',
   bekliyor: () => 'Bekliyor',
+  iptal: () => 'Ders iptal edildi',
 };
 let gorunum = 'gun';   // 'gun' | 'hafta'
 
@@ -79,7 +80,7 @@ function detayCiz(k, g, d) {
   k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
   const butonlar = el('div', undefined, 'hafta-butonlar');
   if (g.tarih <= bugun) {
-    const a = el('a', d.durum === 'tamam' ? 'Dersi düzenle' : 'Dersi bitir', 'dugme-link');
+    const a = el('a', d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi düzenle' : 'Dersi bitir', 'dugme-link');
     a.href = `/yoklama?tarih=${g.tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
     butonlar.appendChild(a);
   }
@@ -129,7 +130,7 @@ async function haftaYukle() {
         const b = el('button', undefined, 'hucre ' + d.durum);
         b.type = 'button';
         b.style.setProperty('--ders', d.renk);
-        b.append(el('strong', d.kisa + ({ tamam: ' ✓', gecikti: ' !' }[d.durum] || '')), el('span', d.sinif));
+        b.append(el('strong', d.kisa + ({ tamam: ' ✓', gecikti: ' !', iptal: ' ⊘' }[d.durum] || '')), el('span', d.sinif));
         b.addEventListener('click', () => secim(b, g, d, false));
         td.appendChild(b);
       }
@@ -159,7 +160,7 @@ async function haftaYukle() {
     }
   }
   const aciklama = el('p', undefined, 'hafta-not');
-  aciklama.append(el('span', 'Koyu dolgu: süresi geçti, tamamlanmadı', 'not-gecikti'), el('span', 'Sol çizgi: tamamlandı'));
+  aciklama.append(el('span', '✓ ders işlendi'), el('span', '⊘ ders iptal'), el('span', '! süresi geçti, tamamlanmadı'), el('span', 'Kesik çizgi: etüt'));
   $('hafta').replaceChildren(ozet, t, aciklama, detay, etutKutu);
   atamaCiz();
 }
@@ -210,6 +211,7 @@ function zamanCiz() {
 }
 
 function durumRozeti(d) {
+  if (d.durum === 'iptal') return el('span', 'İptal edildi', 'durum-etiket');
   if (d.durum === 'tamam') return el('span', `Tamamlandı · ${d.gelmedi} gelmedi`, 'durum-etiket tamam');
   if (d.durum === 'gecikti') return el('span', 'Süresi geçti · tamamlanmadı', 'durum-etiket gecikti');
   return el('span', tarih > bugun ? '' : 'Bekliyor', 'durum-etiket');
