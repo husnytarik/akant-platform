@@ -227,27 +227,44 @@ async function devamCiz() {
   genel.appendChild(el('h3', 'Tüm dersler'));
   const g = svg('svg', { viewBox: '-60 -60 120 120', class: 'pasta' });
   g.appendChild(halka(40, 26, 0, TAM, '#e5e9ef', 'pasta-zemin'));
+  const dilimler = new Map();   // ders adı → { yol, oge }
+  const mer = svg('text', { x: 0, y: -4, class: 'pasta-merkez' });
+  const mer2 = svg('text', { x: 0, y: 8, class: 'pasta-merkez-alt' });
+  const varsayilan = () => { mer.textContent = `${toplam} ders`; mer2.textContent = ''; };
+  let secili = null;
+  const sec = ad => {
+    secili = secili === ad ? null : ad;
+    for (const [n, x] of dilimler) {
+      x.yol.classList.toggle('secili', n === secili);
+      x.yol.classList.toggle('soluk', secili !== null && n !== secili);
+      x.oge.classList.toggle('secili', n === secili);
+    }
+    const d = dersler.find(x => x.ders === secili);
+    if (!d) return varsayilan();
+    mer.textContent = d.ders.length > 13 ? d.kisa : d.ders;
+    mer2.textContent = `${d.islenen} ders · %${Math.round((pay(d) / toplam) * 100)}`;
+  };
   if (toplam) {
     let a = 0;
     for (const d of dersler) {
       if (!pay(d)) continue;
       const bit = a + (pay(d) / toplam) * TAM;
       const p = halka(40, 26, a, bit, d.renk, 'pasta-dilim');
-      const t = svg('title');
-      t.textContent = `${d.ders}: ${d.islenen} ders (%${Math.round((pay(d) / toplam) * 100)})`;
-      p.appendChild(t);
+      p.addEventListener('click', () => sec(d.ders));
       g.appendChild(p);
+      dilimler.set(d.ders, { yol: p });
       a = bit;
     }
   }
-  const mer = svg('text', { x: 0, y: 0, class: 'pasta-merkez' });
-  mer.textContent = `${toplam} ders`;
-  g.appendChild(mer);
+  varsayilan();
+  g.append(mer, mer2);
   genel.appendChild(g);
   const efsane = el('div', undefined, 'lejant-dersler');
   for (const d of dersler) {
-    const oge = el('span', undefined, 'lejant-oge');
+    const oge = el('button', undefined, 'lejant-oge');
+    oge.type = 'button';
     oge.append(dersChip(d.kisa, d.renk), el('span', toplam ? `${d.ders} %${Math.round((pay(d) / toplam) * 100)}` : d.ders));
+    if (dilimler.has(d.ders)) { dilimler.get(d.ders).oge = oge; oge.addEventListener('click', () => sec(d.ders)); }
     efsane.appendChild(oge);
   }
   genel.appendChild(efsane);
