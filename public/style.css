@@ -307,3 +307,8 @@ th { border-bottom-color: var(--navy); }
 .gun-baslik #bugun:disabled { opacity: .45; cursor: default; }
 .gun-baslik #bugun.bugunde { background: var(--navy); color: #fff; border-color: var(--navy); opacity: 1; }
 .gun-baslik strong { white-space: nowrap; }
+
+.hafta-ozet { margin: 0 0 8px; font-size: .95rem; color: var(--muted); }
+.hafta-ozet strong { color: var(--navy); }
+.hafta-etut { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border); }
+.hafta-etut p { margin: 4px 0; font-size: .88rem; }

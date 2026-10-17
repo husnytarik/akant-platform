@@ -104,11 +104,17 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
       LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
       WHERE s.day = ? AND a.teacher_membership_id = ? ORDER BY s.period`);
+    const etutSatir = db.prepare(`
+      SELECT e.id, e.topic AS konu, e.start_time AS saat, e.duration_min AS sure, e.place AS yer, co.name AS ders,
+             (SELECT COUNT(*) FROM etut_katilimcilar k WHERE k.etut_id = e.id) AS kisi
+      FROM etutler e LEFT JOIN courses co ON co.id = e.course_id
+      WHERE e.date = ? AND e.teacher_membership_id = ? AND e.status = 'planli' ORDER BY e.start_time`);
     const gunler = [];
     for (let g = 1; g <= 5; g++) {
       const t = kaydir(pazartesi, g - 1);
       gunler.push({
         tarih: t, gun: g,
+        etutler: etutSatir.all(t, o.membership_id),
         dersler: satir.all(t, g, o.membership_id).map(r => ({
           dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
           aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', gelmedi: r.gelmedi,

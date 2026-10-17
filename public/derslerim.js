@@ -120,9 +120,22 @@ async function haftaYukle() {
     }
     t.appendChild(tr);
   }
+  const dersSayisi = r.veri.gunler.reduce((n, g) => n + g.dersler.length, 0);
+  const etutler = r.veri.gunler.flatMap(g => g.etutler.map(e => ({ ...e, tarih: g.tarih })));
+  const etutDk = etutler.reduce((n, e) => n + e.sure, 0);
+  const ozet = el('p', undefined, 'hafta-ozet');
+  ozet.append(el('strong', `${dersSayisi} saat ders`));
+  if (etutler.length) ozet.append(` · ${etutler.length} etüt (${etutDk} dk)`);
+  const etutKutu = el('div', undefined, 'hafta-etut');
+  if (etutler.length) {
+    etutKutu.appendChild(el('strong', 'Etütler'));
+    for (const e of etutler) {
+      etutKutu.appendChild(el('p', `${tarihYaz(e.tarih).split(' ').slice(0, 3).join(' ')} · ${e.saat} · ${e.ders || 'Etüt'}${e.konu ? ' · ' + e.konu : ''} · ${e.kisi} öğrenci${e.yer ? ' · ' + e.yer : ''}`));
+    }
+  }
   const aciklama = el('p', undefined, 'hafta-not');
   aciklama.append(el('span', 'Koyu dolgu: süresi geçti, tamamlanmadı', 'not-gecikti'), el('span', 'Sol çizgi: tamamlandı'));
-  $('hafta').replaceChildren(t, aciklama, detay);
+  $('hafta').replaceChildren(ozet, t, aciklama, detay, etutKutu);
   atamaCiz();
 }
 
