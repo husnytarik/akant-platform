@@ -399,3 +399,5 @@ th { border-bottom-color: var(--navy); }
 .halka-kart span { font-size: .78rem; }
 .rozetler { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .rozetler .durum-etiket { white-space: nowrap; }
+.ders-satir .ders-zaman { flex-direction: column; align-items: flex-start; gap: 0; min-width: 0; }
+.ders-satir .ders-orta { text-align: left; }
