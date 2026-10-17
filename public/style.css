@@ -150,7 +150,6 @@ a.modul-kart.hazir .durum { color: var(--text); text-decoration: underline; }
 .not-ust .alt { margin: 0; white-space: nowrap; }
 @media (max-width: 600px) {
   .ders-satir { grid-template-columns: 52px 1fr; }
-  .ders-satir .durum-etiket { grid-column: 2; justify-self: start; }
 }
 
 a.ders-satir { text-decoration: none; }
@@ -368,3 +367,8 @@ th { border-bottom-color: var(--navy); }
 .pasta-liste { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .pasta-satir { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .9rem; }
 .pasta-kotu { color: var(--accent); }
+@media (max-width: 600px) {
+  .ders-satir { grid-template-columns: 48px auto minmax(0, 1fr) auto; gap: 8px; }
+  .ders-satir .durum-etiket { grid-column: auto; justify-self: end; font-size: .72rem; padding: 0 7px; }
+  .ders-orta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
