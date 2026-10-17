@@ -190,8 +190,7 @@ async function yukle() {
   lejantCiz();
 }
 
-// Devamsızlık pastası: her dilim bir ders (renk = ders rengi, açı = haftalık ders saati);
-// derse gelmeme arttıkça dilimin yarıçapı orantılı kısalır, kesik daire tam devamı gösterir.
+// Devamsızlık grafikleri: genel dilim grafiği + her ders için katılım halkası (SVG, DOM ile)
 const SVG = 'http://www.w3.org/2000/svg';
 function svg(tag, nitelik) {
   const e = document.createElementNS(SVG, tag);
@@ -206,40 +205,67 @@ async function devamCiz() {
   if (!r.ok) { k.appendChild(el('p', 'Veri alınamadı.', 'alt')); return; }
   const dersler = (await r.json()).dersler;
   if (!dersler.length) { k.appendChild(el('p', 'Henüz ders bulunamadı.', 'alt')); return; }
-  const agirlik = d => Math.max(d.haftalik, 1);
-  const toplamAgirlik = dersler.reduce((t, d) => t + agirlik(d), 0);
-  const R = 100;
-  const grafik = svg('svg', { viewBox: '-110 -110 220 220', class: 'pasta' });
-  grafik.appendChild(svg('circle', { r: R, class: 'pasta-kilavuz' }));
-  let aci = -Math.PI / 2;
+  const TAM = 2 * Math.PI;
+
+  // Halka dilimi: yarıçap r, kalınlık k, açı a0..a1 (halka tam daireyse iki yarım yay)
+  const yay = (r, a0, a1) => {
+    if (a1 - a0 >= TAM - 1e-6) return `M ${r} 0 A ${r} ${r} 0 1 1 ${-r} 0 A ${r} ${r} 0 1 1 ${r} 0`;
+    const n = a => `${(r * Math.cos(a - Math.PI / 2)).toFixed(2)} ${(r * Math.sin(a - Math.PI / 2)).toFixed(2)}`;
+    return `M ${n(a0)} A ${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${n(a1)}`;
+  };
+  const halka = (r, kalin, a0, a1, renk, sinif) => svg('path', { d: yay(r, a0, a1), fill: 'none', stroke: renk, 'stroke-width': kalin, class: sinif });
+
+  // 1) Genel grafik: her dersin dilimi, toplam ders içindeki payı kadar (dilim boyutu eşit yarıçaplı)
+  const pay = d => (d.islenen || 0);
+  const toplam = dersler.reduce((t, d) => t + pay(d), 0);
+  const genel = el('div', undefined, 'devam-genel');
+  genel.appendChild(el('h3', 'Tüm dersler'));
+  const g = svg('svg', { viewBox: '-60 -60 120 120', class: 'pasta' });
+  g.appendChild(halka(40, 26, 0, TAM, '#e5e9ef', 'pasta-zemin'));
+  if (toplam) {
+    let a = 0;
+    for (const d of dersler) {
+      if (!pay(d)) continue;
+      const bit = a + (pay(d) / toplam) * TAM;
+      const p = halka(40, 26, a, bit, d.renk, 'pasta-dilim');
+      const t = svg('title');
+      t.textContent = `${d.ders}: ${d.islenen} ders (%${Math.round((pay(d) / toplam) * 100)})`;
+      p.appendChild(t);
+      g.appendChild(p);
+      a = bit;
+    }
+  }
+  const mer = svg('text', { x: 0, y: 0, class: 'pasta-merkez' });
+  mer.textContent = `${toplam} ders`;
+  g.appendChild(mer);
+  genel.appendChild(g);
+  const efsane = el('div', undefined, 'lejant-dersler');
   for (const d of dersler) {
-    const pay = (agirlik(d) / toplamAgirlik) * 2 * Math.PI;
+    const oge = el('span', undefined, 'lejant-oge');
+    oge.append(dersChip(d.kisa, d.renk), el('span', toplam ? `${d.ders} %${Math.round((pay(d) / toplam) * 100)}` : d.ders));
+    efsane.appendChild(oge);
+  }
+  genel.appendChild(efsane);
+
+  // 2) Her ders için ayrı halka: derse girilen oran renkli, girilmeyen kısım boş kalır
+  const tek = el('div', undefined, 'devam-dersler');
+  tek.appendChild(el('h3', 'Derslere göre katılım'));
+  const izgara = el('div', undefined, 'halka-izgara');
+  for (const d of dersler) {
     const oran = d.islenen ? 1 - d.gelmedi / d.islenen : 1;
-    const yr = R * Math.max(oran, 0.04);
-    const p = (a) => `${(yr * Math.cos(a)).toFixed(2)} ${(yr * Math.sin(a)).toFixed(2)}`;
-    const yol = dersler.length === 1
-      ? `M ${yr} 0 A ${yr} ${yr} 0 1 1 ${-yr} 0 A ${yr} ${yr} 0 1 1 ${yr} 0 Z`
-      : `M 0 0 L ${p(aci)} A ${yr} ${yr} 0 ${pay > Math.PI ? 1 : 0} 1 ${p(aci + pay)} Z`;
-    const dilim = svg('path', { d: yol, fill: d.renk, class: 'pasta-dilim' });
-    const baslik = svg('title');
-    baslik.textContent = `${d.ders}: ${d.islenen} dersten ${d.gelmedi} devamsızlık`;
-    dilim.appendChild(baslik);
-    grafik.appendChild(dilim);
-    const orta = aci + pay / 2;
-    const yaz = svg('text', { x: (yr * 0.62 * Math.cos(orta)).toFixed(1), y: (yr * 0.62 * Math.sin(orta)).toFixed(1), class: 'pasta-yazi' });
-    yaz.textContent = d.kisa;
-    grafik.appendChild(yaz);
-    aci += pay;
+    const kart = el('div', undefined, 'halka-kart');
+    const s = svg('svg', { viewBox: '-60 -60 120 120', class: 'halka' });
+    s.appendChild(halka(44, 16, 0, TAM, '#e5e9ef', 'pasta-zemin'));
+    if (oran > 0) s.appendChild(halka(44, 16, 0, oran * TAM, d.renk, 'pasta-dilim'));
+    const y = svg('text', { x: 0, y: 0, class: 'halka-yazi' });
+    y.textContent = d.kisa;
+    s.appendChild(y);
+    kart.append(s, el('strong', d.ders),
+      el('span', d.islenen ? `${d.islenen - d.gelmedi}/${d.islenen} derse girdi (%${Math.round(oran * 100)})` : 'Henüz ders işlenmedi', d.gelmedi ? 'pasta-kotu' : 'alt'));
+    izgara.appendChild(kart);
   }
-  const liste = el('div', undefined, 'pasta-liste');
-  for (const d of dersler) {
-    const s = el('div', undefined, 'pasta-satir');
-    const yuzde = d.islenen ? Math.round((d.gelmedi / d.islenen) * 100) : 0;
-    s.append(dersChip(d.kisa, d.renk), el('strong', d.ders),
-      el('span', d.islenen ? `${d.gelmedi} devamsızlık / ${d.islenen} ders (%${yuzde})` : 'Henüz ders işlenmedi', d.gelmedi ? 'pasta-kotu' : 'alt'));
-    liste.appendChild(s);
-  }
-  k.append(grafik, el('p', 'Dilim ne kadar kısaysa o derste devamsızlık o kadar fazla. Kesik daire tam devamı gösterir.', 'hafta-not'), liste);
+  tek.appendChild(izgara);
+  k.append(genel, tek);
 }
 
 // Sayfa altı: durum işaretleri + görünen derslerin renkli adları

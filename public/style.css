@@ -387,3 +387,16 @@ th { border-bottom-color: var(--navy); }
 @media (max-width: 600px) {
   .ders-satir { grid-template-columns: 48px minmax(0, 1fr) auto; }
 }
+
+/* Devamsızlık: genel dilim grafiği + ders halkaları */
+.devam-genel h3, .devam-dersler h3 { font-size: 1rem; margin: 12px 0 4px; }
+.pasta { width: min(100%, 240px); }
+.pasta-zemin { opacity: 1; }
+.pasta-dilim { stroke-linecap: butt; }
+.pasta-merkez { fill: var(--navy); font-size: 9px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+.devam-dersler { margin-top: 16px; }
+.halka-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px 10px; }
+.halka-kart { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; font-size: .85rem; }
+.halka { width: 100px; height: 100px; }
+.halka-yazi { fill: var(--navy); font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+.halka-kart span { font-size: .78rem; }
