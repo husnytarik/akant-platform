@@ -81,7 +81,7 @@ async function haftaYukle() {
   bugun = r.veri.bugun;
   const son = r.veri.gunler[4].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
-  $('bugun').disabled = r.veri.gunler.some(g => g.tarih === bugun);
+  $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
@@ -133,8 +133,8 @@ async function gunYukle() {
   mesaj('');
   veri = r.veri;
   bugun = veri.bugun;
-  $('gun-adi').textContent = tarihYaz(tarih) + (tarih === bugun ? ' · bugün' : '');
-  $('bugun').disabled = tarih === bugun;
+  $('gun-adi').textContent = tarihYaz(tarih);
+  $('bugun').classList.toggle('bugunde', tarih === bugun);
   zamanCiz();
   atamaCiz();
 }
