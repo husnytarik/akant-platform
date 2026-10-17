@@ -298,3 +298,10 @@ th { border-bottom-color: var(--navy); }
   .sekmeler { gap: 0 14px; }
   .sekmeler button { font-size: .95rem; }
 }
+
+/* Gün şeridi: tek satır, ince; Bugün butonu tarihin yanında */
+.gun-baslik { flex-direction: row; gap: 10px; min-height: 44px; padding: 4px 8px; border-radius: 8px; }
+.gun-baslik strong { font-size: 1rem; }
+.gun-baslik #bugun { text-decoration: none; background: var(--navy-soft); color: var(--navy); border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; font-size: .8rem; white-space: nowrap; }
+.gun-baslik #bugun:hover:not(:disabled) { background: var(--navy); color: #fff; }
+.gun-baslik #bugun:disabled { opacity: .45; cursor: default; }
