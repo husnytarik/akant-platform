@@ -102,6 +102,10 @@ async function dersAc(d) {
   $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.tamam ? ' (tamamlanmış ders düzenleniyor)' : '');
   $('konu').value = r.veri.konu;
   $('kazanim').value = r.veri.kazanim;
+  $('odev-baslik').value = r.veri.odev?.baslik || '';
+  $('odev-aciklama').value = r.veri.odev?.aciklama || '';
+  const hafta = new Date(Date.now() + 7 * 864e5).toLocaleDateString('sv-SE');
+  $('odev-tarih').value = r.veri.odev?.sonTarih || hafta;
   $('yoklama').classList.remove('gizli');
   if (!ogrenciler.length) $('ozet').textContent = 'Bu sınıfta aktif öğrenci yok.';
   tabloCiz();
@@ -120,6 +124,7 @@ $('kaydet').addEventListener('click', async () => {
     tarih: $('tarih').value, sinifId: secili.sinifId, dersSaati: secili.dersSaati,
     kayitlar: ogrenciler.map(o => ({ ogrenciId: o.ogrenciId, durum: durumlar.get(o.ogrenciId) })),
     konu: $('konu').value, kazanim: $('kazanim').value,
+    odev: { baslik: $('odev-baslik').value, aciklama: $('odev-aciklama').value, sonTarih: $('odev-tarih').value },
   });
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   mesaj(`Ders tamamlandı: ${r.veri.gelmedi} gelmedi, ${r.veri.gec} geç, ${r.veri.izinli} izinli.`, 'tamam');

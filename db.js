@@ -176,6 +176,9 @@ if (!sutunlar('yoklama').some(c => c.name === 'completed_at')) {
   db.exec('ALTER TABLE yoklama ADD COLUMN completed_at INTEGER');
   db.exec('UPDATE yoklama SET completed_at = updated_at');
 }
+if (!sutunlar('odevler').some(c => c.name === 'yoklama_id')) {
+  db.exec('ALTER TABLE odevler ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
+}
 if (!sutunlar('konular').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE konular ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }

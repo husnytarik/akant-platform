@@ -105,7 +105,9 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const y = db.prepare('SELECT id, topic, kazanim, completed_at FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(sinifId, tarih, dersSaati);
     const mevcut = new Map(y ? db.prepare('SELECT student_membership_id AS id, status FROM yoklama_kayit WHERE yoklama_id = ?')
       .all(y.id).map(r => [r.id, r.status]) : []);
+    const od = y ? db.prepare('SELECT title AS baslik, note AS aciklama, due_date AS sonTarih FROM odevler WHERE yoklama_id = ?').get(y.id) : null;
     json(res, 200, {
+      odev: od || null,
       ders: ders.ders, sinif: ders.sinif, alindi: !!y, tamam: !!y?.completed_at,
       konu: y?.topic || '', kazanim: y?.kazanim || '',
       ogrenciler: sinifOgrencileri(sinifId).map(s => ({ ...s, durum: mevcut.get(s.ogrenciId) || 'geldi' })),
@@ -125,6 +127,13 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const konu = String(b.konu || '').trim();
     const kazanim = String(b.kazanim || '').trim().slice(0, 300);
     if (konu.length < 2 || konu.length > 120) return hata(400, 'İşlenen konu 2-120 karakter olmalı');
+    const odevBaslik = String(b.odev?.baslik || '').trim();
+    const odevAciklama = String(b.odev?.aciklama || '').trim().slice(0, 500);
+    const odevTarih = String(b.odev?.sonTarih || '');
+    if (odevBaslik) {
+      if (odevBaslik.length < 2 || odevBaslik.length > 120) return hata(400, 'Ödev başlığı 2-120 karakter olmalı');
+      if (!tarihGecerli(odevTarih) || odevTarih < tarih) return hata(400, 'Ödev son tarihi geçerli olmalı');
+    }
 
     const ogrenciler = sinifOgrencileri(sinifId);
     const durum = new Map();
@@ -150,6 +159,12 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
       db.prepare('DELETE FROM konular WHERE yoklama_id = ?').run(id);
       db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id) VALUES (?,?,?,?,?,?)')
         .run(ders.atamaId, tarih, konu, kazanim ? 'Kazanım: ' + kazanim : null, simdi, id);
+      // Ödev: öğrenci/veli "Ödevler" sayfasında görünür; boş bırakılırsa bu dersin ödevi kaldırılır
+      db.prepare('DELETE FROM odevler WHERE yoklama_id = ?').run(id);
+      if (odevBaslik) {
+        db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, yoklama_id) VALUES (?,?,?,?,?,?)')
+          .run(ders.atamaId, odevBaslik, odevAciklama || null, odevTarih, simdi, id);
+      }
       const ekle = db.prepare('INSERT INTO yoklama_kayit (yoklama_id, student_membership_id, status) VALUES (?,?,?)');
       // Gönderilmeyen öğrenci "geldi" sayılır
       for (const s of ogrenciler) ekle.run(id, s.ogrenciId, durum.get(s.ogrenciId) || 'geldi');
