@@ -407,3 +407,8 @@ th { border-bottom-color: var(--navy); }
 .pasta-merkez-alt { fill: var(--muted); font-size: 6.5px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 button.lejant-oge { background: none; border: 1px solid transparent; border-radius: 999px; padding: 2px 8px 2px 2px; font: inherit; color: inherit; cursor: pointer; }
 .lejant-oge.secili { border-color: var(--navy); background: var(--navy-soft); font-weight: 600; }
+/* Lejant: iki sütun, rozetler ve adlar hizalı */
+.lejant-dersler { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+.lejant-oge { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 8px; text-align: left; }
+.lejant-oge .ders-chip { justify-self: stretch; text-align: center; }
+.lejant-oge > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
