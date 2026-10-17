@@ -51,6 +51,46 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     return true;
   }
 
+  // Öğrenci/veli: sınıfın haftalık ders programı (7 gün), işlenen konu ve devam durumuyla
+  if (req.method === 'GET' && yol === '/api/ders/program') {
+    let cocuklar;
+    if (o.role === 'ogrenci') cocuklar = db.prepare('SELECT m.id, u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?').all(o.membership_id);
+    else if (o.role === 'veli') cocuklar = db.prepare(`SELECT m.id, u.full_name AS ad FROM guardians g JOIN memberships m ON m.id = g.student_membership_id
+      JOIN users u ON u.id = m.user_id WHERE g.parent_membership_id = ? ORDER BY u.full_name`).all(o.membership_id);
+    else return hata(403, 'Bu işlem için yetkiniz yok');
+    const tarih = url.searchParams.get('tarih') || bugun();
+    if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
+    const istenen = tamSayi(url.searchParams.get('cocuk'), 1, 1e9);
+    const cocuk = cocuklar.find(c => c.id === istenen) || cocuklar[0];
+    const pazartesi = kaydir(tarih, -((gunNo(tarih) + 6) % 7));
+    if (!cocuk) return json(res, 200, { bugun: bugun(), pazartesi, cocuklar: [], gunler: [], zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) }), true;
+    const sinif = db.prepare('SELECT c.id, c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(cocuk.id);
+    const satir = db.prepare(`
+      SELECT s.period AS dersSaati, a.id AS atamaId, co.name AS ders, u.full_name AS ogretmen,
+             y.completed_at AS tamamlandi, COALESCE(y.topic, (SELECT title FROM konular WHERE yoklama_id = y.id LIMIT 1)) AS konu,
+             (SELECT k.status FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.student_membership_id = ?) AS devam
+      FROM schedule s JOIN assignments a ON a.id = s.assignment_id JOIN courses co ON co.id = a.course_id
+      LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
+      LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
+      WHERE s.class_id = ? AND s.day = ? ORDER BY s.period`);
+    const odev = db.prepare('SELECT title AS baslik, due_date AS sonTarih FROM odevler WHERE assignment_id = ? AND due_date >= ? ORDER BY due_date LIMIT 3');
+    const gunler = [];
+    for (let i = 1; i <= 7; i++) {
+      const g = i % 7;
+      const t = kaydir(pazartesi, i - 1);
+      gunler.push({
+        tarih: t, gun: g,
+        dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => ({
+          dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ogretmen, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
+          islendi: !!r.tamamlandi, konu: r.tamamlandi ? r.konu : null, devam: r.tamamlandi ? r.devam : null,
+          odevler: odev.all(r.atamaId, t < bugun() ? bugun() : t),
+        })) : [],
+      });
+    }
+    json(res, 200, { bugun: bugun(), pazartesi, cocuklar, cocuk: cocuk.id, sinif: sinif?.name || '', gunler, zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) });
+    return true;
+  }
+
   if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
 
   const atamaGetir = id => {

@@ -41,7 +41,7 @@ const MODULLER = [
   { id: 'yoklama', ad: 'Dersi bitir', aciklama: 'Yoklama, işlenen konu ve kazanımı gir', roller: ['ogretmen'], yol: '/yoklama' },
   { id: 'not-girisi', ad: 'Not girişi', aciklama: 'Sınav ve değerlendirme notları', roller: ['ogretmen'] },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
-  { id: 'ders-programi', ad: 'Ders programım', aciklama: 'Haftalık ders çizelgesi', roller: ['ogrenci'] },
+  { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
   { id: 'notlarim', ad: 'Notlarım', aciklama: 'Sınav sonuçları ve gelişim', roller: ['ogrenci'] },
   { id: 'duyurular', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogrenci', 'veli'] },
   { id: 'ogrencim', ad: 'Öğrencim', aciklama: 'Çocuğumun bilgileri ve durumu', roller: ['veli'] },
@@ -334,6 +334,7 @@ function statik(req, res, url) {
   if (ad === '/yoklama') ad = '/yoklama.html';
   if (ad === '/devamsizlik') ad = '/devamsizlik.html';
   if (ad === '/derslerim') ad = '/derslerim.html';
+  if (ad === '/program') ad = '/program.html';
   if (ad === '/odevler') ad = '/odevler.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
