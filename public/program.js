@@ -95,7 +95,8 @@ function gunCiz() {
     else zaman.append(el('strong', 'Etüt'), el('span', o.bas));
     const orta = el('div', undefined, 'ders-orta');
     orta.append(el('strong', o.tur === 'ders' ? d.ders : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`), el('span', d.ogretmen || ''));
-    satir.append(zaman, dersChip(d.kisa || 'E', d.renk), orta);
+    satir.style.setProperty('--ders', d.renk || '#475569');
+    satir.append(zaman, orta);
     if (d.iptal) satir.appendChild(el('span', 'İptal', 'durum-etiket'));
     else if (d.devam === 'gelmedi') satir.appendChild(el('span', 'Gelmedi', 'durum-etiket gecikti'));
     else if (o.tur === 'ders' && d.islendi) satir.appendChild(el('span', 'İşlendi', 'durum-etiket tamam'));

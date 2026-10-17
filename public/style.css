@@ -372,3 +372,18 @@ th { border-bottom-color: var(--navy); }
   .ders-satir .durum-etiket { grid-column: auto; justify-self: end; font-size: .72rem; padding: 0 7px; }
   .ders-orta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* Günlük liste: tüm satır dersin rengi */
+.ders-satir { grid-template-columns: 70px minmax(0, 1fr) auto; background: var(--ders, #475569); border-color: var(--ders, #475569); color: #fff; }
+.ders-satir:hover { background: var(--ders, #475569); filter: brightness(1.1); }
+.ders-satir.secili { background: var(--ders, #475569); border-color: var(--navy); outline: 2px solid var(--navy); }
+.ders-satir .ders-zaman, .ders-satir .ders-orta span { color: rgba(255,255,255,.85); }
+.ders-satir .ders-zaman strong, .ders-satir .ders-orta strong { color: #fff; }
+.ders-satir .durum-etiket, .ders-satir .durum-etiket.tamam, .ders-satir .durum-etiket.gecikti { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.7); color: #fff; }
+.ders-satir.etut-satir { background: var(--bg); border: 2px dashed var(--ders, #475569); }
+.ders-satir.etut-satir:hover { background: var(--soft); filter: none; }
+.ders-satir.etut-satir .ders-zaman, .ders-satir.etut-satir .ders-zaman strong, .ders-satir.etut-satir .ders-orta strong, .ders-satir.etut-satir .ders-orta span { color: var(--ders, #475569); }
+.ders-satir.etut-satir .durum-etiket { color: var(--ders, #475569); border-color: var(--ders, #475569); background: transparent; }
+@media (max-width: 600px) {
+  .ders-satir { grid-template-columns: 48px minmax(0, 1fr) auto; }
+}

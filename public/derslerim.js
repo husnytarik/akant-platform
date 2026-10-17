@@ -198,7 +198,8 @@ function zamanCiz() {
     const orta = el('div', undefined, 'ders-orta');
     orta.append(el('strong', o.tur === 'ders' ? `${d.sinif} · ${d.ders}` : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
     if (o.tur === 'etut') orta.append(el('span', `${d.kisi} öğrenci${d.yer ? ' · ' + d.yer : ''}`));
-    satir.append(zaman, dersChip(d.kisa || 'E', d.renk), orta);
+    satir.style.setProperty('--ders', d.renk || '#475569');
+    satir.append(zaman, orta);
     if (o.tur === 'ders') {
       const rozet = durumRozeti(d);
       if (rozet.textContent) satir.appendChild(rozet);
