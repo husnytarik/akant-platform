@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { DERS_ZAMANLARI } from './etut.js';
+import { dersStilleri, stilEkle } from './stil.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -30,6 +31,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
   const yol = url.pathname;
   if (!yol.startsWith('/api/ders/')) return false;
   const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
+  const st = dersStilleri();
 
   // Öğrenci/veli: ödevleri görür
   if (req.method === 'GET' && yol === '/api/ders/odevlerim') {
@@ -74,17 +76,24 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
       WHERE s.class_id = ? AND s.day = ? ORDER BY s.period`);
     const odev = db.prepare('SELECT title AS baslik, due_date AS sonTarih FROM odevler WHERE assignment_id = ? AND due_date >= ? ORDER BY due_date LIMIT 3');
+    const etutOgr = db.prepare(`
+      SELECT e.id, e.topic AS konu, e.start_time AS saat, e.duration_min AS sure, e.place AS yer, co.name AS ders,
+             u.full_name AS ogretmen, k.parent_response AS yanit, k.attendance AS devam
+      FROM etut_katilimcilar k JOIN etutler e ON e.id = k.etut_id LEFT JOIN courses co ON co.id = e.course_id
+      LEFT JOIN memberships tm ON tm.id = e.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
+      WHERE k.student_membership_id = ? AND e.date = ? AND e.status = 'planli' ORDER BY e.start_time`);
     const gunler = [];
     for (let i = 1; i <= 7; i++) {
       const g = i % 7;
       const t = kaydir(pazartesi, i - 1);
       gunler.push({
         tarih: t, gun: g,
-        dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => ({
+        dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => stilEkle({
           dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ogretmen, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
           islendi: !!r.tamamlandi, konu: r.tamamlandi ? r.konu : null, devam: r.tamamlandi ? r.devam : null,
           odevler: odev.all(r.atamaId, t < bugun() ? bugun() : t),
-        })) : [],
+        }, st)) : [],
+        etutler: etutOgr.all(cocuk.id, t).map(e => stilEkle(e, st)),
       });
     }
     json(res, 200, { bugun: bugun(), pazartesi, cocuklar, cocuk: cocuk.id, sinif: sinif?.name || '', gunler, zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) });
@@ -121,12 +130,18 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       WHERE a.teacher_membership_id = ? ORDER BY c.level, c.name, co.name`).all(o.membership_id);
     json(res, 200, {
       tarih, bugun: bugun(), hafta_sonu: gun < 1 || gun > 5,
-      gunluk: gunluk.map(r => ({
+      gunluk: gunluk.map(r => stilEkle({
         dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', alindi: !!r.yoklamaId, gelmedi: r.gelmedi,
         durum: dersDurumu(tarih, r.dersSaati, !!r.tamamlandi),
-      })),
-      atamalar,
+      }, st)),
+      atamalar: atamalar.map(a => stilEkle(a, st)),
+      etutler: db.prepare(`
+        SELECT e.id, e.topic AS konu, e.start_time AS saat, e.duration_min AS sure, e.place AS yer, co.name AS ders,
+               (SELECT COUNT(*) FROM etut_katilimcilar k WHERE k.etut_id = e.id) AS kisi
+        FROM etutler e LEFT JOIN courses co ON co.id = e.course_id
+        WHERE e.date = ? AND e.teacher_membership_id = ? AND e.status = 'planli' ORDER BY e.start_time`)
+        .all(tarih, o.membership_id).map(e => stilEkle(e, st)),
     });
     return true;
   }
@@ -155,12 +170,12 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       const t = kaydir(pazartesi, i - 1);
       gunler.push({
         tarih: t, gun: g,
-        etutler: etutSatir.all(t, o.membership_id),
-        dersler: satir.all(t, g, o.membership_id).map(r => ({
+        etutler: etutSatir.all(t, o.membership_id).map(e => stilEkle(e, st)),
+        dersler: satir.all(t, g, o.membership_id).map(r => stilEkle({
           dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
           aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', gelmedi: r.gelmedi,
           durum: dersDurumu(t, r.dersSaati, !!r.tamamlandi),
-        })),
+        }, st)),
       });
     }
     json(res, 200, { bugun: bugun(), pazartesi, gunler, zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) });

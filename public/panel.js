@@ -47,7 +47,7 @@ async function ogretmenDersleri() {
     zaman.append(el('strong', `${d.dersSaati}.`), el('span', bas));
     const orta = el('div', undefined, 'ders-orta');
     orta.append(el('strong', `${d.sinif} · ${d.ders}`));
-    satir.append(zaman, orta);
+    satir.append(zaman, dersChip(d.kisa, d.renk), orta);
     const rozet = durumRozeti(d);
     if (rozet.textContent) satir.appendChild(rozet);
     k.appendChild(satir);

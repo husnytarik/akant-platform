@@ -54,10 +54,27 @@ function kisaTarih(t) {
   return `${g}.${a}.${y}`;
 }
 
+function etutDetayCiz(k, g, e) {
+  k.replaceChildren();
+  k.classList.remove('gizli');
+  const ust = el('div', undefined, 'detay-ust');
+  ust.append(dersChip(e.kisa || 'E', e.renk), el('strong', `Etüt · ${e.ders || 'Genel'}`));
+  k.appendChild(ust);
+  k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${e.saat} · ${e.sure} dk${e.yer ? ' · ' + e.yer : ''}`, 'alt'));
+  if (e.konu) k.appendChild(el('p', `Konu: ${e.konu}`));
+  k.appendChild(el('p', `${e.kisi} öğrenci davetli`));
+  const a = el('a', 'Etüt sayfası', 'dugme-link');
+  a.href = '/etut';
+  k.appendChild(a);
+  k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 function detayCiz(k, g, d) {
   k.replaceChildren();
   k.classList.remove('gizli');
-  k.appendChild(el('strong', `${d.sinif} · ${d.ders}`));
+  const ust = el('div', undefined, 'detay-ust');
+  ust.append(dersChip(d.kisa, d.renk), el('strong', `${d.sinif} · ${d.ders}`));
+  k.appendChild(ust);
   k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}`, 'alt'));
   k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
   const butonlar = el('div', undefined, 'hafta-butonlar');
@@ -93,27 +110,35 @@ async function haftaYukle() {
   t.appendChild(bas);
   const detay = el('div', undefined, 'hafta-detay gizli');
   let secilen = null;
-  for (let p = 1; p <= r.veri.zamanlar.length; p++) {
-    const dolu = r.veri.gunler.some(g => g.dersler.some(x => x.dersSaati === p));
-    if (!dolu) continue;
+  const secim = (b, g, d, etut) => {
+    secilen?.classList.remove('secili');
+    secilen = b;
+    b.classList.add('secili');
+    if (etut) etutDetayCiz(detay, g, d); else detayCiz(detay, g, d);
+  };
+  for (const satir of saatSatirlari(r.veri.zamanlar, r.veri.gunler)) {
     const tr = document.createElement('tr');
     const z = el('th', undefined, 'saat-hucre');
-    z.append(el('strong', String(p)), el('span', r.veri.zamanlar[p - 1].split('–')[0]));
+    z.append(el('strong', satir.etiket), el('span', satir.alt));
     tr.appendChild(z);
     for (const g of r.veri.gunler) {
       const td = document.createElement('td');
       td.className = (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '');
-      const d = g.dersler.find(x => x.dersSaati === p);
-      if (d) {
+      const h = hucreIcerik(r.veri.zamanlar, g, satir);
+      for (const d of h.dersler) {
         const b = el('button', undefined, 'hucre ' + d.durum);
         b.type = 'button';
-        b.append(el('strong', d.sinif), el('span', d.ders));
-        b.addEventListener('click', () => {
-          secilen?.classList.remove('secili');
-          secilen = b;
-          b.classList.add('secili');
-          detayCiz(detay, g, d);
-        });
+        b.style.setProperty('--ders', d.renk);
+        b.append(el('strong', d.kisa + ({ tamam: ' ✓', gecikti: ' !' }[d.durum] || '')), el('span', d.sinif));
+        b.addEventListener('click', () => secim(b, g, d, false));
+        td.appendChild(b);
+      }
+      for (const e of h.etutler) {
+        const b = el('button', undefined, 'hucre etut');
+        b.type = 'button';
+        b.style.setProperty('--ders', e.renk);
+        b.append(el('strong', e.kisa || 'E'), el('span', 'etüt'));
+        b.addEventListener('click', () => secim(b, g, e, true));
         td.appendChild(b);
       }
       tr.appendChild(td);
@@ -155,20 +180,31 @@ async function gunYukle() {
 function zamanCiz() {
   const k = $('zaman');
   k.replaceChildren();
-  if (veri.hafta_sonu) return k.appendChild(el('p', 'Hafta sonu ders yok.', 'alt'));
-  if (!veri.gunluk.length) return k.appendChild(el('p', 'Bu günde dersiniz yok.', 'alt'));
-  for (const d of veri.gunluk) {
-    const satir = el('button', undefined, 'ders-satir');
+  if (veri.hafta_sonu && !veri.etutler.length) return k.appendChild(el('p', 'Hafta sonu ders yok.', 'alt'));
+  if (!veri.gunluk.length && !veri.etutler.length) return k.appendChild(el('p', 'Bu günde dersiniz yok.', 'alt'));
+  const ogeler = [
+    ...veri.gunluk.map(d => ({ tur: 'ders', d, bas: d.aralik.split('–')[0] })),
+    ...veri.etutler.map(e => ({ tur: 'etut', d: e, bas: e.saat })),
+  ].sort((x, y) => (x.bas < y.bas ? -1 : 1));
+  for (const o of ogeler) {
+    const d = o.d;
+    const satir = el('button', undefined, 'ders-satir' + (o.tur === 'etut' ? ' etut-satir' : ''));
     satir.type = 'button';
-    if (ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
+    if (o.tur === 'ders' && ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
     const zaman = el('div', undefined, 'ders-zaman');
-    zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]));
+    if (o.tur === 'ders') zaman.append(el('strong', `${d.dersSaati}.`), el('span', o.bas));
+    else zaman.append(el('strong', 'Etüt'), el('span', o.bas));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', `${d.sinif} · ${d.ders}`));
-    const rozet = durumRozeti(d);
-    satir.append(zaman, orta);
-    if (rozet.textContent) satir.appendChild(rozet);
-    satir.addEventListener('click', () => dersAc(d, true));
+    orta.append(el('strong', o.tur === 'ders' ? `${d.sinif} · ${d.ders}` : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
+    if (o.tur === 'etut') orta.append(el('span', `${d.kisi} öğrenci${d.yer ? ' · ' + d.yer : ''}`));
+    satir.append(zaman, dersChip(d.kisa || 'E', d.renk), orta);
+    if (o.tur === 'ders') {
+      const rozet = durumRozeti(d);
+      if (rozet.textContent) satir.appendChild(rozet);
+      satir.addEventListener('click', () => dersAc(d, true));
+    } else {
+      satir.addEventListener('click', () => { location.href = '/etut'; });
+    }
     k.appendChild(satir);
   }
 }
@@ -186,7 +222,7 @@ function atamaCiz() {
   for (const a of veri.atamalar) {
     const b = el('button', undefined, 'modul-kart hazir');
     b.type = 'button';
-    b.append(el('strong', `${a.sinif} · ${a.ders}`), el('p', `${a.ogrenciSayisi} öğrenci`));
+    b.append(dersChip(a.kisa, a.renk), el('strong', `${a.sinif} · ${a.ders}`), el('p', `${a.ogrenciSayisi} öğrenci`));
     b.addEventListener('click', () => dersAc(a, false));
     k.appendChild(b);
   }
@@ -194,7 +230,7 @@ function atamaCiz() {
 
 function dersAc(d, programdan) {
   ders = { atamaId: d.atamaId, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
-  $('p-baslik').textContent = `${d.sinif} · ${d.ders}`;
+  $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), ` ${d.sinif} · ${d.ders}`);
   $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
   $('panel').classList.remove('gizli');
   zamanCiz();

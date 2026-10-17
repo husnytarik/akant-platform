@@ -330,3 +330,25 @@ th { border-bottom-color: var(--navy); }
   .hafta-tablo th strong { font-size: .7rem; }
   .hafta-tablo .saat-hucre strong { font-size: .8rem; }
 }
+
+/* Ders renkleri ve kısaltmaları */
+.ders-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 2px 7px; border-radius: 6px; background: var(--ders, #475569); color: #fff; font-size: .78rem; font-weight: 700; line-height: 1.3; letter-spacing: .02em; vertical-align: middle; }
+.detay-ust { display: flex; align-items: center; gap: 8px; }
+.modul-kart .ders-chip { align-self: flex-start; }
+.ders-satir { grid-template-columns: 70px auto 1fr auto; }
+.etut-satir { border-style: dashed; }
+.hucre { background: var(--ders, #475569); color: #fff; border: 0; border-left: 0; border-radius: 6px; margin-bottom: 2px; }
+.hucre:last-child { margin-bottom: 0; }
+.hucre strong { color: #fff; }
+.hucre span { color: rgba(255,255,255,.85); }
+.hucre.tamam, .hucre.bekliyor { background: var(--ders, #475569); border: 0; }
+.hucre.gecikti { background: var(--ders, #475569); color: #fff; outline: 2px solid var(--accent); outline-offset: -2px; border: 0; }
+.hucre.gecikti span { color: rgba(255,255,255,.85); }
+.hucre.etut { background: var(--bg); color: var(--ders, #475569); border: 2px dashed var(--ders, #475569); }
+.hucre.etut strong, .hucre.etut span { color: var(--ders, #475569); }
+.hucre.secili { outline: 2px solid var(--navy); outline-offset: 1px; }
+.hucre:hover { border-color: transparent; filter: brightness(1.08); }
+@media (max-width: 600px) {
+  .hucre span { display: block; font-size: .58rem; }
+  .ders-satir { grid-template-columns: 62px auto 1fr auto; }
+}
