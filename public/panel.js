@@ -44,10 +44,12 @@ async function ogretmenDersleri() {
     satir.href = dersLink(liste.tarih, d);
     const zaman = el('div', undefined, 'ders-zaman');
     const [bas, bit] = d.aralik.split('–');
-    zaman.append(el('strong', `${d.dersSaati}.`), el('span', bas), el('span', bit));
+    zaman.append(el('strong', `${d.dersSaati}.`), el('span', bas));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', d.ders), el('span', d.sinif));
-    satir.append(zaman, orta, durumRozeti(d));
+    orta.append(el('strong', `${d.sinif} · ${d.ders}`));
+    satir.append(zaman, orta);
+    const rozet = durumRozeti(d);
+    if (rozet.textContent) satir.appendChild(rozet);
     k.appendChild(satir);
   }
 }
@@ -63,12 +65,13 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   document.getElementById('ad').textContent = k.ad;
   document.getElementById('rol').textContent = ROL_ADI[k.rol] || k.rol;
   document.getElementById('sube').textContent = k.sube || '';
-  document.getElementById('aciklama').textContent = 'Yetkili olduğunuz modüller:';
+  document.getElementById('aciklama').textContent = k.rol === 'ogretmen' ? '' : 'Yetkili olduğunuz modüller:';
 
   if (k.rol === 'ogretmen') ogretmenDersleri();
 
   const grid = document.getElementById('moduller');
   for (const m of moduller) {
+    if (k.rol === 'ogretmen' && m.id === 'yoklama') continue; // dersler listesinden zaten ulaşılıyor
     const kart = document.createElement(m.yol ? 'a' : 'div');
     kart.className = 'modul-kart';
     if (m.yol) { kart.href = m.yol; kart.classList.add('hazir'); }
