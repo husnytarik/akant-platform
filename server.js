@@ -10,6 +10,7 @@ import { etutApi } from './etut.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
+import { sinavApi } from './sinav.js';
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.
@@ -40,7 +41,7 @@ const MODULLER = [
   { id: 'derslerim', ad: 'Derslerim', aciklama: 'Günlük program; devamsızlık, konu ve ödev işlemleri', roller: ['ogretmen'], yol: '/derslerim' },
   { id: 'odev-takip', ad: 'Ödevler', aciklama: 'Verilen ödevler ve son tarihleri', roller: ['ogrenci', 'veli'], yol: '/odevler' },
   { id: 'yoklama', ad: 'Dersi bitir', aciklama: 'Yoklama, işlenen konu ve kazanımı gir', roller: ['ogretmen'], yol: '/yoklama' },
-  { id: 'not-girisi', ad: 'Not girişi', aciklama: 'Sınav ve değerlendirme notları', roller: ['ogretmen'] },
+  { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Optik/test sınavı: cevap anahtarı, cevaplar, sonuç ve madde analizi', roller: ['ogretmen'], yol: '/sinav' },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
   { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
   { id: 'notlarim', ad: 'Notlarım', aciklama: 'Sınav sonuçları ve gelişim', roller: ['ogrenci'] },
@@ -230,6 +231,12 @@ async function api(req, res, url) {
     if (await kazanimApi({ req, res, url, o, json })) return;
   }
 
+  if (url.pathname.startsWith('/api/sinav/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await sinavApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/ders/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -344,6 +351,7 @@ function statik(req, res, url) {
   if (ad === '/derslerim') ad = '/derslerim.html';
   if (ad === '/program') ad = '/program.html';
   if (ad === '/odevler') ad = '/odevler.html';
+  if (ad === '/sinav') ad = '/sinav.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

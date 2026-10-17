@@ -145,6 +145,34 @@ CREATE TABLE IF NOT EXISTS odevler (
   due_date      TEXT NOT NULL,
   created_at    INTEGER NOT NULL
 );
+-- Sınav (optik/test): cevap anahtarı, yanlış götürme katsayısı ve öğrenci cevapları; sonuçlar cevaplardan hesaplanır
+CREATE TABLE IF NOT EXISTS sinavlar (
+  id                    INTEGER PRIMARY KEY,
+  name                  TEXT NOT NULL,
+  date                  TEXT NOT NULL,
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  yanlis_kat            INTEGER NOT NULL DEFAULT 0,
+  created_at            INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sinav_siniflar (
+  sinav_id INTEGER NOT NULL REFERENCES sinavlar(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  PRIMARY KEY (sinav_id, class_id)
+);
+CREATE TABLE IF NOT EXISTS sinav_dersler (
+  id          INTEGER PRIMARY KEY,
+  sinav_id    INTEGER NOT NULL REFERENCES sinavlar(id),
+  ders        TEXT NOT NULL,
+  soru_sayisi INTEGER NOT NULL,
+  anahtar     TEXT NOT NULL,
+  iptal       TEXT NOT NULL DEFAULT '[]'
+);
+CREATE TABLE IF NOT EXISTS sinav_cevaplar (
+  sinav_ders_id         INTEGER NOT NULL REFERENCES sinav_dersler(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  cevaplar              TEXT NOT NULL,
+  PRIMARY KEY (sinav_ders_id, student_membership_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

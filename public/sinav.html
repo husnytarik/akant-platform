@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Sınavlar</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="kart panel genis">
+    <div class="panel-ust">
+      <div>
+        <h1>Sınavlar</h1>
+        <a href="/panel" class="alt">&larr; Panele dön</a>
+      </div>
+    </div>
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <section id="liste-bolum">
+      <button id="yeni-ac" type="button">Yeni sınav</button>
+      <div id="liste"></div>
+    </section>
+
+    <section id="yeni-bolum" class="gizli">
+      <h2 class="baslik2">Yeni sınav</h2>
+      <label for="s-ad">Sınav adı</label>
+      <input id="s-ad" maxlength="80" placeholder="Örn. 1. Dönem 1. Deneme">
+      <div class="form-satir">
+        <div><label for="s-tarih">Tarih</label><input id="s-tarih" type="date"></div>
+        <div>
+          <label for="s-kat">Yanlış doğruyu götürür mü?</label>
+          <select id="s-kat">
+            <option value="0">Götürmez</option>
+            <option value="4">4 yanlış 1 doğruyu götürür</option>
+            <option value="3">3 yanlış 1 doğruyu götürür</option>
+            <option value="2">2 yanlış 1 doğruyu götürür</option>
+          </select>
+        </div>
+      </div>
+      <h3 class="baslik3">Sınıflar</h3>
+      <div id="s-siniflar" class="sinav-secim"></div>
+      <h3 class="baslik3">Dersler ve cevap anahtarı</h3>
+      <div id="s-dersler"></div>
+      <button id="ders-ekle" type="button" class="ikincil">+ Ders ekle</button>
+      <div class="form-satir">
+        <button id="s-kaydet" type="button">Sınavı oluştur</button>
+        <button id="s-vazgec" type="button" class="ikincil">Vazgeç</button>
+      </div>
+    </section>
+
+    <section id="detay-bolum" class="gizli">
+      <button id="geri" type="button" class="ikincil">&larr; Sınav listesi</button>
+      <h2 id="d-baslik" class="baslik2"></h2>
+      <div class="sekmeler" id="d-sekmeler">
+        <button type="button" data-sekme="cevap" aria-pressed="true">Cevaplar</button>
+        <button type="button" data-sekme="sonuc" aria-pressed="false">Sonuçlar</button>
+        <button type="button" data-sekme="analiz" aria-pressed="false">Madde analizi</button>
+        <button type="button" data-sekme="anahtar" aria-pressed="false">Anahtar ve iptal</button>
+      </div>
+      <div id="d-icerik"></div>
+    </section>
+  </main>
+  <script src="/sinav.js"></script>
+</body>
+</html>

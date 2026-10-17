@@ -419,3 +419,24 @@ button.lejant-oge { background: none; border: 1px solid transparent; border-radi
 .kazanim-oge strong { color: var(--accent); }
 .kazanim-hepsi { display: flex; gap: 6px; align-items: center; font-size: 13px; margin-top: 6px; }
 .kazanim-hepsi input { width: auto; }
+
+/* Sınavlar */
+.sinav-kart { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; background: #fff; color: var(--navy); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 10px; cursor: pointer; }
+.sinav-kart:hover { background: var(--soft); }
+.sinav-ders { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.sinav-ders .cevap-giris { flex: 1 1 260px; }
+.sinav-ders input[type=number] { width: 120px; }
+.cevap-giris { font-family: ui-monospace, Consolas, monospace; letter-spacing: 1px; text-transform: uppercase; }
+.sinav-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.sinav-tablo th, .sinav-tablo td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: middle; }
+.sinav-tablo th { background: var(--soft); color: var(--navy); white-space: nowrap; }
+.sinav-tablo td .cevap-giris { min-width: 160px; }
+.sinav-tablo .kalin { font-weight: 700; }
+.sinav-tablo .iptal-soru { opacity: .55; text-decoration: line-through; }
+.sinav-tablo .dogru-sik { font-weight: 700; color: #1b7a3a; }
+.basari-cubuk { display: inline-block; width: 60px; height: 8px; background: var(--border); border-radius: 4px; position: relative; vertical-align: middle; }
+.basari-cubuk::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--oran); background: var(--navy); border-radius: 4px; }
+.sinav-secim { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.toplu { margin: 8px 0; }
+.toplu textarea { width: 100%; font-family: ui-monospace, Consolas, monospace; }
+@media (max-width: 640px) { #detay-bolum { overflow-x: auto; } }
