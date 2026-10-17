@@ -97,9 +97,14 @@ function gunCiz() {
     orta.append(el('strong', o.tur === 'ders' ? d.ders : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`), el('span', d.ogretmen || ''));
     satir.style.setProperty('--ders', d.renk || '#475569');
     satir.append(zaman, orta);
-    if (d.iptal) satir.appendChild(el('span', 'İptal', 'durum-etiket'));
-    else if (d.devam === 'gelmedi') satir.appendChild(el('span', 'Gelmedi', 'durum-etiket gecikti'));
-    else if (o.tur === 'ders' && d.islendi) satir.appendChild(el('span', 'İşlendi', 'durum-etiket tamam'));
+    // Ders durumu (işlendi/iptal) ile öğrencinin devamı (geldi/gelmedi/geç/izinli) ayrı rozetlerdir
+    const rozetler = el('div', undefined, 'rozetler');
+    if (o.tur === 'ders') {
+      if (d.iptal) rozetler.appendChild(el('span', 'İptal', 'durum-etiket'));
+      else if (d.islendi) rozetler.appendChild(el('span', 'İşlendi', 'durum-etiket tamam'));
+    }
+    if (!d.iptal && d.devam) rozetler.appendChild(el('span', DEVAM[d.devam] || d.devam, 'durum-etiket' + (d.devam === 'gelmedi' ? ' gecikti' : '')));
+    if (rozetler.children.length) satir.appendChild(rozetler);
     satir.addEventListener('click', () => (o.tur === 'ders' ? detayCiz(g, d) : etutDetayCiz(g, d)));
     k.appendChild(satir);
   }

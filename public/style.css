@@ -397,3 +397,5 @@ th { border-bottom-color: var(--navy); }
 .halka { width: 100px; height: 100px; }
 .halka-yazi { fill: var(--navy); font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
 .halka-kart span { font-size: .78rem; }
+.rozetler { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.rozetler .durum-etiket { white-space: nowrap; }
