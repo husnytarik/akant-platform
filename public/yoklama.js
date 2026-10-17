@@ -159,14 +159,27 @@ $('tarih').addEventListener('change', dersleriYukle);
 })();
 
 // Kazanım arama: MEB programlarından, dersin adı ve sınıf düzeyine göre
-let kazanimZamanlayici = null;
+let kazanimZamanlayici = null, kazanimSecilenDers = null;
+// Ders listesi bir kez yüklenir; seçili ders programda varsa otomatik seçilir
+async function kazanimDersleri() {
+  const sel = $('kazanim-ders');
+  if (sel.options.length === 1) {
+    const r = await api('/api/kazanim?dersler=1');
+    if (r.ok) for (const d of r.veri.dersler) { const o = el('option', d); o.value = d; sel.append(o); }
+  }
+  if (kazanimSecilenDers !== secili.ders) {
+    kazanimSecilenDers = secili.ders;
+    sel.value = [...sel.options].some(o => o.value === secili.ders) ? secili.ders : '';
+  }
+}
 async function kazanimAra() {
   const kutu = $('kazanim-liste');
   const q = $('kazanim').value.trim();
-  if (!secili || (!q && !$('kazanim-hepsi').checked && false)) return;
+  if (!secili) return;
+  await kazanimDersleri();
   const sinifNo = parseInt(secili.sinif, 10) || '';
   const p = new URLSearchParams({ q, sinif: sinifNo });
-  if (!$('kazanim-hepsi').checked) p.set('ders', secili.ders);
+  if ($('kazanim-ders').value) p.set('ders', $('kazanim-ders').value);
   const r = await api('/api/kazanim?' + p);
   kutu.replaceChildren();
   if (!r.ok) return kutu.classList.add('gizli');
@@ -185,4 +198,4 @@ async function kazanimAra() {
 }
 $('kazanim').addEventListener('input', () => { clearTimeout(kazanimZamanlayici); kazanimZamanlayici = setTimeout(kazanimAra, 250); });
 $('kazanim').addEventListener('focus', kazanimAra);
-$('kazanim-hepsi').addEventListener('change', kazanimAra);
+$('kazanim-ders').addEventListener('change', kazanimAra);
