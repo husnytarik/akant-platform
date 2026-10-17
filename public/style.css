@@ -412,3 +412,10 @@ button.lejant-oge { background: none; border: 1px solid transparent; border-radi
 .lejant-oge { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 8px; text-align: left; }
 .lejant-oge .ders-chip { justify-self: stretch; text-align: center; }
 .lejant-oge > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.kazanim-liste { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; background: #fff; }
+.kazanim-oge { display: block; width: 100%; text-align: left; background: #fff; color: var(--navy); border: 0; border-bottom: 1px solid var(--border); padding: 8px 10px; font-size: 13px; line-height: 1.35; cursor: pointer; }
+.kazanim-oge:hover { background: var(--soft); }
+.kazanim-oge strong { color: var(--accent); }
+.kazanim-hepsi { display: flex; gap: 6px; align-items: center; font-size: 13px; margin-top: 6px; }
+.kazanim-hepsi input { width: auto; }

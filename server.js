@@ -9,6 +9,7 @@ import { kurulumApi } from './kurulum.js';
 import { etutApi } from './etut.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
+import { kazanimApi } from './kazanim.js';
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.
@@ -220,6 +221,13 @@ async function api(req, res, url) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     if (await yoklamaApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
+  if (url.pathname === '/api/kazanim') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (o.role !== 'ogretmen' && o.role !== 'yonetim') return json(res, 403, { hata: 'Yetkiniz yok' });
+    if (await kazanimApi({ req, res, url, o, json })) return;
   }
 
   if (url.pathname.startsWith('/api/ders/')) {
