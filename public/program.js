@@ -142,7 +142,7 @@ function haftaCiz() {
         const b = el('button', undefined, 'hucre ' + durumSinifi(d));
         b.type = 'button';
         b.style.setProperty('--ders', d.renk);
-        b.appendChild(el('strong', d.kisa + (d.iptal ? ' ⊘' : d.devam === 'gelmedi' ? ' ✗' : d.islendi ? ' ✓' : '')));
+        b.appendChild(el('strong', d.kisa + (d.iptal ? ' ⊘' : d.devam === 'gelmedi' ? ' ✗' : d.devam === 'izinli' ? ' İ' : d.islendi ? ' ✓' : '')));
         b.addEventListener('click', () => secim(b, g, d, false));
         td.appendChild(b);
       }
@@ -301,7 +301,7 @@ function lejantCiz() {
     for (const e of g.etutler || []) if (e.ders) dersler.set(e.ders, e);
   }
   const durum = el('p', undefined, 'hafta-not');
-  durum.append(el('span', '✓ ders işlendi'), el('span', '⊘ ders iptal'), el('span', '✗ devamsızlık (gelmedi)'), el('span', 'Kesik çizgi: etüt'));
+  durum.append(el('span', '✓ geldi (ders işlendi)'), el('span', '✗ gelmedi'), el('span', 'İ izinli'), el('span', '⊘ ders iptal'), el('span', 'Kesik çizgi: etüt'));
   k.appendChild(durum);
   if (!dersler.size) return;
   const liste = el('div', undefined, 'lejant-dersler');

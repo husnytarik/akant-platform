@@ -179,6 +179,9 @@ if (!sutunlar('yoklama').some(c => c.name === 'completed_at')) {
 if (!sutunlar('yoklama').some(c => c.name === 'cancelled')) {
   db.exec('ALTER TABLE yoklama ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
 }
+if (!sutunlar('courses').some(c => c.name === 'stil_ad')) {
+  db.exec('ALTER TABLE courses ADD COLUMN stil_ad TEXT');
+}
 if (!sutunlar('courses').some(c => c.name === 'kisa')) {
   db.exec('ALTER TABLE courses ADD COLUMN kisa TEXT');
   db.exec('ALTER TABLE courses ADD COLUMN renk TEXT');

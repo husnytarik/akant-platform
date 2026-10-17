@@ -20,17 +20,21 @@ function adaylar(ad) {
 }
 
 export function dersStilleri() {
-  const satirlar = db.prepare('SELECT id, name, kisa, renk FROM courses ORDER BY id').all();
-  const kullanilan = new Set(satirlar.filter(r => r.kisa).map(r => r.kisa));
-  const guncelle = db.prepare('UPDATE courses SET kisa = ?, renk = ? WHERE id = ?');
+  const satirlar = db.prepare('SELECT id, name, kisa, renk, stil_ad FROM courses ORDER BY id').all();
+  const guncelle = db.prepare('UPDATE courses SET kisa = ?, renk = ?, stil_ad = ? WHERE id = ?');
+  // Ders adı değiştiyse kısaltma yeniden üretilir (renk sabit kalır); eski kayıtlar mevcut kısaltmayı korur
+  const yenile = r => !r.kisa || !r.renk || (r.stil_ad && r.stil_ad !== r.name);
+  const kullanilan = new Set(satirlar.filter(r => r.kisa && !yenile(r)).map(r => r.kisa));
   const harita = new Map();
   for (const r of satirlar) {
     let { kisa, renk } = r;
-    if (!kisa || !renk) {
-      kisa = kisa || adaylar(r.name).find(a => !kullanilan.has(a)) || buyuk(r.name.slice(0, 4)) + r.id;
+    if (yenile(r)) {
+      kisa = adaylar(r.name).find(a => !kullanilan.has(a)) || buyuk(r.name.slice(0, 4)) + r.id;
       renk = renk || RENKLER[(r.id - 1) % RENKLER.length];
       kullanilan.add(kisa);
-      guncelle.run(kisa, renk, r.id);
+      guncelle.run(kisa, renk, r.name, r.id);
+    } else if (!r.stil_ad) {
+      guncelle.run(kisa, renk, r.name, r.id);
     }
     harita.set(r.name, { kisa, renk });
   }
