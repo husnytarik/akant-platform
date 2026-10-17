@@ -182,8 +182,63 @@ async function yukle() {
   $('detay').classList.add('gizli');
   $('zaman').classList.toggle('gizli', gorunum !== 'gun');
   $('hafta').classList.toggle('gizli', gorunum !== 'hafta');
+  $('devam').classList.toggle('gizli', gorunum !== 'devam');
+  $('gun-seridi').classList.toggle('gizli', gorunum === 'devam');
+  if (gorunum === 'devam') { $('lejant').replaceChildren(); await devamCiz(); return; }
   if (gorunum === 'gun') gunCiz(); else haftaCiz();
   lejantCiz();
+}
+
+// Devamsızlık pastası: her dilim bir ders (renk = ders rengi, açı = haftalık ders saati);
+// derse gelmeme arttıkça dilimin yarıçapı orantılı kısalır, kesik daire tam devamı gösterir.
+const SVG = 'http://www.w3.org/2000/svg';
+function svg(tag, nitelik) {
+  const e = document.createElementNS(SVG, tag);
+  for (const [a, b] of Object.entries(nitelik || {})) e.setAttribute(a, b);
+  return e;
+}
+
+async function devamCiz() {
+  const k = $('devam');
+  k.replaceChildren();
+  const r = await fetch(`/api/ders/devamsizlik?cocuk=${cocuk}`);
+  if (!r.ok) { k.appendChild(el('p', 'Veri alınamadı.', 'alt')); return; }
+  const dersler = (await r.json()).dersler;
+  if (!dersler.length) { k.appendChild(el('p', 'Henüz ders bulunamadı.', 'alt')); return; }
+  const agirlik = d => Math.max(d.haftalik, 1);
+  const toplamAgirlik = dersler.reduce((t, d) => t + agirlik(d), 0);
+  const R = 100;
+  const grafik = svg('svg', { viewBox: '-110 -110 220 220', class: 'pasta' });
+  grafik.appendChild(svg('circle', { r: R, class: 'pasta-kilavuz' }));
+  let aci = -Math.PI / 2;
+  for (const d of dersler) {
+    const pay = (agirlik(d) / toplamAgirlik) * 2 * Math.PI;
+    const oran = d.islenen ? 1 - d.gelmedi / d.islenen : 1;
+    const yr = R * Math.max(oran, 0.04);
+    const p = (a) => `${(yr * Math.cos(a)).toFixed(2)} ${(yr * Math.sin(a)).toFixed(2)}`;
+    const yol = dersler.length === 1
+      ? `M ${yr} 0 A ${yr} ${yr} 0 1 1 ${-yr} 0 A ${yr} ${yr} 0 1 1 ${yr} 0 Z`
+      : `M 0 0 L ${p(aci)} A ${yr} ${yr} 0 ${pay > Math.PI ? 1 : 0} 1 ${p(aci + pay)} Z`;
+    const dilim = svg('path', { d: yol, fill: d.renk, class: 'pasta-dilim' });
+    const baslik = svg('title');
+    baslik.textContent = `${d.ders}: ${d.islenen} dersten ${d.gelmedi} devamsızlık`;
+    dilim.appendChild(baslik);
+    grafik.appendChild(dilim);
+    const orta = aci + pay / 2;
+    const yaz = svg('text', { x: (yr * 0.62 * Math.cos(orta)).toFixed(1), y: (yr * 0.62 * Math.sin(orta)).toFixed(1), class: 'pasta-yazi' });
+    yaz.textContent = d.kisa;
+    grafik.appendChild(yaz);
+    aci += pay;
+  }
+  const liste = el('div', undefined, 'pasta-liste');
+  for (const d of dersler) {
+    const s = el('div', undefined, 'pasta-satir');
+    const yuzde = d.islenen ? Math.round((d.gelmedi / d.islenen) * 100) : 0;
+    s.append(dersChip(d.kisa, d.renk), el('strong', d.ders),
+      el('span', d.islenen ? `${d.gelmedi} devamsızlık / ${d.islenen} ders (%${yuzde})` : 'Henüz ders işlenmedi', d.gelmedi ? 'pasta-kotu' : 'alt'));
+    liste.appendChild(s);
+  }
+  k.append(grafik, el('p', 'Dilim ne kadar kısaysa o derste devamsızlık o kadar fazla. Kesik daire tam devamı gösterir.', 'hafta-not'), liste);
 }
 
 // Sayfa altı: durum işaretleri + görünen derslerin renkli adları

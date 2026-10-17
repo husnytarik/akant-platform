@@ -360,3 +360,11 @@ th { border-bottom-color: var(--navy); }
 
 .hucre { align-items: center; text-align: center; }
 .hucre strong, .hucre span { text-align: center; }
+
+.pasta { display: block; width: min(100%, 320px); margin: 12px auto; }
+.pasta-kilavuz { fill: none; stroke: var(--border); stroke-dasharray: 4 4; }
+.pasta-dilim { stroke: #fff; stroke-width: 1.5; }
+.pasta-yazi { fill: #fff; font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.pasta-liste { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.pasta-satir { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .9rem; }
+.pasta-kotu { color: var(--accent); }

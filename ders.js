@@ -54,6 +54,27 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     return true;
   }
 
+  // Öğrenci/veli: derslere göre devamsızlık özeti (pasta grafik için)
+  if (req.method === 'GET' && yol === '/api/ders/devamsizlik') {
+    let cocuklar;
+    if (o.role === 'ogrenci') cocuklar = [o.membership_id];
+    else if (o.role === 'veli') cocuklar = db.prepare('SELECT student_membership_id AS id FROM guardians WHERE parent_membership_id = ?').all(o.membership_id).map(r => r.id);
+    else return hata(403, 'Bu işlem için yetkiniz yok');
+    const id = cocuklar.find(c => c === tamSayi(url.searchParams.get('cocuk'), 1, 1e9)) || cocuklar[0];
+    if (!id) return json(res, 200, { dersler: [] }), true;
+    const dersler = db.prepare(`
+      SELECT co.name AS ders,
+             (SELECT COUNT(*) FROM schedule s WHERE s.assignment_id = a.id) AS haftalik,
+             COUNT(k.yoklama_id) AS islenen,
+             COALESCE(SUM(k.status = 'gelmedi'), 0) AS gelmedi
+      FROM class_students cs JOIN assignments a ON a.class_id = cs.class_id JOIN courses co ON co.id = a.course_id
+      LEFT JOIN yoklama y ON y.assignment_id = a.id AND y.cancelled = 0 AND y.completed_at IS NOT NULL
+      LEFT JOIN yoklama_kayit k ON k.yoklama_id = y.id AND k.student_membership_id = cs.student_membership_id
+      WHERE cs.student_membership_id = ? GROUP BY a.id ORDER BY co.name`).all(id);
+    json(res, 200, { dersler: dersler.map(d => stilEkle({ ...d, haftalik: Number(d.haftalik), islenen: Number(d.islenen), gelmedi: Number(d.gelmedi) }, st)) });
+    return true;
+  }
+
   // Öğrenci/veli: sınıfın haftalık ders programı (7 gün), işlenen konu ve devam durumuyla
   if (req.method === 'GET' && yol === '/api/ders/program') {
     let cocuklar;
