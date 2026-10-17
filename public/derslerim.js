@@ -149,11 +149,12 @@ function zamanCiz() {
     satir.type = 'button';
     if (ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
     const zaman = el('div', undefined, 'ders-zaman');
-    zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]), el('span', d.aralik.split('–')[1]));
+    zaman.append(el('strong', `${d.dersSaati}.`), el('span', d.aralik.split('–')[0]));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', d.ders), el('span', d.sinif));
+    orta.append(el('strong', `${d.sinif} · ${d.ders}`));
     const rozet = durumRozeti(d);
-    satir.append(zaman, orta, rozet);
+    satir.append(zaman, orta);
+    if (rozet.textContent) satir.appendChild(rozet);
     satir.addEventListener('click', () => dersAc(d, true));
     k.appendChild(satir);
   }
@@ -322,6 +323,8 @@ async function gorunumSec(ad, acilacak) {
   for (const b of $('gorunum').children) b.setAttribute('aria-pressed', String(b.dataset.gorunum === ad));
   $('zaman').classList.toggle('gizli', ad !== 'gun');
   $('hafta').classList.toggle('gizli', ad !== 'hafta');
+  $('siniflar').classList.toggle('gizli', ad !== 'siniflar');
+  $('gun-seridi').classList.toggle('gizli', ad === 'siniflar');
   await gunYukle();
   if (acilacak && veri) {
     const d = veri.gunluk.find(x => x.atamaId === acilacak.atamaId && x.dersSaati === acilacak.dersSaati);

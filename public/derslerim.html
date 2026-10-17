@@ -19,9 +19,10 @@
     <div class="sekmeler" id="gorunum">
       <button type="button" data-gorunum="gun" aria-pressed="true">Günlük</button>
       <button type="button" data-gorunum="hafta" aria-pressed="false">Haftalık</button>
+      <button type="button" data-gorunum="siniflar" aria-pressed="false">Tüm derslerim</button>
     </div>
 
-    <div class="gun-seridi">
+    <div class="gun-seridi" id="gun-seridi">
       <button type="button" id="geri" aria-label="Önceki gün">&larr;</button>
       <div class="gun-baslik">
         <strong id="gun-adi"></strong>
@@ -50,9 +51,10 @@
       <div id="icerik"></div>
     </section>
 
-    <h2 class="baslik2">Sınıflarım</h2>
-    <p class="alt">Öğrenci listesi, işlenen konular ve ödevler için bir sınıf seçin. Dersi bitirmek için yukarıdaki programdan dersi seçin.</p>
-    <div id="atamalar" class="modul-grid"></div>
+    <section id="siniflar" class="gizli">
+      <p class="alt">Öğrenci listesi, işlenen konular ve ödevler için bir ders seçin.</p>
+      <div id="atamalar" class="modul-grid"></div>
+    </section>
   </main>
   <script src="/derslerim.js"></script>
 </body>
