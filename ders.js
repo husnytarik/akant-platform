@@ -110,8 +110,9 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       FROM etutler e LEFT JOIN courses co ON co.id = e.course_id
       WHERE e.date = ? AND e.teacher_membership_id = ? AND e.status = 'planli' ORDER BY e.start_time`);
     const gunler = [];
-    for (let g = 1; g <= 5; g++) {
-      const t = kaydir(pazartesi, g - 1);
+    for (let i = 1; i <= 7; i++) {
+      const g = i % 7; // 1=Pzt .. 6=Cmt, 0=Paz
+      const t = kaydir(pazartesi, i - 1);
       gunler.push({
         tarih: t, gun: g,
         etutler: etutSatir.all(t, o.membership_id),

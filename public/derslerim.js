@@ -79,14 +79,14 @@ async function haftaYukle() {
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   mesaj('');
   bugun = r.veri.bugun;
-  const son = r.veri.gunler[4].tarih;
+  const son = r.veri.gunler[6].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
   for (const g of r.veri.gunler) {
-    const th = el('th', undefined, g.tarih === bugun ? 'bugun-sutun' : '');
+    const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
     th.append(el('strong', GUN[g.gun].slice(0, 3)), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
     bas.appendChild(th);
   }
@@ -102,7 +102,7 @@ async function haftaYukle() {
     tr.appendChild(z);
     for (const g of r.veri.gunler) {
       const td = document.createElement('td');
-      if (g.tarih === bugun) td.className = 'bugun-sutun';
+      td.className = (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '');
       const d = g.dersler.find(x => x.dersSaati === p);
       if (d) {
         const b = el('button', undefined, 'hucre ' + d.durum);

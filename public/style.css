@@ -312,3 +312,21 @@ th { border-bottom-color: var(--navy); }
 .hafta-ozet strong { color: var(--navy); }
 .hafta-etut { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border); }
 .hafta-etut p { margin: 4px 0; font-size: .88rem; }
+
+/* 7 günlük haftalık tablo: daha küçük */
+.hafta-tablo th, .hafta-tablo td { padding: 2px; }
+.hafta-tablo th { font-size: .7rem; }
+.hafta-tablo th strong { font-size: .78rem; }
+.hafta-tablo th:first-child { width: 38px; }
+.hafta-tablo .hafta-sonu { background: var(--soft); }
+.hafta-tablo .bugun-sutun { background: var(--navy-soft); }
+.hucre { min-height: 40px; padding: 3px 1px; }
+.hucre strong { font-size: .82rem; }
+.hucre span { font-size: .62rem; }
+@media (max-width: 600px) {
+  .hafta-tablo th:first-child { width: 28px; }
+  .hucre { min-height: 40px; }
+  .hucre strong { font-size: .72rem; }
+  .hafta-tablo th strong { font-size: .7rem; }
+  .hafta-tablo .saat-hucre strong { font-size: .8rem; }
+}
