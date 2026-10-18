@@ -173,6 +173,15 @@ CREATE TABLE IF NOT EXISTS sinav_cevaplar (
   cevaplar              TEXT NOT NULL,
   PRIMARY KEY (sinav_ders_id, student_membership_id)
 );
+-- Sorunun ölçtüğü kazanım: dersi veren öğretmenler ortak girer, doğru yapan öğrenci bu kazanımı edinmiş sayılır
+CREATE TABLE IF NOT EXISTS sinav_kazanim (
+  sinav_ders_id INTEGER NOT NULL REFERENCES sinav_dersler(id),
+  soru_no       INTEGER NOT NULL,
+  kazanim       TEXT NOT NULL,
+  guncelleyen   INTEGER NOT NULL REFERENCES memberships(id),
+  tarih         INTEGER NOT NULL,
+  PRIMARY KEY (sinav_ders_id, soru_no)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

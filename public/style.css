@@ -440,3 +440,14 @@ button.lejant-oge { background: none; border: 1px solid transparent; border-radi
 .toplu { margin: 8px 0; }
 .toplu textarea { width: 100%; font-family: ui-monospace, Consolas, monospace; }
 @media (max-width: 640px) { #detay-bolum { overflow-x: auto; } }
+
+/* Kazanım durumu (karne) */
+.durum { font-weight: 600; white-space: nowrap; }
+.durum-edinildi { color: #1a7f37; }
+.durum-kismen { color: #b45309; }
+.durum-eksik { color: #c62828; }
+.baglanti { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; width: auto; }
+.kucuk { padding: 2px 8px; font-size: 0.8rem; margin-left: 6px; width: auto; }
+@media print {
+  .sekmeler, .form-satir, #geri, .panel-ust a, #mesaj { display: none !important; }
+}
