@@ -281,7 +281,7 @@ async function ogrencilerCiz() {
   k.appendChild(el('p', `${ogr.length} öğrenci` + (!gunluk ? '' : r.veri.yoklamaAlindi ? ` · ${say('geldi') + say('gec')} geldi · ${say('gelmedi')} gelmedi · ${say('izinli')} izinli` : ' · bu ders için yoklama henüz alınmadı'), 'alt'));
   const ISARET = { geldi: ['✓', 'Geldi'], gec: ['G', 'Geç geldi'], gelmedi: ['✗', 'Gelmedi'], izinli: ['İ', 'İzinli'] };
   const t = el('table', undefined, 'ogr-liste');
-  t.dataset.kart = '';
+  t.dataset.duz = '1';
   const bas = document.createElement('tr');
   bas.append(el('th', 'Öğrenci'));
   if (gunluk) bas.append(el('th', 'Yoklama'));

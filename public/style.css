@@ -744,3 +744,11 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
   .ogr-liste[data-kart] tr:first-child { background: transparent; border: 0; box-shadow: none; padding: 0 14px 4px; margin-bottom: 4px; }
   .ogr-liste[data-kart] th { border: 0; padding: 0; font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: none; background: transparent; }
 }
+
+/* Öğrenci listesi: gerçek iki sütunlu tablo (Öğrenci | Yoklama) */
+table.ogr-liste { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); overflow: hidden; }
+table.ogr-liste th { text-align: left; padding: 10px 14px; font-size: .78rem; font-weight: 600; color: var(--muted); background: #f1f4f9; border-bottom: 1px solid var(--cizgi); }
+table.ogr-liste th:last-child { text-align: center; width: 90px; }
+table.ogr-liste td { padding: 8px 14px; border-bottom: 1px solid var(--cizgi); }
+table.ogr-liste tr:last-child td { border-bottom: 0; }
+table.ogr-liste td.ogr-durum { text-align: center; width: 90px; }
