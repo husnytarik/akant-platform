@@ -48,7 +48,7 @@ async function listeYukle() {
     kart.append(
       el('strong', s.ad),
       el('span', `${tarihYaz(s.tarih)} · ${s.siniflar.join(', ')} · ${s.dersler.join(', ')}`, 'alt'),
-      el('span', `${s.okunan} öğrenci cevabı girildi · ${KAT_YAZI(s.yanlisKat)}`, 'alt'),
+      el('span', `${s.okunan} öğrenci cevabı girildi · ${KAT_YAZI(s.yanlisKat)} · ${s.yayin ? 'Yayında' : 'Yayınlanmadı'}`, 'alt'),
     );
     kart.addEventListener('click', () => detayAc(s.id));
     kutu.append(kart);
@@ -243,6 +243,7 @@ function anahtarCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
   const d = acik;
+  kutu.append(el('p', d.sinav.yayin ? 'Bu sınavın sonuçları öğrenci ve velilere yayında.' : 'Sonuçlar henüz yayınlanmadı; öğrenci ve veli görmez.', 'alt'));
   kutu.append(el('p', 'Anahtarı düzeltirseniz tüm sonuçlar yeniden hesaplanır. İptal edilen soru tüm öğrencilere doğru sayılır.', 'alt'));
   const sel = el('select'); sel.setAttribute('aria-label', 'Yanlış katsayısı');
   for (const k of [0, 4, 3, 2]) { const o = el('option', KAT_YAZI(k)); o.value = k; sel.append(o); }
@@ -267,6 +268,16 @@ function anahtarCiz() {
     sekmeSec('anahtar');
     mesaj('Anahtar güncellendi, sonuçlar yeniden hesaplandı.', 'tamam');
   });
+  const yayin = el('button', d.sinav.yayin ? 'Yayından kaldır' : 'Sonuçları yayınla', 'ikincil'); yayin.type = 'button';
+  yayin.addEventListener('click', async () => {
+    const yeni = !d.sinav.yayin;
+    if (yeni && !confirm('Sonuçlar öğrenci ve velilere görünecek. Yayınlansın mı?')) return;
+    const r = await api('/api/sinav/yayin', { id: d.sinav.id, yayin: yeni });
+    if (!r.ok) return mesaj(r.veri.hata || 'Güncellenemedi', 'hata');
+    await detayAc(d.sinav.id);
+    sekmeSec('anahtar');
+    mesaj(yeni ? 'Sonuçlar yayınlandı.' : 'Sonuçlar yayından kaldırıldı.', 'tamam');
+  });
   const sil = el('button', 'Sınavı sil', 'ikincil'); sil.type = 'button';
   sil.addEventListener('click', async () => {
     if (!confirm('Bu sınav ve girilen tüm cevaplar silinecek. Emin misiniz?')) return;
@@ -275,7 +286,7 @@ function anahtarCiz() {
     bolum('liste-bolum'); await listeYukle();
   });
   const satir = el('div', '', 'form-satir');
-  satir.append(kaydet, sil);
+  satir.append(kaydet, yayin, sil);
   kutu.append(satir);
 }
 

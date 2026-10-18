@@ -214,6 +214,10 @@ if (!sutunlar('courses').some(c => c.name === 'kisa')) {
   db.exec('ALTER TABLE courses ADD COLUMN kisa TEXT');
   db.exec('ALTER TABLE courses ADD COLUMN renk TEXT');
 }
+if (!sutunlar('sinavlar').some(c => c.name === 'yayin')) {
+  // Sonuçlar öğretmen "yayınla" deyince öğrenci/veliye görünür
+  db.exec('ALTER TABLE sinavlar ADD COLUMN yayin INTEGER NOT NULL DEFAULT 0');
+}
 if (!sutunlar('odevler').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE odevler ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }

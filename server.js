@@ -44,7 +44,7 @@ const MODULLER = [
   { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Optik/test sınavı: cevap anahtarı, cevaplar, sonuç ve madde analizi', roller: ['ogretmen'], yol: '/sinav' },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
   { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
-  { id: 'notlarim', ad: 'Notlarım', aciklama: 'Sınav sonuçları ve gelişim', roller: ['ogrenci'] },
+  { id: 'notlarim', ad: 'Sınav sonuçlarım', aciklama: 'Yayınlanan sınav sonuçları', roller: ['ogrenci', 'veli'], yol: '/notlarim' },
   { id: 'duyurular', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogrenci', 'veli'] },
   { id: 'ogrencim', ad: 'Öğrencim', aciklama: 'Çocuğumun bilgileri ve durumu', roller: ['veli'] },
   { id: 'devamsizlik-veli', ad: 'Devamsızlık', aciklama: 'Çocuğumun ders devamsızlıkları', roller: ['veli'], yol: '/devamsizlik' },
@@ -80,10 +80,10 @@ function json(res, kod, veri, basliklar = {}) {
   res.end(JSON.stringify(veri));
 }
 
-function govde(req) {
+function govde(req, sinir = 10_000) {
   return new Promise((resolve, reject) => {
     let ham = '';
-    req.on('data', c => { ham += c; if (ham.length > 10_000) { reject(new Error('buyuk')); req.destroy(); } });
+    req.on('data', c => { ham += c; if (ham.length > sinir) { reject(new Error('buyuk')); req.destroy(); } });
     req.on('end', () => { try { resolve(JSON.parse(ham || '{}')); } catch { reject(new Error('json')); } });
   });
 }
@@ -234,7 +234,7 @@ async function api(req, res, url) {
   if (url.pathname.startsWith('/api/sinav/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
-    if (await sinavApi({ req, res, url, o, json, govde, denetle })) return;
+    if (await sinavApi({ req, res, url, o, json, govde: r => govde(r, 1_000_000), denetle })) return;
   }
 
   if (url.pathname.startsWith('/api/ders/')) {
@@ -352,6 +352,7 @@ function statik(req, res, url) {
   if (ad === '/program') ad = '/program.html';
   if (ad === '/odevler') ad = '/odevler.html';
   if (ad === '/sinav') ad = '/sinav.html';
+  if (ad === '/notlarim') ad = '/notlarim.html';
   const tam = path.normalize(path.join(publicDir, ad));
   if (!tam.startsWith(publicDir) || !fs.existsSync(tam) || !fs.statSync(tam).isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -372,6 +373,7 @@ http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     statik(req, res, url);
   } catch (e) {
+    console.error(e);
     if (!res.headersSent) json(res, 400, { hata: 'Geçersiz istek' });
   }
 }).listen(PORT, () => console.log(`Akant platformu: http://localhost:${PORT}`));
