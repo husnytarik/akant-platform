@@ -732,7 +732,7 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
 .isaret.geldi { background: #e3f4ea; color: #1b6b3a; }
 .isaret.gec { background: #fff3d9; color: #8a5a00; }
 .isaret.gelmedi { background: #fbe7e7; color: #a12b2b; }
-.isaret.izinli { background: #e4eefc; color: #1f5cae; }
+.isaret.izinli { background: #e3e6ec; color: #4b5668; }
 @media (max-width: 640px) {
   .ogr-liste[data-kart] tr { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
   .ogr-liste[data-kart] td { display: block; border: 0; padding: 0; width: auto; text-align: left; }
