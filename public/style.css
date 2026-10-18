@@ -519,3 +519,10 @@ button.kucuk { height: 32px; padding: 0 12px; font-size: .85rem; margin-left: 0;
 .panel-ust a.alt, .panel-ust #cikis { height: 36px; padding: 0 14px; font-size: .88rem; }
 @media (max-width: 600px) { .panel-ust a.alt, .panel-ust #cikis { height: 38px; } .mesaj { min-height: 0; margin-top: 8px; } }
 .kutu > button, .kutu > details > button { margin-top: 12px; }
+
+/* iOS Safari: tarih/saat alanları kutudan taşmasın, sola hizalı olsun */
+input[type="date"], input[type="time"], input[type="datetime-local"] {
+  -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; width: 100%;
+  text-align: left; line-height: normal; padding-top: 0; padding-bottom: 0;
+}
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; margin: 0; }
