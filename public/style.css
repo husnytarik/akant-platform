@@ -744,3 +744,9 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
   .ogr-liste[data-kart] tr:first-child { background: transparent; border: 0; box-shadow: none; padding: 0 14px 4px; margin-bottom: 4px; }
   .ogr-liste[data-kart] th { border: 0; padding: 0; font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: none; background: transparent; }
 }
+
+/* Etüt yoklaması: 3 seçenekli segment, adın altında veli yanıtı */
+.segment.uc { grid-template-columns: repeat(3, 1fr); }
+.yok-ad small { display: block; font-weight: 400; margin-top: 2px; }
+.yoklama-liste > .yok-satir:not([class*="d-"]) { grid-template-columns: 1fr auto; align-items: center; border-left-color: var(--cizgi); }
+@media (min-width: 640px) { .segment.uc { max-width: 340px; } }

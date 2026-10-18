@@ -176,31 +176,35 @@ function ogretmenKarti(e) {
   const bugun = new Date().toLocaleDateString('sv-SE');
   const yoklamaAcik = !iptal && e.tarih <= bugun;
   const durum = new Map(e.katilimcilar.map(k => [k.ogrenciId, k.devam || 'geldi']));
-  const t = el('table');
-  const bas = document.createElement('tr');
-  bas.append(el('th', 'Öğrenci'), el('th', 'Veli yanıtı'), el('th', 'Yoklama'));
-  t.appendChild(bas);
+  const t = el('div', undefined, 'yoklama-liste');
+  const IS = { geldi: '✓', gelmedi: '✗', izinli: 'İ' };
   for (const k of e.katilimcilar) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
+    const satir = el('div', undefined, 'yok-satir' + (yoklamaAcik ? ' d-' + durum.get(k.ogrenciId) : ''));
+    const ad = el('div', undefined, 'yok-ad');
+    ad.append(el('span', k.ad), el('small', 'Veli yanıtı: ' + YANIT_ADI[k.yanit], 'alt'));
+    satir.appendChild(ad);
     if (yoklamaAcik) {
-      const grup = el('div', undefined, 'cipler');
-      for (const [deger, ad] of DEVAM_SECENEK) {
-        const l = el('label', undefined, 'onay');
-        const r = document.createElement('input');
-        r.type = 'radio';
-        r.name = `e${e.id}-${k.ogrenciId}`;
-        r.checked = durum.get(k.ogrenciId) === deger;
-        r.addEventListener('change', () => durum.set(k.ogrenciId, deger));
-        l.append(r, document.createTextNode(' ' + ad));
-        grup.appendChild(l);
+      const grup = el('div', undefined, 'segment uc');
+      grup.setAttribute('role', 'group');
+      grup.setAttribute('aria-label', k.ad + ' yoklama durumu');
+      for (const [deger, adi] of DEVAM_SECENEK) {
+        const b = el('button', adi, 's-' + deger);
+        b.type = 'button';
+        b.setAttribute('aria-pressed', String(durum.get(k.ogrenciId) === deger));
+        b.addEventListener('click', () => {
+          durum.set(k.ogrenciId, deger);
+          satir.className = 'yok-satir d-' + deger;
+          for (const x of grup.children) x.setAttribute('aria-pressed', String(x === b));
+        });
+        grup.appendChild(b);
       }
-      td.appendChild(grup);
+      satir.appendChild(grup);
     } else {
-      td.textContent = k.devam ? DEVAM_ADI[k.devam] : '-';
+      const m = el('span', k.devam ? IS[k.devam] : '–', 'isaret ' + (k.devam || 'yok'));
+      m.setAttribute('aria-label', k.devam ? DEVAM_ADI[k.devam] : 'Kayıt yok');
+      satir.appendChild(m);
     }
-    tr.append(el('td', k.ad), el('td', YANIT_ADI[k.yanit]), td);
-    t.appendChild(tr);
+    t.appendChild(satir);
   }
   d.appendChild(t);
   if (yoklamaAcik) {
