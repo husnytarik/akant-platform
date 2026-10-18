@@ -750,3 +750,17 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
 .yok-ad small { display: block; font-weight: 400; margin-top: 2px; }
 .yoklama-liste > .yok-satir:not([class*="d-"]) { grid-template-columns: 1fr auto; align-items: center; border-left-color: var(--cizgi); }
 @media (min-width: 640px) { .segment.uc { max-width: 340px; } }
+
+/* Ders renkleri: hafif (%10) zemin, dersin rengi sol şerit ve rozetlerde */
+.ders-satir:not(.etut-satir) { background: color-mix(in srgb, var(--ders, #475569) 10%, #fff); border: 1px solid color-mix(in srgb, var(--ders, #475569) 25%, #fff); border-left: 5px solid var(--ders, #475569); color: var(--text); }
+.ders-satir:not(.etut-satir):hover { background: color-mix(in srgb, var(--ders, #475569) 16%, #fff); filter: none; }
+.ders-satir.secili:not(.etut-satir) { background: color-mix(in srgb, var(--ders, #475569) 16%, #fff); border-color: var(--navy); border-left-color: var(--ders, #475569); outline: 2px solid var(--navy); outline-offset: -1px; }
+.ders-satir:not(.etut-satir) .ders-zaman strong, .ders-satir:not(.etut-satir) .ders-orta strong { color: var(--navy); }
+.ders-satir:not(.etut-satir) .ders-zaman, .ders-satir:not(.etut-satir) .ders-orta span { color: var(--muted); }
+.ders-satir:not(.etut-satir) .durum-etiket { background: #fff; border-color: color-mix(in srgb, var(--ders, #475569) 45%, #fff); color: var(--navy); }
+.ders-satir:not(.etut-satir) .durum-etiket.tamam { background: #e3f4ea; border-color: #b9e0c9; color: #1b6b3a; }
+.ders-satir:not(.etut-satir) .durum-etiket.gecikti { background: #fff3d9; border-color: #f0d79b; color: #8a5a00; }
+.hucre:not(.etut) { background: color-mix(in srgb, var(--ders, #475569) 10%, #fff); border: 1px solid color-mix(in srgb, var(--ders, #475569) 25%, #fff); border-left: 4px solid var(--ders, #475569); color: var(--text); }
+.hucre:not(.etut) strong { color: var(--navy); }
+.hucre:not(.etut) span, .hucre.gecikti span { color: var(--muted); }
+.hucre.gecikti { outline: 2px solid var(--accent); outline-offset: -2px; }
