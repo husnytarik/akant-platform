@@ -451,3 +451,7 @@ button.lejant-oge { background: none; border: 1px solid transparent; border-radi
 @media print {
   .sekmeler, .form-satir, #geri, .panel-ust a, #mesaj { display: none !important; }
 }
+
+.kazanim-satir td { padding: 0; border: 0; }
+.kazanim-satir .kazanim-liste { margin: 4px 0 10px; }
+.kucuk-yazi { display: block; font-size: 0.75rem; }

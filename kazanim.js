@@ -34,6 +34,8 @@ export async function kazanimApi({ url, res, json }) {
   const sinif = Number(url.searchParams.get('sinif'));
   const q = kucuk(url.searchParams.get('q') || '').trim();
   const sonuc = [];
+  // Ders de arama sözcüğü de yoksa tüm programdan rastgele kazanım dökmeyiz
+  if (!ders && q.length < 2) return json(res, 200, { kazanimlar: [] }), true;
   for (const k of yukle()) {
     if (ders && k.ders !== ders) continue;
     if (sinif && k.sinif != null && k.sinif !== sinif) continue;

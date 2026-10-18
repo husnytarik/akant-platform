@@ -404,12 +404,23 @@ async function kazanimCiz() {
     const hepsi = el('option', 'Tüm dersler'); hepsi.value = ''; sel.append(hepsi);
     for (const ad of kazProgramDersleri) { const o = el('option', ad); o.value = ad; sel.append(o); }
     if (kazProgramDersleri.includes(d.ders)) sel.value = d.ders;
+    // MEB programında bazı dersler belli sınıflardan başlar (örn. Bilişim 5. sınıftan); sınıf süzgeci kapatılabilir
+    const sinifSel = el('select'); sinifSel.setAttribute('aria-label', 'Kazanım sınıf düzeyi');
+    if (sinifNo) { const o = el('option', `${sinifNo}. sınıf kazanımları`); o.value = sinifNo; sinifSel.append(o); }
+    const tum = el('option', 'Tüm sınıflar'); tum.value = ''; sinifSel.append(tum);
     const liste = el('div', '', 'kazanim-liste gizli');
+    const listeSatiri = el('tr', '', 'kazanim-satir'); const listeHucre = el('td'); listeHucre.colSpan = 3; listeSatiri.append(listeHucre); listeHucre.append(liste);
     let aktif = null, zaman = null, sayac = 0;
     const ara = async () => {
       if (!aktif) return;
       const benim = ++sayac, girdi = aktif;
-      const p = new URLSearchParams({ q: girdi.value.trim(), sinif: sinifNo });
+      const q = girdi.value.trim();
+      girdi.closest('tr').after(listeSatiri);
+      if (!sel.value && q.length < 2) {
+        liste.replaceChildren(el('p', 'Tüm programlarda aramak için en az 2 harf yazın veya yukarıdan ders seçin.', 'alt'));
+        return liste.classList.remove('gizli');
+      }
+      const p = new URLSearchParams({ q, sinif: sinifSel.value });
       if (sel.value) p.set('ders', sel.value);
       const k = await api('/api/kazanim?' + p);
       if (benim !== sayac || aktif !== girdi) return;
@@ -421,13 +432,13 @@ async function kazanimCiz() {
         b.addEventListener('click', () => { girdi.value = ((x.kod ? x.kod + ' – ' : '') + x.metin).slice(0, 300); liste.classList.add('gizli'); aktif = null; });
         liste.append(b);
       }
-      if (!k.veri.kazanimlar.length) liste.append(el('p', 'Sonuç yok. Program seçimini "Tüm dersler" yapın veya elle yazın.', 'alt'));
+      if (!k.veri.kazanimlar.length) liste.append(el('p', 'Sonuç yok. "Tüm sınıflar" veya "Tüm dersler" seçip arayın ya da kazanımı elle yazın.', 'alt'));
       liste.classList.remove('gizli');
     };
-    sel.addEventListener('change', ara);
-    if (d.duzenle) kutu.append(el('label', 'Kazanım programı'), sel);
+    sel.addEventListener('change', ara); sinifSel.addEventListener('change', ara);
+    if (d.duzenle) kutu.append(el('label', 'Kazanım programı'), sel, sinifSel);
     const tablo = el('table', '', 'sinav-tablo');
-    const bas = el('tr'); for (const h of ['Soru', 'Doğru şık', 'Kazanım', 'Giren']) bas.append(el('th', h));
+    const bas = el('tr'); for (const h of ['Soru', 'Doğru şık', 'Kazanım']) bas.append(el('th', h));
     tablo.append(bas);
     const girdiler = [];
     for (const q of d.sorular) {
@@ -436,17 +447,18 @@ async function kazanimCiz() {
       gi.setAttribute('aria-label', `${d.ders} soru ${q.no} kazanımı`);
       if (!d.duzenle) gi.readOnly = true;
       else {
-        gi.addEventListener('input', () => { aktif = gi; hucre.append(liste); clearTimeout(zaman); zaman = setTimeout(ara, 250); });
-        gi.addEventListener('focus', () => { aktif = gi; hucre.append(liste); ara(); });
+        gi.addEventListener('input', () => { aktif = gi; clearTimeout(zaman); zaman = setTimeout(ara, 250); });
+        gi.addEventListener('focus', () => { aktif = gi; ara(); });
         gi.addEventListener('keydown', e => { if (e.key === 'Escape') { liste.classList.add('gizli'); aktif = null; } });
       }
       hucre.append(gi);
+      if (q.kim) hucre.append(el('span', ' Son giren: ' + q.kim, 'alt kucuk-yazi'));
       if (d.duzenle && q.no > 1) {
         const ayni = el('button', '↑ Üsttekiyle aynı', 'ikincil kucuk'); ayni.type = 'button';
         ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].value; liste.classList.add('gizli'); });
         hucre.append(ayni);
       }
-      tr.append(el('td', q.no + (q.iptal ? ' (iptal)' : '')), el('td', q.dogruSik), hucre, el('td', q.kim, 'alt'));
+      tr.append(el('td', q.no + (q.iptal ? ' (iptal)' : '')), el('td', q.dogruSik), hucre);
       girdiler.push(gi);
       tablo.append(tr);
     }
