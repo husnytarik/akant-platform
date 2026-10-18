@@ -99,9 +99,9 @@ async function yeniAc() {
   const kutu = $('s-siniflar');
   kutu.replaceChildren();
   for (const c of secenekler.siniflar) {
-    const l = el('label', '', 'kazanim-hepsi');
+    const l = el('label', '', 'onay');
     const cb = el('input'); cb.type = 'checkbox'; cb.value = c.id;
-    l.append(cb, document.createTextNode(' ' + c.name));
+    l.append(cb, document.createTextNode(c.name));
     kutu.append(l);
   }
   $('s-dersler').replaceChildren(dersSatiri());

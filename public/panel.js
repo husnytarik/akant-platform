@@ -28,12 +28,21 @@ async function ogretmenDersleri() {
     uyari.classList.remove('gizli');
     uyari.appendChild(el('strong', `Tamamlanmamış ${geciken.sayi} dersiniz var`));
     const ul = el('div', undefined, 'uyari-liste');
-    for (const d of geciken.dersler) {
+    const satir = d => {
       const a = el('a', `${kisaTarih(d.tarih)} · ${d.dersSaati}. ders · ${d.sinif} ${d.ders}`);
       a.href = dersLink(d.tarih, d);
-      ul.appendChild(a);
-    }
+      return a;
+    };
+    for (const d of geciken.dersler.slice(0, 3)) ul.appendChild(satir(d));
     uyari.appendChild(ul);
+    if (geciken.dersler.length > 3) {
+      const ek = el('details');
+      ek.appendChild(el('summary', `${geciken.dersler.length - 3} ders daha`));
+      const ul2 = el('div', undefined, 'uyari-liste');
+      for (const d of geciken.dersler.slice(3)) ul2.appendChild(satir(d));
+      ek.appendChild(ul2);
+      uyari.appendChild(ek);
+    }
   }
 
   const k = document.getElementById('bugun-liste');
