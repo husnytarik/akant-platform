@@ -271,21 +271,40 @@ function sekmeAc(ad) {
 async function ogrencilerCiz() {
   const k = $('icerik');
   k.replaceChildren();
-  const r = await api('/api/ders/ogrenciler?atamaId=' + ders.atamaId);
+  const q = new URLSearchParams({ atamaId: ders.atamaId });
+  if (ders.dersSaati) { q.set('tarih', tarih); q.set('dersSaati', ders.dersSaati); }
+  const r = await api('/api/ders/ogrenciler?' + q);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  k.appendChild(el('p', `${r.veri.ogrenciler.length} öğrenci`, 'alt'));
-  const t = el('table');
+  const ogr = r.veri.ogrenciler;
+  const gunluk = ders.dersSaati && r.veri.yoklamaAlindi;
+  const say = d => ogr.filter(o => o.durum === d).length;
+  k.appendChild(el('p', `${ogr.length} öğrenci` + (gunluk ? ` · ${say('geldi') + say('gec')} geldi · ${say('gelmedi')} gelmedi · ${say('izinli')} izinli` : ders.dersSaati ? ' · bu ders için yoklama henüz alınmadı' : ''), 'alt'));
+  const ISARET = { geldi: ['✓', 'Geldi'], gec: ['G', 'Geç geldi'], gelmedi: ['✗', 'Gelmedi'], izinli: ['İ', 'İzinli'] };
+  const t = el('table', undefined, 'ogr-liste');
+  t.dataset.kart = '';
   const bas = document.createElement('tr');
-  bas.append(el('th', '#'), el('th', 'Öğrenci'), el('th', 'Bu derste devamsızlık'));
+  bas.append(el('th', 'Öğrenci'), el('th', gunluk ? 'Bu ders' : 'Devamsızlık'));
   t.appendChild(bas);
-  r.veri.ogrenciler.forEach((o, i) => {
+  ogr.forEach((o, i) => {
     const tr = document.createElement('tr');
-    tr.append(el('td', String(i + 1)), el('td', o.ad), el('td', o.devamsiz ? `${o.devamsiz} gün` : '-'));
+    const ad = el('td', undefined, 'ogr-ad');
+    ad.append(el('span', String(i + 1), 'ogr-no'), el('span', o.ad));
+    if (gunluk && o.devamsiz) ad.appendChild(el('small', `Toplam ${o.devamsiz} gün devamsız`, 'alt'));
+    const d = el('td', undefined, 'ogr-durum');
+    if (gunluk) {
+      const [isaret, ad2] = o.durum ? ISARET[o.durum] : ['–', 'Kayıt yok'];
+      const m = el('span', isaret, 'isaret ' + (o.durum || 'yok'));
+      m.title = ad2;
+      m.setAttribute('aria-label', ad2);
+      d.appendChild(m);
+    } else d.textContent = o.devamsiz ? `${o.devamsiz} gün` : '-';
+    tr.append(ad, d);
     t.appendChild(tr);
   });
   const sar = el('div', undefined, 'tablo-sar');
   sar.appendChild(t);
   k.appendChild(sar);
+  if (gunluk) k.appendChild(el('p', '✓ geldi · G geç · ✗ gelmedi · İ izinli', 'alt'));
 }
 
 function yoklamaCiz() {

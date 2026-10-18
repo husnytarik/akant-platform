@@ -720,3 +720,27 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
 @media (min-width: 640px) {
   .yok-satir { grid-template-columns: 1fr 340px; align-items: center; }
 }
+
+/* Derslerim → Öğrenciler: iki sütun, işaretli yoklama */
+.ogr-liste { width: 100%; }
+.ogr-liste th:last-child, .ogr-liste td.ogr-durum { text-align: center; width: 96px; }
+.ogr-liste td.ogr-ad { display: table-cell; }
+.ogr-liste td.ogr-ad > span:not(.ogr-no) { font-weight: 600; }
+.ogr-liste td.ogr-ad small { display: block; margin: 2px 0 0 34px; }
+.ogr-no { display: inline-block; min-width: 26px; margin-right: 8px; color: var(--muted); font-size: .85rem; }
+.isaret { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; font-weight: 700; font-size: 1rem; background: #eef1f6; color: var(--muted); }
+.isaret.geldi { background: #e3f4ea; color: #1b6b3a; }
+.isaret.gec { background: #fff3d9; color: #8a5a00; }
+.isaret.gelmedi { background: #fbe7e7; color: #a12b2b; }
+.isaret.izinli { background: #e4eefc; color: #1f5cae; }
+@media (max-width: 640px) {
+  .ogr-liste[data-kart] tr { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
+  .ogr-liste[data-kart] td { display: block; border: 0; padding: 0; width: auto; text-align: left; }
+  .ogr-liste[data-kart] td::before { display: none; }
+  .ogr-liste[data-kart] td.ogr-durum { flex: none; text-align: right; }
+  .ogr-liste[data-kart] td:first-child { font-weight: inherit; color: inherit; }
+}
+@media (max-width: 640px) {
+  .ogr-liste[data-kart] tr:first-child { background: transparent; border: 0; box-shadow: none; padding: 0 14px 4px; margin-bottom: 4px; }
+  .ogr-liste[data-kart] th { border: 0; padding: 0; font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: none; background: transparent; }
+}

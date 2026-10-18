@@ -237,7 +237,19 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
           WHERE k.student_membership_id = m.id AND y.assignment_id = ? AND k.status = 'gelmedi') AS devamsiz
       FROM class_students cs JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
       WHERE cs.class_id = ? AND m.status = 'aktif' ORDER BY u.full_name`).all(a.id, a.sinifId);
-    json(res, 200, { sinif: a.sinif, ders: a.ders, ogrenciler: ogr });
+    // Seçili ders saatinin yoklaması (varsa): öğrenci başına geldi/gelmedi/gec/izinli
+    const saat = tamSayi(url.searchParams.get('dersSaati'), 1, 20);
+    const tarih = url.searchParams.get('tarih') || '';
+    let alindi = false;
+    if (saat && /^\d{4}-\d{2}-\d{2}$/.test(tarih)) {
+      const y = db.prepare('SELECT id FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(a.sinifId, tarih, saat);
+      if (y) {
+        alindi = true;
+        const durum = new Map(db.prepare('SELECT student_membership_id AS id, status FROM yoklama_kayit WHERE yoklama_id = ?').all(y.id).map(r => [r.id, r.status]));
+        for (const o2 of ogr) o2.durum = durum.get(o2.ogrenciId) || null;
+      }
+    }
+    json(res, 200, { sinif: a.sinif, ders: a.ders, yoklamaAlindi: alindi, ogrenciler: ogr });
     return true;
   }
 
