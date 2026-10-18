@@ -39,11 +39,12 @@ const tarihYaz = t => t.split('-').reverse().join('.');
         kart.appendChild(el('h4', `${d.ders}: ${d.kazanimlar.length - eksik.length} kazanım edinildi, ${eksik.length} kazanımda eksik var`, 'baslik3'));
         if (!eksik.length) continue;
         const kt = el('table', undefined, 'sinav-tablo');
-        const kb = el('tr'); for (const t of ['Eksik kazanım', 'Sorular', 'Durum']) kb.append(el('th', t));
+        const kb = el('tr'); for (const t of ['Eksik kazanım', 'Sorular', 'Durum', 'Ders']) kb.append(el('th', t));
         kt.append(kb);
         for (const k of eksik) {
           const tr = el('tr');
-          tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), el('td', k.durum, 'durum ' + (k.durum === 'Kısmen' ? 'durum-kismen' : 'durum-eksik')));
+          tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), el('td', k.durum, 'durum ' + (k.durum === 'Kısmen' ? 'durum-kismen' : 'durum-eksik')),
+            el('td', ({ islenmedi: 'Henüz işlenmedi', devamsiz: 'Derse katılmadı', katildi: 'İşlendi', bilinmiyor: 'İşlendi' })[k.isleme?.durum] || ''));
           kt.append(tr);
         }
         kart.appendChild(kt);

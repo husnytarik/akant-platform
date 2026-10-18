@@ -206,6 +206,10 @@ if (!sutunlar('etut_katilimcilar').some(c => c.name === 'attendance')) {
   // Etüt yoklaması: NULL = henüz alınmadı
   db.exec("ALTER TABLE etut_katilimcilar ADD COLUMN attendance TEXT CHECK (attendance IN ('geldi','gelmedi','izinli'))");
 }
+if (!sutunlar('konular').some(c => c.name === 'kazanim')) {
+  // Konuya bağlanan kazanım (sınavdaki kazanımla eşleştirilir)
+  db.exec('ALTER TABLE konular ADD COLUMN kazanim TEXT');
+}
 if (!sutunlar('yoklama').some(c => c.name === 'completed_at')) {
   // "Dersi bitir": yoklama + işlenen konu + kazanım tek kayıtta; completed_at dolu = ders tamamlandı
   db.exec('ALTER TABLE yoklama ADD COLUMN topic TEXT');

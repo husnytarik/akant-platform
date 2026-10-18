@@ -319,7 +319,33 @@ function listeKart(baslik, alt, aciklama, sil) {
   return kart;
 }
 
-function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder }) {
+// Kazanım seçici: MEB programından ders ve sınıf düzeyine göre arar; elle de yazılabilir
+function kazanimAlani(girdi) {
+  const kutu = el('div', undefined, 'kazanim-liste gizli');
+  let zaman = null, sayac = 0;
+  const ara = async () => {
+    const benim = ++sayac, q = girdi.value.trim();
+    const p = new URLSearchParams({ q, sinif: parseInt(ders.sinif, 10) || '', ders: ders.ders });
+    const r = await api('/api/kazanim?' + p);
+    if (benim !== sayac) return;
+    kutu.replaceChildren();
+    if (!r.ok) return kutu.classList.add('gizli');
+    for (const x of r.veri.kazanimlar) {
+      const b = el('button', '', 'kazanim-oge'); b.type = 'button';
+      b.append(el('strong', x.kod || 'Kod yok'), document.createTextNode(' ' + x.metin));
+      b.addEventListener('click', () => { girdi.value = ((x.kod ? x.kod + ' – ' : '') + x.metin).slice(0, 300); kutu.classList.add('gizli'); });
+      kutu.append(b);
+    }
+    if (!r.veri.kazanimlar.length) kutu.append(el('p', 'Sonuç yok; kazanımı elle yazabilirsiniz.', 'alt'));
+    kutu.classList.remove('gizli');
+  };
+  girdi.addEventListener('input', () => { clearTimeout(zaman); zaman = setTimeout(ara, 250); });
+  girdi.addEventListener('focus', ara);
+  girdi.addEventListener('keydown', e => { if (e.key === 'Escape') kutu.classList.add('gizli'); });
+  return kutu;
+}
+
+function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, kazanimli }) {
   const f = el('form', undefined, 'ekle-form');
   const satir = el('div', undefined, 'form-satir');
   const sol = document.createElement('div');
@@ -336,10 +362,17 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder }
   const l3 = el('label', 'Açıklama (isteğe bağlı)'); l3.htmlFor = 'f-aciklama';
   const ac = el('input'); ac.id = 'f-aciklama'; ac.maxLength = 500;
   const b = el('button', buton, 'birincil'); b.type = 'submit';
-  f.append(satir, l3, ac, b);
+  f.append(satir, l3, ac);
+  let kaz = null;
+  if (kazanimli) {
+    const l4 = el('label', 'Kazanım (isteğe bağlı; sınavda bu kazanımı ölçen sorular için "dersi aldı mı" kontrolünde kullanılır)'); l4.htmlFor = 'f-kazanim';
+    kaz = el('input'); kaz.id = 'f-kazanim'; kaz.maxLength = 300; kaz.autocomplete = 'off'; kaz.placeholder = 'Kod veya kelimeyle arayın';
+    f.append(l4, kaz, kazanimAlani(kaz));
+  }
+  f.append(b);
   f.addEventListener('submit', async e => {
     e.preventDefault();
-    const r = await gonder({ atamaId: ders.atamaId, baslik: baslik.value, tarih: t.value, aciklama: ac.value });
+    const r = await gonder({ atamaId: ders.atamaId, baslik: baslik.value, tarih: t.value, aciklama: ac.value, kazanim: kaz ? kaz.value : '' });
     if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
     mesaj('Kaydedildi.', 'tamam');
     sekmeAc(sekme);
@@ -352,14 +385,14 @@ async function konularCiz() {
   k.replaceChildren();
   k.appendChild(ekleForm({
     tarihEtiket: 'İşlendiği tarih', tarihDeger: tarih > bugun ? bugun : tarih, tarihMax: bugun,
-    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g),
+    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g), kazanimli: true,
   }));
   const r = await api('/api/ders/konular?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   k.appendChild(el('h3', 'İşlenen konular', 'baslik3'));
   if (!r.veri.konular.length) k.appendChild(el('p', 'Henüz konu girilmemiş.', 'alt'));
   for (const x of r.veri.konular) {
-    k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), x.aciklama, async () => {
+    k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), [x.aciklama, x.kazanim && !(x.aciklama || '').includes(x.kazanim) ? 'Kazanım: ' + x.kazanim : ''].filter(Boolean).join(' · '), async () => {
       const s = await api('/api/ders/konu-sil', { id: x.id });
       if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
       sekmeAc(sekme);

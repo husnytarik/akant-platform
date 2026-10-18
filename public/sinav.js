@@ -353,18 +353,22 @@ async function analizCiz() {
     if (a.kazanimlar.length) {
       kutu.append(el('h4', 'Kazanım başarısı (sınıf geneli)', 'baslik3'));
       const kt = el('table', '', 'sinav-tablo');
-      const kb = el('tr'); for (const t of ['Kazanım', 'Sorular', 'Başarı']) kb.append(el('th', t));
+      const kb = el('tr'); for (const t of ['Kazanım', 'Sorular', 'Başarı', 'Ders işlendi mi?']) kb.append(el('th', t));
       kt.append(kb);
       for (const k of a.kazanimlar) {
         const tr = el('tr'); const bt = el('td'); const cubuk = el('span', '', 'basari-cubuk'); cubuk.style.setProperty('--oran', k.oran + '%');
         bt.append(cubuk, document.createTextNode(' %' + k.oran));
-        tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), bt); kt.append(tr);
+        const im = el('td', k.islenmedi === k.giren ? 'Sınıfta işlenmedi' : k.islenmedi ? `${k.islenmedi} öğrenci için işlenmedi` : 'İşlendi');
+        if (k.devamsiz) im.append(document.createTextNode(` · ${k.devamsiz} öğrenci derse katılmadı`));
+        if (k.islenmedi) im.classList.add('durum-eksik');
+        tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), bt, im); kt.append(tr);
       }
       kutu.append(kt);
     } else kutu.append(el('p', 'Bu derste soru-kazanım eşlemesi yapılmamış; "Kazanımlar" sekmesinden girin.', 'alt'));
   }
 }
 
+const islemeYazi = i => (i ? ({ islenmedi: 'Ders işlenmedi', devamsiz: 'Derse katılmadı', katildi: 'İşlendi, katıldı', bilinmiyor: 'İşlendi' })[i.durum] : '');
 const durumSinif = d => ({ Edinildi: 'durum-edinildi', Kısmen: 'durum-kismen', Eksik: 'durum-eksik' })[d];
 
 // Öğrenci karnesi: ders sonuçları + kazanım bazında edinilen/eksik konular
@@ -389,11 +393,11 @@ async function karneAc(ogrenciId) {
     const liste = g.kazanim[d.id] || [];
     if (!liste.length) { kutu.append(el('p', 'Bu ders için kazanım eşlemesi girilmemiş.', 'alt')); continue; }
     const t = el('table', '', 'sinav-tablo');
-    const b = el('tr'); for (const h of ['Kazanım', 'Sorular', 'Doğru', 'Durum']) b.append(el('th', h));
+    const b = el('tr'); for (const h of ['Kazanım', 'Sorular', 'Doğru', 'Durum', 'Ders']) b.append(el('th', h));
     t.append(b);
     for (const k of liste) {
       const tr = el('tr');
-      tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), el('td', `${k.dogru}/${k.toplam}`), el('td', k.durum, 'durum ' + durumSinif(k.durum)));
+      tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), el('td', `${k.dogru}/${k.toplam}`), el('td', k.durum, 'durum ' + durumSinif(k.durum)), el('td', islemeYazi(k.isleme), k.isleme && k.isleme.durum !== 'katildi' && k.isleme.durum !== 'bilinmiyor' ? 'durum-eksik' : ''));
       t.append(tr);
     }
     kutu.append(t);

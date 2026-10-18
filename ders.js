@@ -244,7 +244,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/ders/konular') {
     const a = atamaGetir(url.searchParams.get('atamaId'));
     if (!a) return hata(404, 'Ders bulunamadı');
-    json(res, 200, { konular: db.prepare('SELECT id, date AS tarih, title AS baslik, note AS aciklama FROM konular WHERE assignment_id = ? ORDER BY date DESC, id DESC LIMIT 100').all(a.id) });
+    json(res, 200, { konular: db.prepare('SELECT id, date AS tarih, title AS baslik, note AS aciklama, kazanim FROM konular WHERE assignment_id = ? ORDER BY date DESC, id DESC LIMIT 100').all(a.id) });
     return true;
   }
 
@@ -262,12 +262,13 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const baslik = String(b.baslik || '').trim();
     const aciklama = String(b.aciklama || '').trim().slice(0, 500);
     const tarih = String(b.tarih || '');
+    const kazanim = String(b.kazanim || '').replace(/\s+/g, ' ').trim().slice(0, 300);
     if (baslik.length < 2 || baslik.length > 120) return hata(400, 'Başlık 2-120 karakter olmalı');
     if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
     const simdi = Date.now();
     if (yol === '/api/ders/konu-ekle') {
       if (tarih > bugun()) return hata(400, 'Gelecek tarihli konu girilemez');
-      const id = Number(db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at) VALUES (?,?,?,?,?)').run(a.id, tarih, baslik, aciklama || null, simdi).lastInsertRowid);
+      const id = Number(db.prepare('INSERT INTO konular (assignment_id, date, title, note, kazanim, created_at) VALUES (?,?,?,?,?,?)').run(a.id, tarih, baslik, aciklama || null, kazanim || null, simdi).lastInsertRowid);
       denetle(o.user_id, 'konu-ekle', { id, atamaId: a.id });
     } else {
       if (tarih < bugun()) return hata(400, 'Son tarih geçmişte olamaz');

@@ -52,10 +52,52 @@ function kazanimDurum(kazList, anahtar, iptal, cevap) {
   }).sort((a, b) => a.oran - b.oran || a.sorular[0] - b.sorular[0]);
 }
 
+// Kazanım eşleştirme anahtarı: "MAT.5.1.2 – metin" biçiminde kod, değilse küçük harfli serbest metin
+const kazAnahtar = k => { const t = String(k || '').trim(), i = t.indexOf(' – '); return (i > 0 ? t.slice(0, i) : t).toLocaleLowerCase('tr'); };
+const kazEslesir = (sinavKaz, dersKaz) => {
+  const a = kazAnahtar(sinavKaz), b = kazAnahtar(dersKaz);
+  return a === b || (a.length >= 4 && String(dersKaz).toLocaleLowerCase('tr').includes(a)) || (b.length >= 4 && String(sinavKaz).toLocaleLowerCase('tr').includes(b));
+};
+// Sınav tarihine kadar sınıfta işlenen kazanımlar: sınıf -> ders adı -> [{ kazanim, yoklamaId, durum: {ogrenciId: 'geldi'|...} }]
+function islenenKazanimlar(sinifIdleri, sinavTarihi) {
+  const harita = new Map();
+  for (const sid of sinifIdleri) {
+    const dersler = new Map();
+    const ekle = (ders, kayit) => { (dersler.get(ders) || dersler.set(ders, []).get(ders)).push(kayit); };
+    for (const y of db.prepare(`SELECT y.id, y.kazanim, co.name AS ders FROM yoklama y JOIN assignments a ON a.id = y.assignment_id
+      JOIN courses co ON co.id = a.course_id WHERE y.class_id = ? AND y.date <= ? AND y.cancelled = 0 AND y.completed_at IS NOT NULL
+        AND y.kazanim IS NOT NULL AND y.kazanim <> ''`).all(sid, sinavTarihi)) {
+      const durum = {};
+      for (const k of db.prepare('SELECT student_membership_id AS id, status FROM yoklama_kayit WHERE yoklama_id = ?').all(y.id)) durum[k.id] = k.status;
+      ekle(y.ders, { kazanim: y.kazanim, durum });
+    }
+    // Konu kaydına elle girilen kazanımlar (yoklama kaydı olmadığından devam bilgisi yoktur)
+    for (const k of db.prepare(`SELECT k.kazanim, co.name AS ders FROM konular k JOIN assignments a ON a.id = k.assignment_id
+      JOIN courses co ON co.id = a.course_id WHERE a.class_id = ? AND k.date <= ? AND k.yoklama_id IS NULL AND k.kazanim IS NOT NULL AND k.kazanim <> ''`).all(sid, sinavTarihi)) {
+      ekle(k.ders, { kazanim: k.kazanim, durum: null });
+    }
+    harita.set(sid, dersler);
+  }
+  return harita;
+}
+// Öğrencinin bir kazanımı alıp almadığı: islenmedi | devamsiz | katildi | bilinmiyor
+function islemeDurumu(islenen, sinifId, ders, ogrenciId, kazanim) {
+  const kayitlar = (islenen.get(sinifId)?.get(ders) || []).filter(k => kazEslesir(kazanim, k.kazanim));
+  if (!kayitlar.length) return { durum: 'islenmedi', ders: 0, katildi: 0 };
+  let katildi = 0, bilgili = 0;
+  for (const k of kayitlar) {
+    if (!k.durum) continue;
+    const d = k.durum[ogrenciId];
+    if (d) bilgili++;
+    if (d === 'geldi' || d === 'gec') katildi++;
+  }
+  return { durum: !bilgili ? 'bilinmiyor' : katildi ? 'katildi' : 'devamsiz', ders: kayitlar.length, katildi };
+}
+
 const zorluk = y => (y >= 80 ? 'Çok kolay' : y >= 60 ? 'Kolay' : y >= 40 ? 'Orta' : y >= 20 ? 'Zor' : 'Çok zor');
 
 const sinifOgrencileri = idler => idler.length ? db.prepare(`
-  SELECT m.id AS ogrenciId, m.okul_no AS okulNo, u.full_name AS ad, c.name AS sinif
+  SELECT m.id AS ogrenciId, m.okul_no AS okulNo, u.full_name AS ad, c.name AS sinif, c.id AS sinifId
   FROM class_students cs JOIN classes c ON c.id = cs.class_id
   JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
   WHERE cs.class_id IN (${idler.map(() => '?').join(',')}) AND m.status = 'aktif'
@@ -98,6 +140,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   const dersler = dersleri(s.id);
   const kaz = kazanimlari(s.id);
   const ogrenciler = sinifOgrencileri(sinavSiniflari(s.id).map(c => c.id));
+  const islenen = kazanimli ? islenenKazanimlar(sinavSiniflari(s.id).map(c => c.id), s.date) : null;
   const cevaplar = db.prepare(`SELECT c.sinav_ders_id AS dersId, c.student_membership_id AS ogrenciId, c.cevaplar
     FROM sinav_cevaplar c JOIN sinav_dersler d ON d.id = c.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id);
   const harita = new Map(cevaplar.map(c => [c.dersId + ':' + c.ogrenciId, c.cevaplar]));
@@ -110,7 +153,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       if (!c) continue;
       const r = hesapla(d.anahtar, d.iptal, c, s.yanlis_kat);
       dersSonuc[d.id] = r;
-      if (kazanimli) kazanim[d.id] = kazanimDurum(kaz.get(d.id), d.anahtar, d.iptal, c);
+      if (kazanimli) kazanim[d.id] = kazanimDurum(kaz.get(d.id), d.anahtar, d.iptal, c).map(k => ({ ...k, isleme: islemeDurumu(islenen, g.sinifId, d.ders, g.ogrenciId, k.kazanim) }));
       topPuan += r.puan; say++;
     }
     return { ogrenciId: g.ogrenciId, okulNo: g.okulNo, ad: g.ad, sinif: g.sinif, dersler: dersSonuc, ...(kazanimli ? { kazanim } : {}), ortalama: say ? Math.round(topPuan / say * 10) / 10 : null };
@@ -144,12 +187,16 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     }
     // Sınıf düzeyi kazanım başarısı: kazanımı ölçen soruların tüm öğrencilerdeki ortalama doğru oranı
     const kazGrup = new Map();
+    const islenenAnaliz = kazanimli ? islenen : islenenKazanimlar(sinavSiniflari(s.id).map(c => c.id), s.date);
+    const sinifIdsi = new Map(ogrenciler.map(g => [g.ogrenciId, g.sinifId]));
     for (const x of girenCevaplar) for (const k of kazanimDurum(kaz.get(d.id), d.anahtar, d.iptal, x.c)) {
-      const g = kazGrup.get(k.kazanim) || { kazanim: k.kazanim, sorular: k.sorular, dogru: 0, toplam: 0 };
-      g.dogru += k.dogru; g.toplam += k.toplam;
+      const g = kazGrup.get(k.kazanim) || { kazanim: k.kazanim, sorular: k.sorular, dogru: 0, toplam: 0, ogr: 0, islenmedi: 0, devamsiz: 0 };
+      g.dogru += k.dogru; g.toplam += k.toplam; g.ogr++;
+      const im = islemeDurumu(islenenAnaliz, sinifIdsi.get(x.id), d.ders, x.id, k.kazanim).durum;
+      if (im === 'islenmedi') g.islenmedi++; else if (im === 'devamsiz') g.devamsiz++;
       kazGrup.set(k.kazanim, g);
     }
-    const kazanimlar = [...kazGrup.values()].map(g => ({ kazanim: g.kazanim, sorular: g.sorular, oran: Math.round(g.dogru / g.toplam * 1000) / 10 }))
+    const kazanimlar = [...kazGrup.values()].map(g => ({ kazanim: g.kazanim, sorular: g.sorular, oran: Math.round(g.dogru / g.toplam * 1000) / 10, giren: g.ogr, islenmedi: g.islenmedi, devamsiz: g.devamsiz }))
       .sort((a, b) => a.oran - b.oran);
     return { dersId: d.id, ders: d.ders, giren: n, sorular, kazanimlar };
   });
