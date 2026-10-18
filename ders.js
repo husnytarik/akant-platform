@@ -47,7 +47,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
         FROM class_students cs JOIN assignments a ON a.class_id = cs.class_id
         JOIN odevler od ON od.assignment_id = a.id JOIN courses co ON co.id = a.course_id
         LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
-        WHERE cs.student_membership_id = ? ORDER BY od.due_date DESC, od.id DESC LIMIT 60`).all(id);
+        WHERE cs.student_membership_id = ? AND (od.visible_from IS NULL OR od.visible_from <= ?) ORDER BY od.due_date DESC, od.id DESC LIMIT 60`).all(id, bugun());
       return { ad, odevler };
     });
     json(res, 200, { bugun: bugun(), ogrenciler: sonuc });
@@ -97,7 +97,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
       LEFT JOIN yoklama y ON y.class_id = s.class_id AND y.date = ? AND y.period = s.period
       WHERE s.class_id = ? AND s.day = ? ORDER BY s.period`);
-    const odev = db.prepare('SELECT title AS baslik, due_date AS sonTarih FROM odevler WHERE assignment_id = ? AND due_date >= ? ORDER BY due_date LIMIT 3');
+    const odev = db.prepare('SELECT title AS baslik, due_date AS sonTarih FROM odevler WHERE assignment_id = ? AND due_date >= ? AND (visible_from IS NULL OR visible_from <= date(\'now\', \'localtime\')) ORDER BY due_date LIMIT 3');
     const etutOgr = db.prepare(`
       SELECT e.id, e.topic AS konu, e.start_time AS saat, e.duration_min AS sure, e.place AS yer, co.name AS ders,
              u.full_name AS ogretmen, k.parent_response AS yanit, k.attendance AS devam
@@ -251,7 +251,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/ders/odevler') {
     const a = atamaGetir(url.searchParams.get('atamaId'));
     if (!a) return hata(404, 'Ders bulunamadı');
-    json(res, 200, { odevler: db.prepare('SELECT id, title AS baslik, note AS aciklama, due_date AS sonTarih FROM odevler WHERE assignment_id = ? ORDER BY due_date DESC, id DESC LIMIT 100').all(a.id) });
+    json(res, 200, { odevler: db.prepare('SELECT id, title AS baslik, note AS aciklama, due_date AS sonTarih, visible_from AS gorunur FROM odevler WHERE assignment_id = ? ORDER BY due_date DESC, id DESC LIMIT 100').all(a.id) });
     return true;
   }
 
@@ -272,7 +272,10 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       denetle(o.user_id, 'konu-ekle', { id, atamaId: a.id });
     } else {
       if (tarih < bugun()) return hata(400, 'Son tarih geçmişte olamaz');
-      const id = Number(db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at) VALUES (?,?,?,?,?)').run(a.id, baslik, aciklama || null, tarih, simdi).lastInsertRowid);
+      const gorunur = String(b.gorunur || '') || bugun();
+      if (!tarihGecerli(gorunur) || gorunur < bugun()) return hata(400, 'Yayın tarihi geçersiz (bugün veya sonrası olmalı)');
+      if (gorunur > tarih) return hata(400, 'Yayın tarihi son teslim tarihinden sonra olamaz');
+      const id = Number(db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, visible_from) VALUES (?,?,?,?,?,?)').run(a.id, baslik, aciklama || null, tarih, simdi, gorunur > bugun() ? gorunur : null).lastInsertRowid);
       denetle(o.user_id, 'odev-ekle', { id, atamaId: a.id });
     }
     json(res, 200, { tamam: true });

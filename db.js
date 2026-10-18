@@ -206,6 +206,10 @@ if (!sutunlar('etut_katilimcilar').some(c => c.name === 'attendance')) {
   // Etüt yoklaması: NULL = henüz alınmadı
   db.exec("ALTER TABLE etut_katilimcilar ADD COLUMN attendance TEXT CHECK (attendance IN ('geldi','gelmedi','izinli'))");
 }
+if (!sutunlar('odevler').some(c => c.name === 'visible_from')) {
+  // Planlı ödev: bu tarihe kadar öğrenci ve veli görmez (NULL = hemen görünür)
+  db.exec('ALTER TABLE odevler ADD COLUMN visible_from TEXT');
+}
 if (!sutunlar('konular').some(c => c.name === 'kazanim')) {
   // Konuya bağlanan kazanım (sınavdaki kazanımla eşleştirilir)
   db.exec('ALTER TABLE konular ADD COLUMN kazanim TEXT');
