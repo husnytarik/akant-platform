@@ -17,44 +17,55 @@
 
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <div class="form-satir">
-      <div>
-        <label for="tarih">Tarih</label>
-        <input id="tarih" type="date" required>
-      </div>
+    <div class="gun-gezgin">
+      <button type="button" id="onceki" class="ikincil" aria-label="Önceki gün">&lsaquo;</button>
+      <label class="gun-secici"><span id="gun-yazi">Bugün</span><input id="tarih" type="date" required></label>
+      <button type="button" id="sonraki" class="ikincil" aria-label="Sonraki gün">&rsaquo;</button>
     </div>
 
-    <h2 class="baslik2">Bu günkü dersleriniz</h2>
-    <div id="dersler"></div>
+    <h2 class="baslik2">Dersler</h2>
+    <div id="dersler" class="ders-secim"></div>
 
     <section id="yoklama" class="gizli">
-      <h2 class="baslik2" id="yoklama-baslik"></h2>
-      <h3 class="baslik3">1. Yoklama</h3>
-      <p class="alt">Varsayılan "Geldi" işaretlidir; yalnızca gelmeyenleri değiştirin.</p>
-      <label class="onay"><input type="checkbox" id="hepsi-geldi" checked> <strong>Hepsi geldi</strong></label>
-      <div class="tablo-sar"><table id="ogrenci-tablo"></table></div>
-      <p id="ozet" class="alt"></p>
-      <h3 class="baslik3">2. İşlenen konu</h3>
-      <label for="konu">Konu</label>
-      <input id="konu" maxlength="120" placeholder="Örn. Doğal sayılarla işlemler">
-      <h3 class="baslik3">3. Kazanım</h3>
-      <label for="kazanim">Kazanım (isteğe bağlı)</label>
-      <input id="kazanim" maxlength="300" placeholder="Örn. MAT.5.1.2 veya kesir" autocomplete="off">
-      <div id="kazanim-liste" class="kazanim-liste gizli"></div>
-      <label for="kazanim-ders">Kazanım programı (ders)</label>
-      <select id="kazanim-ders"><option value="">Tüm dersler</option></select>
-      <p class="alt">Kod, kelime veya konu yazın; MEB öğretim programlarından öneriler çıkar. İsterseniz kendiniz de yazabilirsiniz.</p>
-      <h3 class="baslik3">4. Ödev (isteğe bağlı)</h3>
-      <label for="odev-baslik">Ödev</label>
-      <input id="odev-baslik" maxlength="120" placeholder="Örn. Sayfa 40-41 alıştırmaları">
-      <label for="odev-aciklama">Açıklama</label>
-      <input id="odev-aciklama" maxlength="500">
-      <label for="odev-tarih">Son teslim tarihi</label>
-      <input id="odev-tarih" type="date">
-      <p class="alt">Öğrenci ve velilerin Ödevler sayfasında görünür.</p>
-      <div class="dugme-satir">
-        <button class="birincil" type="button" id="kaydet">Dersi bitir</button>
+      <div class="secili-ders">
+        <strong id="yoklama-baslik"></strong>
+        <span id="yoklama-durum" class="rozet"></span>
+      </div>
+
+      <div class="adim">
+        <div class="adim-ust"><h3>Yoklama</h3><span id="ozet" class="alt"></span></div>
+        <label class="onay hepsi"><input type="checkbox" id="hepsi-geldi" checked> <strong>Hepsi geldi</strong><span class="alt">Yalnızca gelmeyenleri değiştirin</span></label>
+        <div id="ogrenci-liste" class="yoklama-liste"></div>
+      </div>
+
+      <div class="adim">
+        <div class="adim-ust"><h3>İşlenen konu</h3></div>
+        <label for="konu">Konu</label>
+        <input id="konu" maxlength="120" placeholder="Örn. Doğal sayılarla işlemler">
+        <label for="kazanim">Kazanım <span class="alt">(isteğe bağlı)</span></label>
+        <input id="kazanim" maxlength="300" placeholder="Kod, kelime veya konu yazın" autocomplete="off">
+        <div id="kazanim-liste" class="kazanim-liste gizli"></div>
+        <details class="kazanim-ayar">
+          <summary>Kazanım programı</summary>
+          <select id="kazanim-ders" aria-label="Kazanım programı"><option value="">Tüm dersler</option></select>
+          <p class="alt">MEB öğretim programlarından öneri çıkar; isterseniz kendiniz de yazabilirsiniz.</p>
+        </details>
+      </div>
+
+      <div class="adim">
+        <div class="adim-ust"><h3>Ödev</h3><span class="alt">isteğe bağlı</span></div>
+        <label for="odev-baslik">Ödev</label>
+        <input id="odev-baslik" maxlength="120" placeholder="Örn. Sayfa 40-41 alıştırmaları">
+        <label for="odev-aciklama">Açıklama</label>
+        <input id="odev-aciklama" maxlength="500">
+        <label for="odev-tarih">Son teslim tarihi</label>
+        <input id="odev-tarih" type="date">
+        <p class="alt">Öğrenci ve velilerin Ödevler sayfasında görünür.</p>
+      </div>
+
+      <div class="kaydet-cubuk">
         <button class="ikincil tehlike" type="button" id="iptal">Dersi iptal et</button>
+        <button class="birincil" type="button" id="kaydet">Dersi bitir</button>
       </div>
     </section>
     <p id="yoklama-bos" class="bos-not">Yukarıdan bir ders seçin; yoklama, işlenen konu, kazanım ve ödev burada girilir.</p>

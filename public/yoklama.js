@@ -32,40 +32,40 @@ function el(tag, metin, sinif) {
 function ozetGuncelle() {
   const say = { geldi: 0, gelmedi: 0, gec: 0, izinli: 0 };
   for (const o of ogrenciler) say[durumlar.get(o.ogrenciId)]++;
-  $('ozet').textContent = `Geldi ${say.geldi} · Gelmedi ${say.gelmedi} · Geç ${say.gec} · İzinli ${say.izinli}`;
+  $('ozet').textContent = `${say.geldi} geldi` + (say.gelmedi ? ` · ${say.gelmedi} gelmedi` : '') + (say.gec ? ` · ${say.gec} geç` : '') + (say.izinli ? ` · ${say.izinli} izinli` : '');
   $('hepsi-geldi').checked = ogrenciler.length > 0 && say.geldi === ogrenciler.length;
 }
 
 function tabloCiz() {
-  const t = $('ogrenci-tablo');
+  const t = $('ogrenci-liste');
   t.replaceChildren();
-  const bas = document.createElement('tr');
-  bas.append(el('th', 'Öğrenci'), el('th', 'Durum'));
-  t.appendChild(bas);
   for (const o of ogrenciler) {
-    const tr = document.createElement('tr');
-    tr.appendChild(el('td', o.ad));
-    const td = document.createElement('td');
-    const grup = el('div', undefined, 'cipler');
+    const satir = el('div', undefined, 'yok-satir d-' + durumlar.get(o.ogrenciId));
+    satir.appendChild(el('span', o.ad, 'yok-ad'));
+    const grup = el('div', undefined, 'segment');
+    grup.setAttribute('role', 'group');
+    grup.setAttribute('aria-label', o.ad + ' yoklama durumu');
     for (const [deger, ad] of SECENEKLER) {
-      const l = el('label', undefined, 'onay');
-      const r = document.createElement('input');
-      r.type = 'radio';
-      r.name = 'd' + o.ogrenciId;
-      r.checked = durumlar.get(o.ogrenciId) === deger;
-      r.addEventListener('change', () => { durumlar.set(o.ogrenciId, deger); ozetGuncelle(); });
-      l.append(r, document.createTextNode(' ' + ad));
-      grup.appendChild(l);
+      const b = el('button', ad, 's-' + deger);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(durumlar.get(o.ogrenciId) === deger));
+      b.addEventListener('click', () => {
+        durumlar.set(o.ogrenciId, deger);
+        satir.className = 'yok-satir d-' + deger;
+        for (const x of grup.children) x.setAttribute('aria-pressed', String(x === b));
+        ozetGuncelle();
+      });
+      grup.appendChild(b);
     }
-    td.appendChild(grup);
-    tr.appendChild(td);
-    t.appendChild(tr);
+    satir.appendChild(grup);
+    t.appendChild(satir);
   }
   ozetGuncelle();
 }
 
 async function dersleriYukle() {
   $('yoklama').classList.add('gizli');
+  $('yoklama-bos').classList.remove('gizli');
   secili = null;
   const liste = $('dersler');
   liste.replaceChildren();
@@ -79,13 +79,14 @@ async function dersleriYukle() {
   }
   gunDersleri = r.veri.dersler;
   for (const d of r.veri.dersler) {
-    const b = el('button', undefined, 'modul-kart hazir');
+    const b = el('button', undefined, 'ders-oge');
     b.type = 'button';
-    b.append(
-      el('strong', `${d.dersSaati}. ders · ${d.sinif} · ${d.ders}`),
-      el('p', d.aralik),
-      el('span', d.iptal ? 'Ders iptal edildi' : d.tamam ? `Tamamlandı · ${d.gelmedi} devamsız` : 'Tamamlanmadı', 'durum'),
-    );
+    b.dataset.key = d.sinifId + '-' + d.dersSaati;
+    b.setAttribute('aria-pressed', 'false');
+    const [durum, tur] = d.iptal ? ['İptal', 'iptal'] : d.tamam ? ['Tamamlandı', 'tamam'] : ['Bekliyor', 'bekliyor'];
+    const sol = el('div', undefined, 'ders-oge-metin');
+    sol.append(el('strong', `${d.sinif} · ${d.ders}`), el('span', `${d.dersSaati}. ders · ${d.aralik}` + (d.tamam && d.gelmedi ? ` · ${d.gelmedi} devamsız` : ''), 'alt'));
+    b.append(sol, el('span', durum, 'rozet ' + tur));
     b.addEventListener('click', () => dersAc(d));
     liste.appendChild(b);
   }
@@ -99,7 +100,10 @@ async function dersAc(d) {
   secili = d;
   ogrenciler = r.veri.ogrenciler;
   durumlar = new Map(ogrenciler.map(o => [o.ogrenciId, o.durum]));
-  $('yoklama-baslik').textContent = `${d.sinif} · ${d.dersSaati}. ders · ${d.ders}` + (r.veri.iptal ? ' (iptal edilmiş ders)' : r.veri.tamam ? ' (tamamlanmış ders düzenleniyor)' : '');
+  $('yoklama-baslik').textContent = `${d.sinif} · ${d.ders} · ${d.dersSaati}. ders`;
+  $('yoklama-durum').textContent = r.veri.iptal ? 'İptal edilmiş' : r.veri.tamam ? 'Düzenleniyor' : 'Yeni kayıt';
+  $('yoklama-durum').className = 'rozet ' + (r.veri.iptal ? 'iptal' : r.veri.tamam ? 'tamam' : 'bekliyor');
+  for (const b of document.querySelectorAll('.ders-oge')) b.setAttribute('aria-pressed', String(b.dataset.key === d.sinifId + '-' + d.dersSaati));
   $('konu').value = r.veri.konu;
   $('kazanim').value = r.veri.kazanim;
   $('odev-baslik').value = r.veri.odev?.baslik || '';
@@ -109,6 +113,7 @@ async function dersAc(d) {
   $('yoklama').classList.remove('gizli');
   if (!ogrenciler.length) $('ozet').textContent = 'Bu sınıfta aktif öğrenci yok.';
   tabloCiz();
+  $('yoklama-bos').classList.add('gizli');
   $('yoklama').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -142,7 +147,23 @@ $('iptal').addEventListener('click', async () => {
   await dersleriYukle();
 });
 
-$('tarih').addEventListener('change', dersleriYukle);
+function gunYazisi() {
+  const t = $('tarih').value, bugun = new Date().toLocaleDateString('sv-SE');
+  const ad = new Date(t + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+  $('gun-yazi').textContent = (t === bugun ? 'Bugün · ' : '') + ad;
+  $('sonraki').disabled = t >= bugun;
+}
+function gunKaydir(n) {
+  const d = new Date($('tarih').value + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  const t = d.toLocaleDateString('sv-SE');
+  if (t > $('tarih').max) return;
+  $('tarih').value = t;
+  $('tarih').dispatchEvent(new Event('change'));
+}
+$('onceki').addEventListener('click', () => gunKaydir(-1));
+$('sonraki').addEventListener('click', () => gunKaydir(1));
+$('tarih').addEventListener('change', () => { gunYazisi(); dersleriYukle(); });
 
 (async () => {
   const ben = await fetch('/api/ben');
@@ -152,6 +173,7 @@ $('tarih').addEventListener('change', dersleriYukle);
   const q = new URLSearchParams(location.search);
   const t = q.get('tarih');
   $('tarih').value = /^\d{4}-\d{2}-\d{2}$/.test(t || '') && t <= bugun ? t : bugun;
+  gunYazisi();
   await dersleriYukle();
   const sinifId = Number(q.get('sinifId')), dersSaati = Number(q.get('dersSaati'));
   const hedef = gunDersleri.find(d => d.sinifId === sinifId && d.dersSaati === dersSaati);
