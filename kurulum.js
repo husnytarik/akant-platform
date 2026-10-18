@@ -1,4 +1,4 @@
-import { db, tcGecerliMi } from './db.js';
+import { db, sonrakiOkulNo, tcGecerliMi } from './db.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -25,6 +25,13 @@ function kisiKaydet(b, rol, aktorId, denetle) {
   if (!/^\d{10}$/.test(tel)) return { kod: 400, hata: 'Telefon 10 haneli olmalı' };
   if (!subeId || !db.prepare('SELECT 1 FROM branches WHERE id = ?').get(subeId)) return { kod: 400, hata: 'Geçersiz şube' };
 
+  // Okul numarası yalnızca öğrenciler için; boş bırakılırsa şubedeki sıradaki numara verilir
+  const okulNoGirilen = String(b.okulNo ?? '').trim();
+  if (rol === 'ogrenci' && okulNoGirilen && !/^\d{1,10}$/.test(okulNoGirilen)) return { kod: 400, hata: 'Okul numarası 1-10 haneli rakam olmalı' };
+  if (rol === 'ogrenci' && okulNoGirilen && db.prepare("SELECT 1 FROM memberships WHERE branch_id = ? AND role = 'ogrenci' AND okul_no = ?").get(subeId, okulNoGirilen)) {
+    return { kod: 409, hata: 'Bu okul numarası şubede başka bir öğrencide kayıtlı' };
+  }
+
   const var_ = db.prepare('SELECT * FROM users WHERE tc_no = ? OR passport_no = ?').get(kimlik, kimlik);
   if (var_ && var_.phone !== tel) return { kod: 409, hata: 'Bu kimlik numarası başka bir telefonla kayıtlı' };
   if (var_ && db.prepare('SELECT 1 FROM memberships WHERE user_id = ? AND branch_id = ? AND role = ?').get(var_.id, subeId, rol)) {
@@ -36,8 +43,9 @@ function kisiKaydet(b, rol, aktorId, denetle) {
     userId = Number(db.prepare('INSERT INTO users (tc_no, passport_no, phone, full_name, created_at) VALUES (?,?,?,?,?)')
       .run(tcMi ? kimlik : null, tcMi ? null : kimlik, tel, ad, Date.now()).lastInsertRowid);
   }
-  const uyelikId = Number(db.prepare('INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,?)')
-    .run(userId, subeId, rol).lastInsertRowid);
+  const okulNo = rol === 'ogrenci' ? (okulNoGirilen || sonrakiOkulNo(subeId)) : null;
+  const uyelikId = Number(db.prepare('INSERT INTO memberships (user_id, branch_id, role, okul_no) VALUES (?,?,?,?)')
+    .run(userId, subeId, rol, okulNo).lastInsertRowid);
   denetle(aktorId, rol + '-kayit', { userId, uyelikId, subeId, mevcutHesap: !!var_ });
   return { kod: 201, uyelikId, userId, subeId };
 }
@@ -54,7 +62,7 @@ export async function kurulumApi({ req, res, url, o, json, govde, denetle }) {
       WHERE m.role = 'ogretmen' ORDER BY u.full_name`).all()
       .map(t => ({ ...t, dersIds: dersIdleri.filter(x => x.u === t.uyelikId).map(x => x.d) }));
     const ogrenciler = db.prepare(`
-      SELECT m.id AS uyelikId, u.full_name AS ad, m.branch_id AS subeId, b.name AS sube, m.status AS durum,
+      SELECT m.id AS uyelikId, u.full_name AS ad, m.okul_no AS okulNo, m.branch_id AS subeId, b.name AS sube, m.status AS durum,
              cs.class_id AS sinifId
       FROM memberships m JOIN users u ON u.id = m.user_id LEFT JOIN branches b ON b.id = m.branch_id
       LEFT JOIN class_students cs ON cs.student_membership_id = m.id

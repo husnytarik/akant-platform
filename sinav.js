@@ -55,7 +55,7 @@ function kazanimDurum(kazList, anahtar, iptal, cevap) {
 const zorluk = y => (y >= 80 ? 'Çok kolay' : y >= 60 ? 'Kolay' : y >= 40 ? 'Orta' : y >= 20 ? 'Zor' : 'Çok zor');
 
 const sinifOgrencileri = idler => idler.length ? db.prepare(`
-  SELECT m.id AS ogrenciId, u.full_name AS ad, c.name AS sinif
+  SELECT m.id AS ogrenciId, m.okul_no AS okulNo, u.full_name AS ad, c.name AS sinif
   FROM class_students cs JOIN classes c ON c.id = cs.class_id
   JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
   WHERE cs.class_id IN (${idler.map(() => '?').join(',')}) AND m.status = 'aktif'
@@ -113,7 +113,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       if (kazanimli) kazanim[d.id] = kazanimDurum(kaz.get(d.id), d.anahtar, d.iptal, c);
       topPuan += r.puan; say++;
     }
-    return { ogrenciId: g.ogrenciId, ad: g.ad, sinif: g.sinif, dersler: dersSonuc, ...(kazanimli ? { kazanim } : {}), ortalama: say ? Math.round(topPuan / say * 10) / 10 : null };
+    return { ogrenciId: g.ogrenciId, okulNo: g.okulNo, ad: g.ad, sinif: g.sinif, dersler: dersSonuc, ...(kazanimli ? { kazanim } : {}), ortalama: say ? Math.round(topPuan / say * 10) / 10 : null };
   });
   const girenler = satirlar.filter(r => r.ortalama !== null).sort((a, b) => b.ortalama - a.ortalama);
   girenler.forEach((r, i) => { r.sira = i + 1; });

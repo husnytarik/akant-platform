@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { db, tcGecerliMi, seed } from './db.js';
+import { db, tcGecerliMi, seed, okulNoDoldur } from './db.js';
 import { dersProgramiApi } from './ders-programi.js';
 import { kurulumApi } from './kurulum.js';
 import { etutApi } from './etut.js';
@@ -11,6 +11,8 @@ import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
 import { sinavApi } from './sinav.js';
+
+okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.

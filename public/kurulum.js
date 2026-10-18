@@ -152,7 +152,7 @@ function cizOgrenciler() {
     sel.addEventListener('change', () =>
       yap('/api/yonetim/ogrenci-sinif', { ogrenciUyelikId: o.uyelikId, sinifId: sel.value === '' ? null : Number(sel.value) },
         'Öğrencinin sınıfı güncellendi.'));
-    satir(tb, o.ad, o.sube, o.durum === 'aktif' ? 'Aktif' : 'Pasif', sel);
+    satir(tb, o.okulNo || '', o.ad, o.sube, o.durum === 'aktif' ? 'Aktif' : 'Pasif', sel);
   }
 }
 
@@ -161,7 +161,7 @@ $('g-sube').addEventListener('change', ogrenciSinifSecenekleri);
 $('ogrenci-form').addEventListener('submit', async e => {
   e.preventDefault();
   const ok = await yap('/api/yonetim/ogrenci-kayit', {
-    ad: $('g-ad').value, kimlik: $('g-kimlik').value, telefon: $('g-tel').value,
+    ad: $('g-ad').value, kimlik: $('g-kimlik').value, telefon: $('g-tel').value, okulNo: $('g-no').value,
     subeId: $('g-sube').value, sinifId: $('g-sinif').value === '' ? null : $('g-sinif').value,
   }, 'Öğrenci kaydedildi.');
   if (ok) $('ogrenci-form').reset();

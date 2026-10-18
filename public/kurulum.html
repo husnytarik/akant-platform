@@ -61,13 +61,14 @@
         <div><label for="g-ad">Ad soyad</label><input id="g-ad" required maxlength="80"></div>
         <div><label for="g-kimlik">T.C. / pasaport no</label><input id="g-kimlik" required maxlength="20"></div>
         <div><label for="g-tel">Telefon (öğrenci veya veli)</label><input id="g-tel" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
+        <div><label for="g-no">Okul no (boşsa otomatik)</label><input id="g-no" inputmode="numeric" maxlength="10" pattern="\d{1,10}"></div>
         <div><label for="g-sube">Şube</label><select id="g-sube" required></select></div>
         <div><label for="g-sinif">Sınıf (isteğe bağlı)</label><select id="g-sinif"></select></div>
         <div><button class="birincil" type="submit">Öğrenciyi kaydet</button></div>
       </form>
       <h2 class="baslik2">Kayıtlı öğrenciler</h2>
       <div class="tablo-sar">
-        <table><thead><tr><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Sınıfı</th></tr></thead>
+        <table><thead><tr><th>Okul no</th><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Sınıfı</th></tr></thead>
         <tbody id="ogrenci-liste"></tbody></table>
       </div>
     </section>

@@ -227,6 +227,23 @@ if (!sutunlar('sinavlar').some(c => c.name === 'yayin')) {
   // Sonuçlar öğretmen "yayınla" deyince öğrenci/veliye görünür
   db.exec('ALTER TABLE sinavlar ADD COLUMN yayin INTEGER NOT NULL DEFAULT 0');
 }
+if (!sutunlar('memberships').some(c => c.name === 'okul_no')) {
+  // Okul numarası: şube içinde öğrenciye özgü; optik okuyucu dosyalarında öğrenci eşleştirmesi bununla yapılır
+  db.exec('ALTER TABLE memberships ADD COLUMN okul_no TEXT');
+}
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS uq_okul_no ON memberships (branch_id, okul_no) WHERE okul_no IS NOT NULL');
+
+// Şubedeki sıradaki okul numarası (1001'den başlar)
+export function sonrakiOkulNo(subeId) {
+  const son = db.prepare("SELECT MAX(CAST(okul_no AS INTEGER)) AS n FROM memberships WHERE branch_id = ? AND role = 'ogrenci' AND okul_no GLOB '[0-9]*'").get(subeId).n;
+  return String(Math.max(1000, son || 0) + 1);
+}
+// Numarası olmayan öğrencilere sırayla numara verir (eski kayıtlar, örnek veri); tekrar çalıştırmak güvenlidir
+export function okulNoDoldur() {
+  const eksik = db.prepare("SELECT id, branch_id FROM memberships WHERE role = 'ogrenci' AND okul_no IS NULL ORDER BY id").all();
+  for (const m of eksik) db.prepare('UPDATE memberships SET okul_no = ? WHERE id = ?').run(sonrakiOkulNo(m.branch_id), m.id);
+}
+okulNoDoldur();
 if (!sutunlar('odevler').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE odevler ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }

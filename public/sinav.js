@@ -134,6 +134,94 @@ function sekmeSec(ad) {
   ({ cevap: cevapCiz, sonuc: sonucCiz, analiz: analizCiz, kazanim: kazanimCiz, anahtar: anahtarCiz })[ad]();
 }
 
+
+// ---------- Optik okuyucu dosyası ----------
+// CSV: okul_no;ders1 cevapları;ders2 cevapları... (tek cevap sütunu da olur) · Sabit genişlik: ilk N karakter okul no, sonrası cevaplar
+const noSade = s => String(s).trim().replace(/^0+(?=\d)/, '');
+function dersBol(metin, dersler) {
+  let konum = 0;
+  return dersler.map(x => { const p = metin.slice(konum, konum + x.soruSayisi); konum += x.soruSayisi; return p; });
+}
+function optikCoz(metin, bicim, noUzunluk, dersler) {
+  const toplam = dersler.reduce((t, d) => t + d.soruSayisi, 0);
+  const satirlar = metin.replace(/^\uFEFF/, '').split(/\r?\n/).filter(s => s.trim());
+  const kayitlar = [];
+  satirlar.forEach((satir, i) => {
+    let no, cevap;
+    if (bicim === 'csv') {
+      const ayrac = [';', '\t', ','].find(a => satir.includes(a)) || ';';
+      const h = satir.split(ayrac).map(x => x.trim().replace(/^"|"$/g, ''));
+      if (i === 0 && !/^\d+$/.test(h[0])) return; // başlık satırı
+      no = h[0];
+      const c = h.slice(1);
+      cevap = c.length === dersler.length ? c : dersBol(c.join(''), dersler);
+    } else {
+      no = satir.slice(0, noUzunluk);
+      cevap = dersBol(satir.slice(noUzunluk).replace(/\s+$/, ''), dersler);
+    }
+    const uzunluk = cevap.reduce((t, c) => t + c.length, 0);
+    kayitlar.push({ satir: i + 1, no: noSade(no), cevap, uyari: uzunluk !== toplam ? `${uzunluk} cevap var, ${toplam} bekleniyordu` : '' });
+  });
+  return kayitlar;
+}
+function dosyaIndir(ad, icerik) {
+  const a = el('a'); a.href = URL.createObjectURL(new Blob([icerik], { type: 'text/plain;charset=utf-8' })); a.download = ad;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function optikSablon(bicim, noUzunluk, d) {
+  const ogr = d.ogrenciler.slice(0, 3);
+  const ornek = x => 'ABCDE'.repeat(Math.ceil(x.soruSayisi / 5)).slice(0, x.soruSayisi);
+  if (bicim === 'csv') {
+    const bas = ['okul_no', ...d.dersler.map(x => x.ders)].join(';');
+    return [bas, ...ogr.map(g => [g.okulNo, ...d.dersler.map(ornek)].join(';'))].join('\r\n') + '\r\n';
+  }
+  return ogr.map(g => String(g.okulNo).padEnd(noUzunluk, ' ') + d.dersler.map(ornek).join('')).join('\r\n') + '\r\n';
+}
+function optikKutusu(d, girisler) {
+  const kutu = el('details', '', 'toplu');
+  kutu.append(el('summary', 'Dosyadan yükle (optik okuyucu çıktısı)'));
+  kutu.append(el('p', 'Okuyucu yazılımını aşağıdaki biçimlerden birini verecek şekilde ayarlayın. Her satır bir öğrencidir; öğrenci okul numarasıyla eşleştirilir. Boş soru "-", "*" veya boşluk olabilir. Dosya yüklenince cevaplar tabloya yazılır; kontrol edip "Cevapları kaydet"e basın.', 'alt'));
+  const bicim = el('select'); bicim.setAttribute('aria-label', 'Dosya biçimi');
+  for (const [v, ad] of [['csv', 'CSV: okul_no;ders1;ders2… (noktalı virgül, virgül veya sekme)'], ['sabit', 'Sabit genişlikli metin: ilk N karakter okul no, sonra cevaplar']]) { const o = el('option', ad); o.value = v; bicim.append(o); }
+  const uzunluk = el('input'); uzunluk.type = 'number'; uzunluk.min = 1; uzunluk.max = 20; uzunluk.value = 10; uzunluk.setAttribute('aria-label', 'Okul no karakter sayısı');
+  const uzEtiket = el('label', 'Okul no karakter sayısı (sabit genişlik)');
+  const guncelle = () => { uzEtiket.classList.toggle('gizli', bicim.value !== 'sabit'); uzunluk.classList.toggle('gizli', bicim.value !== 'sabit'); };
+  bicim.addEventListener('change', guncelle); guncelle();
+  const dosya = el('input'); dosya.type = 'file'; dosya.accept = '.csv,.txt,.dat,.tsv'; dosya.setAttribute('aria-label', 'Optik dosyası');
+  const sablon = el('button', 'Örnek şablon indir', 'ikincil'); sablon.type = 'button';
+  sablon.addEventListener('click', () => dosyaIndir(bicim.value === 'csv' ? 'optik-sablon.csv' : 'optik-sablon.txt', optikSablon(bicim.value, Number(uzunluk.value) || 10, d)));
+  const rapor = el('div');
+  dosya.addEventListener('change', async () => {
+    rapor.replaceChildren();
+    const f = dosya.files[0];
+    if (!f) return;
+    if (f.size > 5_000_000) return mesaj('Dosya çok büyük (en çok 5 MB).', 'hata');
+    const kayitlar = optikCoz(await f.text(), bicim.value, Number(uzunluk.value) || 10, d.dersler);
+    const harita = new Map(girisler.map(satir => [noSade(satir[0][0].okulNo || ''), satir]));
+    let uygulanan = 0;
+    const sorunlar = [];
+    for (const k of kayitlar) {
+      const satir = harita.get(k.no);
+      if (!satir) { sorunlar.push(`Satır ${k.satir}: "${k.no}" numaralı öğrenci bu sınavın sınıflarında yok`); continue; }
+      satir.forEach(([, , gi], j) => { gi.value = k.cevap[j] || ''; });
+      uygulanan++;
+      if (k.uyari) sorunlar.push(`Satır ${k.satir} (${satir[0][0].ad}): ${k.uyari}`);
+    }
+    const okunan = new Set(kayitlar.map(k => k.no));
+    const girmeyen = [...harita].filter(([no]) => !okunan.has(no)).length;
+    rapor.append(el('p', `${uygulanan} öğrencinin cevabı yazıldı; dosyada olmayan öğrenci: ${girmeyen}. Kaydetmeyi unutmayın.`, uygulanan ? 'mesaj tamam' : 'mesaj hata'));
+    if (sorunlar.length) {
+      const ul = el('ul');
+      for (const s of sorunlar.slice(0, 30)) ul.append(el('li', s));
+      if (sorunlar.length > 30) ul.append(el('li', `… ve ${sorunlar.length - 30} uyarı daha`));
+      rapor.append(el('p', `${sorunlar.length} uyarı:`, 'alt'), ul);
+    }
+  });
+  kutu.append(el('label', 'Dosya biçimi'), bicim, uzEtiket, uzunluk, el('label', 'Dosya'), dosya, sablon, rapor);
+  return kutu;
+}
+
 // Cevaplar: öğrenci başına, derslerin sırasıyla cevap dizisi
 function cevapCiz() {
   const kutu = $('d-icerik');
@@ -147,15 +235,14 @@ function cevapCiz() {
   const ta = el('textarea'); ta.rows = 6; ta.setAttribute('aria-label', 'Toplu cevaplar');
   const uygula = el('button', 'Satırları uygula', 'ikincil'); uygula.type = 'button';
   topluKutu.append(ta, uygula);
-  kutu.append(topluKutu);
 
   const tablo = el('table', '', 'sinav-tablo');
-  const bas = el('tr'); bas.append(el('th', 'Öğrenci'), el('th', 'Sınıf'));
+  const bas = el('tr'); bas.append(el('th', 'No'), el('th', 'Öğrenci'), el('th', 'Sınıf'));
   for (const x of d.dersler) bas.append(el('th', `${x.ders} (${x.soruSayisi})`));
   tablo.append(bas);
   const girisler = [];
   for (const g of d.ogrenciler) {
-    const tr = el('tr'); tr.append(el('td', g.ad), el('td', g.sinif));
+    const tr = el('tr'); tr.append(el('td', g.okulNo || ''), el('td', g.ad), el('td', g.sinif));
     const satir = [];
     for (const x of d.dersler) {
       const td = el('td'); const gi = el('input', undefined, 'cevap-giris'); gi.value = (g.cevaplar[x.id] || '').replace(/-/g, '-');
@@ -166,7 +253,7 @@ function cevapCiz() {
     girisler.push(satir);
     tablo.append(tr);
   }
-  kutu.append(tablo);
+  kutu.append(optikKutusu(d, girisler), topluKutu, tablo);
   if (!d.ogrenciler.length) kutu.append(el('p', 'Seçilen sınıflarda aktif öğrenci yok.', 'alt'));
 
   uygula.addEventListener('click', () => {
@@ -199,7 +286,7 @@ async function sonucCiz() {
   const v = r.veri;
   kutu.append(el('p', `${v.giren} / ${v.beklenen} öğrenci sınava girdi. ${KAT_YAZI(v.sinav.yanlisKat)}; puan = net / soru sayısı × 100. Karne için öğrencinin adına tıklayın.`, 'alt'));
   const tablo = el('table', '', 'sinav-tablo');
-  const bas = el('tr'); bas.append(el('th', 'Sıra'), el('th', 'Öğrenci'), el('th', 'Sınıf'));
+  const bas = el('tr'); bas.append(el('th', 'Sıra'), el('th', 'No'), el('th', 'Öğrenci'), el('th', 'Sınıf'));
   for (const d of v.dersler) bas.append(el('th', `${d.ders} D/Y/B`), el('th', 'Net'), el('th', 'Puan'));
   bas.append(el('th', 'Ortalama'));
   tablo.append(bas);
@@ -213,7 +300,7 @@ async function sonucCiz() {
       b.addEventListener('click', () => karneAc(g.ogrenciId));
       adHucre.append(b);
     }
-    tr.append(adHucre, el('td', g.sinif));
+    tr.append(el('td', g.okulNo || ''), adHucre, el('td', g.sinif));
     for (const d of v.dersler) {
       const x = g.dersler[d.id];
       tr.append(el('td', x ? `${x.dogru}/${x.yanlis}/${x.bos}` : '–'), el('td', x ? String(x.net) : '–'), el('td', x ? String(x.puan) : '–'));
