@@ -68,11 +68,11 @@ function veliBagla() {
   return eklenen;
 }
 
-// Demo Öğretmen hesabı da gerçek dersler alsın: Bilişim derslerinin öğretmeni olur.
+// Demo Öğretmen hesabı da gerçek dersler alsın: Fen Bilimleri derslerinin öğretmeni olur.
 function demoOgretmenBagla() {
   const d = db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
                         WHERE u.tc_no = '10000000214' AND m.role = 'ogretmen' AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get();
-  const ders = db.prepare("SELECT id FROM courses WHERE name = 'Bilişim'").get();
+  const ders = db.prepare("SELECT id FROM courses WHERE name = 'Fen Bilimleri'").get();
   if (!d || !ders) return 0;
   db.prepare('INSERT OR IGNORE INTO teacher_courses (teacher_membership_id, course_id) VALUES (?,?)').run(d.id, ders.id);
   return Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?
