@@ -181,8 +181,15 @@ async function gunYukle() {
 function zamanCiz() {
   const k = $('zaman');
   k.replaceChildren();
-  if (veri.hafta_sonu && !veri.etutler.length) return k.appendChild(el('p', 'Hafta sonu ders yok.', 'alt'));
-  if (!veri.gunluk.length && !veri.etutler.length) return k.appendChild(el('p', 'Bu günde dersiniz yok.', 'alt'));
+  if (!veri.gunluk.length && !veri.etutler.length) {
+    k.appendChild(el('p', veri.hafta_sonu ? 'Hafta sonu ders yok.' : 'Bu günde dersiniz yok.', 'bos-not'));
+    if (veri.hafta_sonu) {
+      const git = el('button', 'Pazartesi gününe git', 'ikincil'); git.type = 'button';
+      git.addEventListener('click', () => { do { tarih = gunKaydir(tarih, 1); } while ([0, 6].includes(new Date(tarih + 'T12:00:00').getDay())); gunYukle(); });
+      k.appendChild(git);
+    }
+    return;
+  }
   const ogeler = [
     ...veri.gunluk.map(d => ({ tur: 'ders', d, bas: d.aralik.split('–')[0] })),
     ...veri.etutler.map(e => ({ tur: 'etut', d: e, bas: e.saat })),
@@ -221,7 +228,7 @@ function durumRozeti(d) {
 function atamaCiz() {
   const k = $('atamalar');
   k.replaceChildren();
-  if (!veri.atamalar.length) return k.appendChild(el('p', 'Size atanmış ders yok.', 'alt'));
+  if (!veri.atamalar.length) return k.appendChild(el('p', 'Size atanmış ders yok.', 'bos-not'));
   for (const a of veri.atamalar) {
     const b = el('button', undefined, 'modul-kart hazir');
     b.type = 'button';
@@ -231,11 +238,21 @@ function atamaCiz() {
   }
 }
 
+function dersBos() {
+  ders = null;
+  $('p-baslik').textContent = 'Ders detayı';
+  $('p-alt').textContent = 'Yukarıdan bir ders seçin.';
+  $('p-kapat').classList.add('gizli');
+  for (const b of $('sekmeler').children) { b.disabled = true; b.classList.remove('gizli'); b.setAttribute('aria-pressed', String(b.dataset.sekme === 'ogrenciler')); }
+  $('icerik').replaceChildren(el('p', 'Bir ders seçtiğinizde öğrenci listesi, işlenen konular ve ödevler burada görünür.', 'bos-not'));
+}
+
 function dersAc(d, programdan) {
   ders = { atamaId: d.atamaId, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
   $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), ` ${d.sinif} · ${d.ders}`);
   $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
-  $('panel').classList.remove('gizli');
+  $('p-kapat').classList.remove('gizli');
+  for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
   const bitirVar = ders.dersSaati !== null;
   $('sekmeler').querySelector('[data-sekme="yoklama"]').classList.toggle('gizli', !bitirVar);
@@ -295,7 +312,7 @@ function listeKart(baslik, alt, aciklama, sil) {
   ust.append(el('strong', baslik), el('span', alt, 'alt'));
   kart.appendChild(ust);
   if (aciklama) kart.appendChild(el('p', aciklama));
-  const s = el('button', 'Sil', 'ikincil kucuk');
+  const s = el('button', 'Sil', 'ikincil tehlike kucuk');
   s.type = 'button';
   s.addEventListener('click', sil);
   kart.appendChild(s);
@@ -318,7 +335,7 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder }
   satir.append(sol, sag);
   const l3 = el('label', 'Açıklama (isteğe bağlı)'); l3.htmlFor = 'f-aciklama';
   const ac = el('input'); ac.id = 'f-aciklama'; ac.maxLength = 500;
-  const b = el('button', buton, 'birincil kucuk'); b.type = 'submit';
+  const b = el('button', buton, 'birincil'); b.type = 'submit';
   f.append(satir, l3, ac, b);
   f.addEventListener('submit', async e => {
     e.preventDefault();
@@ -392,7 +409,7 @@ $('gorunum').addEventListener('click', e => {
 $('geri').addEventListener('click', () => { tarih = gunKaydir(tarih, gorunum === 'hafta' ? -7 : -1); gunYukle(); });
 $('ileri').addEventListener('click', () => { tarih = gunKaydir(tarih, gorunum === 'hafta' ? 7 : 1); gunYukle(); });
 $('bugun').addEventListener('click', () => { tarih = bugun; gunYukle(); });
-$('p-kapat').addEventListener('click', () => { ders = null; $('panel').classList.add('gizli'); zamanCiz(); });
+$('p-kapat').addEventListener('click', () => { dersBos(); zamanCiz(); });
 $('sekmeler').addEventListener('click', e => {
   const b = e.target.closest('button');
   if (b && ders) sekmeAc(b.dataset.sekme);

@@ -37,8 +37,8 @@ async function ogretmenDersleri() {
   }
 
   const k = document.getElementById('bugun-liste');
-  if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders yok (hafta sonu).', 'alt'));
-  if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'alt'));
+  if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders yok (hafta sonu).', 'bos-not'));
+  if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'bos-not'));
   for (const d of liste.gunluk) {
     const satir = el('a', undefined, 'ders-satir');
     satir.href = dersLink(liste.tarih, d);
@@ -70,9 +70,18 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   if (k.rol === 'ogretmen') ogretmenDersleri();
 
   const grid = document.getElementById('moduller');
+  const yakinda = document.getElementById('yakinda-liste');
   for (const m of moduller) {
     if (k.rol === 'ogretmen' && m.id === 'yoklama') continue; // dersler listesinden zaten ulaşılıyor
-    const kart = document.createElement(m.yol ? 'a' : 'div');
+    if (!m.yol) {
+      const cip = document.createElement('span');
+      cip.className = 'cip';
+      cip.textContent = m.ad;
+      cip.title = m.aciklama;
+      yakinda.appendChild(cip);
+      continue;
+    }
+    const kart = document.createElement('a');
     kart.className = 'modul-kart';
     if (m.yol) { kart.href = m.yol; kart.classList.add('hazir'); }
     const b = document.createElement('strong');
@@ -85,6 +94,8 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
     kart.append(b, p, d);
     grid.appendChild(kart);
   }
+  if (!grid.children.length) grid.appendChild(Object.assign(document.createElement('p'), { className: 'bos-not', textContent: 'Size açık modül yok.' }));
+  if (!yakinda.children.length) document.getElementById('yakinda').classList.add('gizli');
 })();
 
 document.getElementById('cikis').addEventListener('click', async () => {

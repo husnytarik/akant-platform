@@ -27,9 +27,19 @@ function el(tag, metin, sinif) {
   return e;
 }
 
+// Liste ve detay kutuları hep görünür; yalnızca "Yeni sınav" formu açılıp kapanır
 function bolum(ad) {
-  for (const b of ['liste-bolum', 'yeni-bolum', 'detay-bolum']) $(b).classList.toggle('gizli', b !== ad);
+  $('yeni-bolum').classList.toggle('gizli', ad !== 'yeni-bolum');
   mesaj('');
+}
+
+// Hiçbir sınav seçili değilken detay kutusu boş hâliyle durur
+function detayBos() {
+  acik = null;
+  $('d-baslik').textContent = 'Sınav detayı';
+  for (const b of $('d-sekmeler').querySelectorAll('button')) { b.disabled = true; b.classList.remove('gizli'); b.setAttribute('aria-pressed', 'false'); }
+  $('d-icerik').replaceChildren(el('p', 'Listeden bir sınav seçin. Cevaplar, sonuçlar, madde analizi ve kazanımlar burada görünür.', 'bos-not'));
+  for (const k of document.querySelectorAll('.sinav-kart.secili')) k.classList.remove('secili');
 }
 
 const tarihYaz = t => t.split('-').reverse().join('.');
@@ -41,7 +51,7 @@ async function listeYukle() {
   const kutu = $('liste');
   kutu.replaceChildren();
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  if (!r.veri.sinavlar.length) kutu.append(el('p', 'Henüz sınav yok. "Yeni sınav" ile başlayın.', 'alt'));
+  if (!r.veri.sinavlar.length) kutu.append(el('p', 'Henüz sınav yok. Sağ üstteki "Yeni sınav" ile başlayın.', 'bos-not'));
   for (const s of r.veri.sinavlar) {
     const kart = el('button', '', 'sinav-kart');
     kart.type = 'button';
@@ -52,6 +62,7 @@ async function listeYukle() {
         ? `${s.okunan} öğrenci cevabı girildi · ${KAT_YAZI(s.yanlisKat)} · ${s.yayin ? 'Yayında' : 'Yayınlanmadı'} · ${s.kazanimli}/${s.soru} soruya kazanım girildi`
         : `Paylaşılan sınav · Sahibi: ${s.sahipAd} · ${s.kazanimli}/${s.soru} soruya kazanım girildi`, 'alt'),
     );
+    if (acik && acik.sinav.id === s.id) kart.classList.add('secili');
     kart.addEventListener('click', () => detayAc(s.id));
     kutu.append(kart);
   }
@@ -95,6 +106,7 @@ async function yeniAc() {
   }
   $('s-dersler').replaceChildren(dersSatiri());
   bolum('yeni-bolum');
+  $('yeni-bolum').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function dersleriTopla(kutu) {
@@ -111,6 +123,9 @@ async function olustur() {
     dersler: dersleriTopla($('s-dersler')),
   });
   if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+  bolum('');
+  await detayBos();
+listeYukle();
   await detayAc(r.veri.id);
   mesaj('Sınav oluşturuldu. Şimdi öğrenci cevaplarını girebilirsiniz.', 'tamam');
 }
@@ -122,9 +137,10 @@ async function detayAc(id) {
   acik = r.veri;
   $('d-baslik').textContent = `${acik.sinav.ad} · ${tarihYaz(acik.sinav.tarih)} · ${acik.siniflar.map(c => c.name).join(', ')}`;
   // Sınav sahibi olmayan öğretmen yalnızca kazanım sekmesini kullanır
-  for (const b of $('d-sekmeler').querySelectorAll('button')) b.classList.toggle('gizli', !acik.sahip && b.dataset.sekme !== 'kazanim');
+  for (const b of $('d-sekmeler').querySelectorAll('button')) { b.disabled = false; b.classList.toggle('gizli', !acik.sahip && b.dataset.sekme !== 'kazanim'); }
+  for (const k of document.querySelectorAll('.sinav-kart')) k.classList.remove('secili');
   sekmeSec(!acik.sahip || sekme === 'kazanim' ? 'kazanim' : 'cevap');
-  bolum('detay-bolum');
+  $('detay-bolum').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function sekmeSec(ad) {
@@ -517,22 +533,23 @@ function anahtarCiz() {
     sekmeSec('anahtar');
     mesaj(yeni ? 'Sonuçlar yayınlandı.' : 'Sonuçlar yayından kaldırıldı.', 'tamam');
   });
-  const sil = el('button', 'Sınavı sil', 'ikincil'); sil.type = 'button';
+  const sil = el('button', 'Sınavı sil', 'ikincil tehlike'); sil.type = 'button';
   sil.addEventListener('click', async () => {
     if (!confirm('Bu sınav ve girilen tüm cevaplar silinecek. Emin misiniz?')) return;
     const r = await api('/api/sinav/sil', { id: d.sinav.id });
     if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
-    bolum('liste-bolum'); await listeYukle();
+    detayBos(); await listeYukle();
+    mesaj('Sınav silindi.', 'tamam');
   });
-  const satir = el('div', '', 'form-satir');
+  const satir = el('div', '', 'dugme-satir');
   satir.append(kaydet, yayin, sil);
   kutu.append(satir);
 }
 
 $('yeni-ac').addEventListener('click', yeniAc);
-$('s-vazgec').addEventListener('click', () => bolum('liste-bolum'));
+$('s-vazgec').addEventListener('click', () => bolum(''));
 $('ders-ekle').addEventListener('click', () => $('s-dersler').append(dersSatiri()));
 $('s-kaydet').addEventListener('click', olustur);
-$('geri').addEventListener('click', async () => { bolum('liste-bolum'); await listeYukle(); });
-$('d-sekmeler').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sekmeSec(b.dataset.sekme); });
+$('d-sekmeler').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) sekmeSec(b.dataset.sekme); });
+detayBos();
 listeYukle();

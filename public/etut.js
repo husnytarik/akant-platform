@@ -29,7 +29,7 @@ function el(tag, metin, sinif) {
   return e;
 }
 
-function dugme(metin, tikla, sinif = 'ikincil kucuk') {
+function dugme(metin, tikla, sinif = 'ikincil') {
   const b = el('button', metin, sinif);
   b.type = 'button';
   b.addEventListener('click', tikla);
@@ -76,6 +76,12 @@ function ogrenciListesiCiz() {
   for (const o of g) liste.appendChild(onayKutusu(o.ad, seciliOgrenciler, o.id, ozetGuncelle));
   if (!g.length) liste.appendChild(el('p', 'Bu sınıfta öğrenci yok.', 'alt'));
   ozetGuncelle();
+}
+
+function sekmeSec(ad) {
+  for (const b of $('e-sekmeler').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
+  $('yeni').classList.toggle('gizli', ad !== 'yeni');
+  $('liste-bolum').classList.toggle('gizli', ad !== 'liste');
 }
 
 let dinleyiciVar = false;
@@ -140,6 +146,7 @@ async function gonder(onayla) {
   seciliOgrenciler.clear();
   await secenekYukle();
   await listeYukle();
+  sekmeSec('liste');
 }
 
 $('etut-form').addEventListener('submit', e => { e.preventDefault(); gonder(false); });
@@ -204,7 +211,7 @@ function ogretmenKarti(e) {
       if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
       mesaj(`Yoklama kaydedildi: ${r.veri.geldi} geldi, ${r.veri.gelmedi} gelmedi, ${r.veri.izinli} izinli.`, 'tamam');
       listeYukle();
-    }, 'birincil kucuk'));
+    }, 'birincil'));
   } else if (!iptal) {
     d.appendChild(el('p', 'Yoklama etüt günü açılır.', 'alt'));
   }
@@ -215,7 +222,7 @@ function ogretmenKarti(e) {
       if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
       mesaj('Etüt iptal edildi.', 'tamam');
       listeYukle();
-    }));
+    }, 'ikincil tehlike'));
   }
   return kart;
 }
@@ -237,9 +244,8 @@ function veliKarti(e) {
       listeYukle();
     };
     kart.append(
-      dugme('Gelecek', yanitla('gelecek'), e.yanit === 'gelecek' ? 'birincil kucuk' : 'ikincil kucuk'),
-      document.createTextNode('  '),
-      dugme('Gelmeyecek', yanitla('gelmeyecek'), e.yanit === 'gelmeyecek' ? 'birincil kucuk' : 'ikincil kucuk'),
+      dugme('Gelecek', yanitla('gelecek'), e.yanit === 'gelecek' ? 'birincil' : 'ikincil'),
+      dugme('Gelmeyecek', yanitla('gelmeyecek'), e.yanit === 'gelmeyecek' ? 'birincil' : 'ikincil'),
     );
   }
   return kart;
@@ -262,9 +268,9 @@ async function listeYukle() {
   liste.replaceChildren();
   const etutler = r.veri.etutler || [];
   if (!etutler.length) {
-    liste.appendChild(el('p', rol === 'veli' ? 'Çocuğunuz için davet yok.' : 'Henüz etüt yok.', 'alt'));
+    liste.appendChild(el('p', rol === 'veli' ? 'Çocuğunuz için davet yok.' : rol === 'ogretmen' ? 'Henüz etüt açmadınız. "Yeni etüt" sekmesinden başlayın.' : 'Henüz davet edildiğiniz etüt yok.', 'bos-not'));
     if (rol === 'veli' && !(r.veri.cocuklar || []).length) {
-      liste.appendChild(el('p', 'Hesabınıza bağlı öğrenci yok. Okul yönetimi ile iletişime geçin.', 'alt'));
+      liste.appendChild(el('p', 'Hesabınıza bağlı öğrenci yok. Okul yönetimi ile iletişime geçin.', 'bos-not'));
     }
     return;
   }
@@ -280,7 +286,9 @@ async function listeYukle() {
   $('baslik').textContent = rol === 'veli' ? 'Etüt onayları' : rol === 'ogrenci' ? 'Etütlerim' : 'Etüt';
   $('liste-baslik').textContent = rol === 'ogretmen' ? 'Açtığım etütler' : 'Etütler';
   if (rol === 'ogretmen') {
-    $('yeni').classList.remove('gizli');
+    $('e-sekmeler').classList.remove('gizli');
+    $('e-sekmeler').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sekmeSec(b.dataset.sekme); });
+    sekmeSec('liste');
     $('tarih').min = new Date().toLocaleDateString('sv-SE');
     await secenekYukle();
   }

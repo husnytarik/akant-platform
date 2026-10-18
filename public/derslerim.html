@@ -34,21 +34,21 @@
     <div id="zaman"></div>
     <div id="hafta" class="gizli"></div>
 
-    <section id="panel" class="ders-panel gizli">
+    <section id="panel" class="ders-panel">
       <div class="ders-panel-ust">
         <div>
-          <h2 id="p-baslik"></h2>
-          <p id="p-alt" class="alt"></p>
+          <h2 id="p-baslik">Ders detayı</h2>
+          <p id="p-alt" class="alt">Yukarıdan bir ders seçin.</p>
         </div>
-        <button type="button" id="p-kapat" class="ikincil">Kapat</button>
+        <button type="button" id="p-kapat" class="ikincil gizli">Kapat</button>
       </div>
       <div class="sekmeler" id="sekmeler">
-        <button type="button" data-sekme="ogrenciler" aria-pressed="true">Öğrenciler</button>
-        <button type="button" data-sekme="yoklama" aria-pressed="false">Dersi bitir</button>
-        <button type="button" data-sekme="konular" aria-pressed="false">Konular</button>
-        <button type="button" data-sekme="odevler" aria-pressed="false">Ödevler</button>
+        <button type="button" data-sekme="ogrenciler" aria-pressed="true" disabled>Öğrenciler</button>
+        <button type="button" data-sekme="yoklama" aria-pressed="false" disabled>Dersi bitir</button>
+        <button type="button" data-sekme="konular" aria-pressed="false" disabled>Konular</button>
+        <button type="button" data-sekme="odevler" aria-pressed="false" disabled>Ödevler</button>
       </div>
-      <div id="icerik"></div>
+      <div id="icerik"><p class="bos-not">Bir ders seçtiğinizde öğrenci listesi, işlenen konular ve ödevler burada görünür.</p></div>
     </section>
 
     <section id="siniflar" class="gizli">

@@ -16,7 +16,7 @@ const tarihYaz = t => t.split('-').reverse().join('.');
   if (!ogrenciler.length) liste.appendChild(el('p', 'Bağlı öğrenci bulunamadı.', 'alt'));
   for (const o of ogrenciler) {
     liste.appendChild(el('h2', o.ad, 'baslik2'));
-    if (!o.sinavlar.length) liste.appendChild(el('p', 'Yayınlanmış sınav sonucu yok.', 'alt'));
+    if (!o.sinavlar.length) liste.appendChild(el('p', 'Henüz yayınlanmış sınav sonucu yok. Öğretmen yayınladığında burada görünür.', 'bos-not'));
     for (const s of o.sinavlar) {
       const kart = el('div', undefined, 'not-kart');
       const ust = el('div', undefined, 'not-ust');

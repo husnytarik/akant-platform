@@ -455,3 +455,67 @@ button.lejant-oge { background: none; border: 1px solid transparent; border-radi
 .kazanim-satir td { padding: 0; border: 0; }
 .kazanim-satir .kazanim-liste { margin: 4px 0 10px; }
 .kucuk-yazi { display: block; font-size: 0.75rem; }
+
+/* ===== Tek tip düğme sistemi =====
+   Varsayılan düğme = dolu lacivert. .ikincil = çerçeveli. .tehlike = silme/iptal. .baglanti = tablo içi bağlantı.
+   Sekmeler, gün okları, ders satırları vb. kendi sınıflarıyla ayrı stillenir. */
+button:not([class]):not([aria-pressed]):not([aria-label]), .birincil, .ikincil, .dugme-link, .panel-ust a.alt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: auto; height: 40px; margin: 0; padding: 0 18px;
+  background: var(--navy); color: #fff; border: 1px solid var(--navy); border-radius: 8px;
+  font: inherit; font-size: .92rem; font-weight: 600; line-height: 1; text-decoration: none; white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(11,37,69,.15); cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+}
+button:not([class]):not([aria-pressed]):not([aria-label]):hover, .birincil:hover, .dugme-link:hover { background: #17386a; border-color: #17386a; }
+.ikincil, .panel-ust a.alt { background: #fff; color: var(--navy); border-color: var(--border); box-shadow: none; }
+.ikincil:hover, .panel-ust a.alt:hover { background: var(--soft); border-color: var(--navy); text-decoration: none; }
+.ikincil.tehlike { color: var(--accent); border-color: #e3b9b9; }
+.ikincil.tehlike:hover { background: #fdf3f3; border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.birincil, .birincil.kucuk { margin-top: 0; }
+button.kucuk { height: 32px; padding: 0 12px; font-size: .85rem; margin-left: 0; }
+.gun-baslik #bugun { height: 30px; padding: 0 12px; font-weight: 400; font-size: .8rem; box-shadow: none; }
+.gun-baslik #bugun:not(.bugunde) { background: var(--navy-soft); color: var(--navy); border-color: var(--border); }
+.gun-baslik #bugun.bugunde { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* Düğme satırı: aynı hizada, sarmalı */
+.dugme-satir { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+.form-satir > .dugme-satir { margin-top: 0; }
+.form-satir > div > .birincil { margin-top: 14px; }
+.panel-ust a.alt { margin: 0; }
+
+/* Sekmeler pasifken */
+.sekmeler button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Sabit kutular: her sayfada bölümler boş olsa da yerinde durur */
+.bolum-kutu { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 4px 18px 18px; margin: 0 0 16px; }
+.bolum-kutu > .baslik2, .kutu-ust > .baslik2 { margin-top: 16px; }
+.kutu-ust { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bos-not { margin: 8px 0 12px; padding: 18px 14px; text-align: center; color: var(--muted); font-size: .92rem; background: var(--soft); border: 1px dashed var(--border); border-radius: 8px; }
+.bos-not + button { margin-top: 4px; }
+.sinav-kart.secili { border-color: var(--navy); background: var(--navy-soft); }
+#liste .sinav-kart:first-child { margin-top: 0; }
+
+@media (max-width: 600px) {
+  button:not([class]):not([aria-pressed]):not([aria-label]), .birincil, .ikincil, .dugme-link, .panel-ust a.alt { height: 44px; }
+  button.kucuk { height: 36px; }
+  .gun-baslik #bugun { height: 32px; }
+  .birincil, .birincil.kucuk { width: auto; height: 44px; }
+  .dugme-satir > button, .dugme-satir > a { flex: 1 1 140px; }
+  .bolum-kutu { padding: 2px 12px 14px; }
+  .kutu-ust { flex-wrap: wrap; }
+  .dugme-link { display: inline-flex; padding: 0 18px; }
+}
+@media print { .dugme-satir { display: none !important; } }
+.bos-hucre { text-align: center; color: var(--muted); padding: 18px 8px; background: var(--soft); }
+
+#yoklama-bos { margin-top: 16px; }
+#yoklama:not(.gizli) ~ #yoklama-bos, #yoklama:not(.gizli) + #yoklama-bos { display: none; }
+.yakinda { margin-top: 28px; }
+.yakinda .baslik3 { margin: 0 0 8px; color: var(--muted); font-weight: 500; }
+.yakinda .cip { background: var(--soft); color: var(--muted); border-radius: 999px; }
+.panel-ust a.alt { margin: 0 6px 0 0; }
+.panel-ust > div > a.alt { margin-top: 6px; }
+.panel-ust a.alt, .panel-ust #cikis { height: 36px; padding: 0 14px; font-size: .88rem; }
+@media (max-width: 600px) { .panel-ust a.alt, .panel-ust #cikis { height: 38px; } .mesaj { min-height: 0; margin-top: 8px; } }
+.kutu > button, .kutu > details > button { margin-top: 12px; }

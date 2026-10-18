@@ -17,7 +17,12 @@
 
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <section id="yeni" class="gizli">
+    <div class="sekmeler gizli" id="e-sekmeler">
+      <button type="button" data-sekme="liste" aria-pressed="true">Açtığım etütler</button>
+      <button type="button" data-sekme="yeni" aria-pressed="false">Yeni etüt</button>
+    </div>
+
+    <section id="yeni" class="bolum-kutu gizli">
       <h2 class="baslik2">Yeni etüt</h2>
       <form id="etut-form">
         <div class="form-satir">
@@ -68,12 +73,14 @@
         </div>
 
         <p id="secim-ozet" class="alt"></p>
-        <button class="birincil kucuk" type="submit">Etüt oluştur ve velilere gönder</button>
+        <button class="birincil" type="submit">Etüt oluştur ve velilere gönder</button>
       </form>
     </section>
 
-    <h2 class="baslik2" id="liste-baslik">Etütler</h2>
-    <div id="liste"></div>
+    <section id="liste-bolum" class="bolum-kutu">
+      <h2 class="baslik2" id="liste-baslik">Etütler</h2>
+      <div id="liste"></div>
+    </section>
   </main>
   <script src="/etut.js"></script>
 </body>

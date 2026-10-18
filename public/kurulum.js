@@ -41,6 +41,24 @@ function el(tag, metin, sinif) {
   return e;
 }
 
+// Boş kalan tablo ve listelerde yer tutucu yazı göster
+const BOS_METIN = {
+  'ogretmen-liste': 'Henüz öğretmen kaydı yok.', 'ogrenci-liste': 'Henüz öğrenci kaydı yok.', 'sinif-liste': 'Henüz sınıf açılmadı.',
+  'd-ders-liste': 'Bu sınıfa henüz ders eklenmedi.', 'd-ogrenci-liste': 'Bu sınıfta henüz öğrenci yok.',
+};
+function bosYazilar() {
+  for (const [id, metin] of Object.entries(BOS_METIN)) {
+    const tb = $(id);
+    if (!tb || tb.children.length) continue;
+    const tr = document.createElement('tr');
+    const td = el('td', metin, 'bos-hucre');
+    td.colSpan = 8;
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+  const dl = $('ders-liste');
+  if (!dl.children.length) dl.appendChild(el('p', 'Henüz ders açılmadı.', 'bos-not'));
+}
+
 function satir(tbody, ...hucreler) {
   const tr = document.createElement('tr');
   for (const h of hucreler) {
@@ -204,8 +222,9 @@ $('sinif-form').addEventListener('submit', async e => {
 
 function cizDetay() {
   const sinif = v.siniflar.find(s => s.id === seciliSinifId);
-  $('sinif-detay').classList.toggle('gizli', !sinif);
-  if (!sinif) return;
+  $('detay-icerik').classList.toggle('gizli', !sinif);
+  $('detay-bos').classList.toggle('gizli', !!sinif);
+  if (!sinif) { $('detay-baslik').textContent = 'Sınıf detayı'; bosYazilar(); return; }
   $('detay-baslik').textContent = `${sinif.sube} · ${sinif.kademe} · ${sinif.ad}`;
 
   // Sınıf öğretmeni
@@ -253,9 +272,9 @@ function cizDetay() {
     satir(ob, o.ad, dugme('Sınıftan çıkar', () =>
       yap('/api/yonetim/ogrenci-sinif', { ogrenciUyelikId: o.uyelikId, sinifId: null }, 'Öğrenci sınıftan çıkarıldı.')));
   }
-  if (!ogrenciler.length) satir(ob, 'Bu sınıfta henüz öğrenci yok.', '');
   const adaylar = v.ogrenciler.filter(o => o.durum === 'aktif' && !o.sinifId && o.subeId === sinif.subeId);
   doldur($('d-ogrenci'), adaylar, o => o.uyelikId, o => o.ad, adaylar.length ? 'Öğrenci seçin' : 'Sınıfsız öğrenci yok');
+  bosYazilar();
 }
 
 $('d-ders-form').addEventListener('submit', async e => {

@@ -89,6 +89,11 @@ async function yukle() {
     );
     govde.appendChild(tr);
   }
+  if (!govde.children.length) {
+    const tr = document.createElement('tr'), td = document.createElement('td');
+    td.colSpan = 5; td.className = 'bos-hucre'; td.textContent = 'Henüz kullanıcı yok.';
+    tr.appendChild(td); govde.appendChild(tr);
+  }
 }
 
 $('ekle').addEventListener('submit', async e => {

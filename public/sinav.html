@@ -16,12 +16,15 @@
     </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <section id="liste-bolum">
-      <button id="yeni-ac" type="button">Yeni sınav</button>
+    <section id="liste-bolum" class="bolum-kutu">
+      <div class="kutu-ust">
+        <h2 class="baslik2">Sınavlarım</h2>
+        <button id="yeni-ac" type="button">+ Yeni sınav</button>
+      </div>
       <div id="liste"></div>
     </section>
 
-    <section id="yeni-bolum" class="gizli">
+    <section id="yeni-bolum" class="bolum-kutu gizli">
       <h2 class="baslik2">Yeni sınav</h2>
       <label for="s-ad">Sınav adı</label>
       <input id="s-ad" maxlength="80" placeholder="Örn. 1. Dönem 1. Deneme">
@@ -42,15 +45,14 @@
       <h3 class="baslik3">Dersler ve cevap anahtarı</h3>
       <div id="s-dersler"></div>
       <button id="ders-ekle" type="button" class="ikincil">+ Ders ekle</button>
-      <div class="form-satir">
+      <div class="dugme-satir">
         <button id="s-kaydet" type="button">Sınavı oluştur</button>
         <button id="s-vazgec" type="button" class="ikincil">Vazgeç</button>
       </div>
     </section>
 
-    <section id="detay-bolum" class="gizli">
-      <button id="geri" type="button" class="ikincil">&larr; Sınav listesi</button>
-      <h2 id="d-baslik" class="baslik2"></h2>
+    <section id="detay-bolum" class="bolum-kutu">
+      <h2 id="d-baslik" class="baslik2">Sınav detayı</h2>
       <div class="sekmeler" id="d-sekmeler">
         <button type="button" data-sekme="cevap" aria-pressed="true">Cevaplar</button>
         <button type="button" data-sekme="sonuc" aria-pressed="false">Sonuçlar</button>

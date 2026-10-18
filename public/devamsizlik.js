@@ -26,7 +26,7 @@ function tarihYaz(t) {
     kutu.appendChild(el('h2', c.ad, 'baslik2'));
     kutu.appendChild(el('p', `Gelmedi ${c.say.gelmedi} · Geç ${c.say.gec} · İzinli ${c.say.izinli} · Toplam yoklama ${c.toplam}`));
     if (!c.kayitlar.length) {
-      kutu.appendChild(el('p', 'Kayıtlı devamsızlık yok.', 'alt'));
+      kutu.appendChild(el('p', 'Kayıtlı devamsızlık yok.', 'bos-not'));
     } else {
       const t = el('table');
       const bas = document.createElement('tr');

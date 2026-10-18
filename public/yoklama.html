@@ -52,9 +52,12 @@
       <label for="odev-tarih">Son teslim tarihi</label>
       <input id="odev-tarih" type="date">
       <p class="alt">Öğrenci ve velilerin Ödevler sayfasında görünür.</p>
-      <button class="birincil kucuk" type="button" id="kaydet">Dersi bitir</button>
-      <button class="ikincil kucuk" type="button" id="iptal">Dersi iptal et</button>
+      <div class="dugme-satir">
+        <button class="birincil" type="button" id="kaydet">Dersi bitir</button>
+        <button class="ikincil tehlike" type="button" id="iptal">Dersi iptal et</button>
+      </div>
     </section>
+    <p id="yoklama-bos" class="bos-not">Yukarıdan bir ders seçin; yoklama, işlenen konu, kazanım ve ödev burada girilir.</p>
   </main>
   <script src="/yoklama.js"></script>
 </body>

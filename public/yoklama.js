@@ -72,9 +72,9 @@ async function dersleriYukle() {
   const r = await api('/api/yoklama/dersler?tarih=' + encodeURIComponent($('tarih').value));
   if (!r.ok) { mesaj(r.veri.hata || 'Hata', 'hata'); return; }
   mesaj('');
-  if (r.veri.hafta_sonu) { liste.appendChild(el('p', 'Hafta sonu ders yok.', 'alt')); return; }
+  if (r.veri.hafta_sonu) { liste.appendChild(el('p', 'Hafta sonu ders yok.', 'bos-not')); return; }
   if (!r.veri.dersler.length) {
-    liste.appendChild(el('p', 'Bu tarihte ders programınızda ders yok.', 'alt'));
+    liste.appendChild(el('p', 'Bu tarihte ders programınızda ders yok.', 'bos-not'));
     return;
   }
   gunDersleri = r.veri.dersler;

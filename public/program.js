@@ -79,7 +79,7 @@ function gunCiz() {
   $('bugun').classList.toggle('bugunde', tarih === bugun);
   const etutler = g ? g.etutler : [];
   if (!g || (!g.dersler.length && !etutler.length)) {
-    k.appendChild(el('p', g && (g.gun === 0 || g.gun === 6) ? 'Hafta sonu ders yok.' : 'Bu günde ders yok.', 'alt'));
+    k.appendChild(el('p', g && (g.gun === 0 || g.gun === 6) ? 'Hafta sonu ders yok.' : 'Bu günde ders yok.', 'bos-not'));
     return;
   }
   const ogeler = [
@@ -209,7 +209,7 @@ async function devamCiz() {
   const r = await fetch(`/api/ders/devamsizlik?cocuk=${cocuk}`);
   if (!r.ok) { k.appendChild(el('p', 'Veri alınamadı.', 'alt')); return; }
   const dersler = (await r.json()).dersler;
-  if (!dersler.length) { k.appendChild(el('p', 'Henüz ders bulunamadı.', 'alt')); return; }
+  if (!dersler.length) { k.appendChild(el('p', 'Henüz ders bulunamadı.', 'bos-not')); return; }
   const TAM = 2 * Math.PI;
 
   // Halka dilimi: yarıçap r, kalınlık k, açı a0..a1 (halka tam daireyse iki yarım yay)
