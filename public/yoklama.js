@@ -37,44 +37,51 @@ function ozetGuncelle() {
 }
 
 const IKON = { geldi: '✓', gelmedi: '✗', gec: 'G', izinli: 'İ' };
+// Pasta menü: öğrenci hapına dokununca dört yuvarlak buton çevresinde açılır
+const pasta = el('div', undefined, 'pasta gizli');
+const pastaPerde = el('div', undefined, 'pasta-perde gizli');
+document.body.append(pastaPerde, pasta);
+const pastaKapat = () => { pasta.classList.add('gizli'); pastaPerde.classList.add('gizli'); pasta.replaceChildren(); };
+pastaPerde.addEventListener('click', pastaKapat);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') pastaKapat(); });
+const PASTA_YON = { geldi: [0, -1], izinli: [1, 0], gelmedi: [0, 1], gec: [-1, 0] };
+
+function pastaAc(o, hap, guncelle) {
+  pasta.replaceChildren();
+  const r = hap.getBoundingClientRect(), R = 64, pay = R + 30;
+  const cx = Math.min(Math.max(r.left + r.width / 2, pay), window.innerWidth - pay);
+  const cy = Math.min(Math.max(r.top + r.height / 2, pay), window.innerHeight - pay);
+  pasta.style.setProperty('left', cx + 'px');
+  pasta.style.setProperty('top', cy + 'px');
+  pasta.appendChild(el('span', o.ad, 'pasta-ad'));
+  for (const [deger, ad] of SECENEKLER) {
+    const b = el('button', IKON[deger], 'pasta-dugme s-' + deger);
+    b.type = 'button';
+    b.title = ad;
+    b.setAttribute('aria-label', ad);
+    b.setAttribute('aria-pressed', String(durumlar.get(o.ogrenciId) === deger));
+    b.style.setProperty('--x', PASTA_YON[deger][0] * R + 'px');
+    b.style.setProperty('--y', PASTA_YON[deger][1] * R + 'px');
+    b.addEventListener('click', () => { durumlar.set(o.ogrenciId, deger); guncelle(deger); ozetGuncelle(); pastaKapat(); });
+    pasta.appendChild(b);
+  }
+  pastaPerde.classList.remove('gizli');
+  pasta.classList.remove('gizli');
+}
+
 function tabloCiz() {
   const t = $('ogrenci-liste');
   t.replaceChildren();
   for (const o of ogrenciler) {
-    const kap = el('div', undefined, 'yok-kap d-' + durumlar.get(o.ogrenciId));
-    const satir = el('div', undefined, 'yok-satir');
-    satir.appendChild(el('span', o.ad, 'yok-ad'));
-    const sec = el('button', IKON[durumlar.get(o.ogrenciId)], 'yok-sec');
-    sec.type = 'button';
-    sec.setAttribute('aria-expanded', 'false');
-    sec.setAttribute('aria-label', o.ad + ' yoklama durumu');
-    const menu = el('div', undefined, 'yok-menu gizli');
-    for (const [deger, ad] of SECENEKLER) {
-      const b = el('button', IKON[deger], 'yok-kare s-' + deger);
-      b.type = 'button';
-      b.title = ad;
-      b.setAttribute('aria-label', ad);
-      b.setAttribute('aria-pressed', String(durumlar.get(o.ogrenciId) === deger));
-      b.addEventListener('click', () => {
-        durumlar.set(o.ogrenciId, deger);
-        kap.className = 'yok-kap d-' + deger;
-        sec.textContent = IKON[deger];
-        for (const x of menu.children) x.setAttribute('aria-pressed', String(x === b));
-        menu.classList.add('gizli');
-        sec.setAttribute('aria-expanded', 'false');
-        ozetGuncelle();
-      });
-      menu.appendChild(b);
-    }
-    sec.addEventListener('click', () => {
-      const acik = menu.classList.contains('gizli');
-      for (const m of t.querySelectorAll('.yok-menu')) m.classList.add('gizli');
-      for (const x of t.querySelectorAll('.yok-sec')) x.setAttribute('aria-expanded', 'false');
-      if (acik) { menu.classList.remove('gizli'); sec.setAttribute('aria-expanded', 'true'); }
-    });
-    satir.appendChild(sec);
-    kap.append(satir, menu);
-    t.appendChild(kap);
+    const hap = el('button', undefined, 'yok-hap d-' + durumlar.get(o.ogrenciId));
+    hap.type = 'button';
+    const ikon = el('span', IKON[durumlar.get(o.ogrenciId)], 'yok-ikon');
+    hap.append(el('span', o.ad, 'yok-ad'), ikon);
+    hap.addEventListener('click', () => pastaAc(o, hap, deger => {
+      hap.className = 'yok-hap d-' + deger;
+      ikon.textContent = IKON[deger];
+    }));
+    t.appendChild(hap);
   }
   ozetGuncelle();
 }
