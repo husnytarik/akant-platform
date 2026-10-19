@@ -932,3 +932,12 @@ a.modul-kart.hazir { border-color: var(--ince); }
 .bolum-kutu, .sinav-kart, .not-kart { background: transparent; border: 0; border-top: 1px solid var(--ince); border-radius: 0; padding: 4px 0 16px; margin: 0 0 8px; }
 .bolum-kutu > .baslik2, .kutu-ust > .baslik2 { margin-top: 14px; }
 .sekmeler button[aria-pressed="false"] { color: #9a958b; }
+
+/* Yoklama öğrenci listesi: iki sütun, kısa yükseklik */
+.yoklama-liste { grid-template-columns: 1fr 1fr; column-gap: 14px; row-gap: 0; }
+.yok-satir { grid-template-columns: 1fr; gap: 4px; padding: 7px 0 8px; align-content: start; }
+.yok-ad { font-size: .86rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yok-satir .segment { grid-template-columns: repeat(4, auto); }
+.yok-satir .segment button { height: 30px; padding: 0 2px; font-size: .68rem; letter-spacing: -.02em; }
+@media (min-width: 640px) { .yok-satir { grid-template-columns: 1fr; } }
+.onay.hepsi { border: 0; background: transparent; padding: 6px 0; margin: 4px 0 8px; }
