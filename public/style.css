@@ -941,3 +941,18 @@ a.modul-kart.hazir { border-color: var(--ince); }
 .yok-satir .segment button { height: 30px; padding: 0 2px; font-size: .68rem; letter-spacing: -.02em; }
 @media (min-width: 640px) { .yok-satir { grid-template-columns: 1fr; } }
 .onay.hepsi { border: 0; background: transparent; padding: 6px 0; margin: 4px 0 8px; }
+
+/* Yoklama: tek sütun satır + renkli durum düğmesi + açılır 4 kare */
+.yoklama-liste { display: block; }
+.yok-kap { border-bottom: 1px solid var(--ince); background: color-mix(in srgb, var(--dk, #2e9e5b) 10%, #fff); }
+.yok-kap.d-geldi { --dk: #2e9e5b; } .yok-kap.d-gelmedi { --dk: #d64545; } .yok-kap.d-gec { --dk: #e0a100; } .yok-kap.d-izinli { --dk: #8a867d; }
+.yok-kap .yok-satir { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 8px 4px 10px; border: 0; background: transparent !important; }
+.yok-kap .yok-ad { white-space: normal; font-size: .95rem; }
+.yok-sec { flex: none; width: 36px; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: var(--dk); color: #fff; font-weight: 700; font-size: 1rem; }
+.yok-menu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 4px 10px 10px; }
+.yok-menu.gizli { display: none; }
+.yok-kare { height: 40px; margin: 0; padding: 0; border: 2px solid transparent; border-radius: 6px; color: #fff; font-weight: 700; font-size: 1.05rem; }
+.yok-kare.s-geldi { background: #2e9e5b; } .yok-kare.s-gelmedi { background: #d64545; } .yok-kare.s-gec { background: #e0a100; } .yok-kare.s-izinli { background: #8a867d; }
+.yok-kare[aria-pressed="true"] { border-color: var(--murekkep); }
+.ogr-iki { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.ogr-iki span { padding: 9px 0; border-bottom: 1px solid var(--ince); font-size: .9rem; }

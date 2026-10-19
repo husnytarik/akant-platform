@@ -36,29 +36,45 @@ function ozetGuncelle() {
   $('hepsi-geldi').checked = ogrenciler.length > 0 && say.geldi === ogrenciler.length;
 }
 
+const IKON = { geldi: '✓', gelmedi: '✗', gec: 'G', izinli: 'İ' };
 function tabloCiz() {
   const t = $('ogrenci-liste');
   t.replaceChildren();
   for (const o of ogrenciler) {
-    const satir = el('div', undefined, 'yok-satir d-' + durumlar.get(o.ogrenciId));
+    const kap = el('div', undefined, 'yok-kap d-' + durumlar.get(o.ogrenciId));
+    const satir = el('div', undefined, 'yok-satir');
     satir.appendChild(el('span', o.ad, 'yok-ad'));
-    const grup = el('div', undefined, 'segment');
-    grup.setAttribute('role', 'group');
-    grup.setAttribute('aria-label', o.ad + ' yoklama durumu');
+    const sec = el('button', IKON[durumlar.get(o.ogrenciId)], 'yok-sec');
+    sec.type = 'button';
+    sec.setAttribute('aria-expanded', 'false');
+    sec.setAttribute('aria-label', o.ad + ' yoklama durumu');
+    const menu = el('div', undefined, 'yok-menu gizli');
     for (const [deger, ad] of SECENEKLER) {
-      const b = el('button', ad, 's-' + deger);
+      const b = el('button', IKON[deger], 'yok-kare s-' + deger);
       b.type = 'button';
+      b.title = ad;
+      b.setAttribute('aria-label', ad);
       b.setAttribute('aria-pressed', String(durumlar.get(o.ogrenciId) === deger));
       b.addEventListener('click', () => {
         durumlar.set(o.ogrenciId, deger);
-        satir.className = 'yok-satir d-' + deger;
-        for (const x of grup.children) x.setAttribute('aria-pressed', String(x === b));
+        kap.className = 'yok-kap d-' + deger;
+        sec.textContent = IKON[deger];
+        for (const x of menu.children) x.setAttribute('aria-pressed', String(x === b));
+        menu.classList.add('gizli');
+        sec.setAttribute('aria-expanded', 'false');
         ozetGuncelle();
       });
-      grup.appendChild(b);
+      menu.appendChild(b);
     }
-    satir.appendChild(grup);
-    t.appendChild(satir);
+    sec.addEventListener('click', () => {
+      const acik = menu.classList.contains('gizli');
+      for (const m of t.querySelectorAll('.yok-menu')) m.classList.add('gizli');
+      for (const x of t.querySelectorAll('.yok-sec')) x.setAttribute('aria-expanded', 'false');
+      if (acik) { menu.classList.remove('gizli'); sec.setAttribute('aria-expanded', 'true'); }
+    });
+    satir.appendChild(sec);
+    kap.append(satir, menu);
+    t.appendChild(kap);
   }
   ozetGuncelle();
 }
