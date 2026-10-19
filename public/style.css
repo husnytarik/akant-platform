@@ -1313,3 +1313,7 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .ogr-chip.cikti { background: #fbeeee; border-color: #f1d2d0; color: #9a6a68; }
 .ogr-chip.cikti span { text-decoration: line-through; }
 .ogr-chip.cikti i { background: #d64545; }
+
+/* Ders detay sekmeleri: dört sekme kaydırmadan sığar */
+.ders-panel .sekmeler { overflow: visible; }
+.ders-panel .sekmeler button { flex: 1 1 0; min-width: 0; padding: 0 4px; font-size: .8rem; }
