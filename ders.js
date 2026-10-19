@@ -43,7 +43,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const sonuc = ogrenciler.map(id => {
       const ad = db.prepare('SELECT u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?').get(id).ad;
       const odevler = db.prepare(`
-        SELECT od.id, od.title AS baslik, od.note AS aciklama, od.due_date AS sonTarih, co.name AS ders, u.full_name AS ogretmen
+        SELECT od.id, od.title AS baslik, od.note AS aciklama, od.kazanim, od.due_date AS sonTarih, co.name AS ders, u.full_name AS ogretmen
         FROM class_students cs JOIN assignments a ON a.class_id = cs.class_id
         JOIN odevler od ON od.assignment_id = a.id JOIN courses co ON co.id = a.course_id
         LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
@@ -263,7 +263,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/ders/odevler') {
     const a = atamaGetir(url.searchParams.get('atamaId'));
     if (!a) return hata(404, 'Ders bulunamadı');
-    json(res, 200, { odevler: db.prepare('SELECT id, title AS baslik, note AS aciklama, due_date AS sonTarih, visible_from AS gorunur FROM odevler WHERE assignment_id = ? ORDER BY due_date DESC, id DESC LIMIT 100').all(a.id) });
+    json(res, 200, { odevler: db.prepare('SELECT id, title AS baslik, note AS aciklama, kazanim, due_date AS sonTarih, visible_from AS gorunur FROM odevler WHERE assignment_id = ? ORDER BY due_date DESC, id DESC LIMIT 100').all(a.id) });
     return true;
   }
 
@@ -287,7 +287,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       const gorunur = String(b.gorunur || '') || bugun();
       if (!tarihGecerli(gorunur) || gorunur < bugun()) return hata(400, 'Yayın tarihi geçersiz (bugün veya sonrası olmalı)');
       if (gorunur > tarih) return hata(400, 'Yayın tarihi son teslim tarihinden sonra olamaz');
-      const id = Number(db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, visible_from) VALUES (?,?,?,?,?,?)').run(a.id, baslik, aciklama || null, tarih, simdi, gorunur > bugun() ? gorunur : null).lastInsertRowid);
+      const id = Number(db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, visible_from, kazanim) VALUES (?,?,?,?,?,?,?)').run(a.id, baslik, aciklama || null, tarih, simdi, gorunur > bugun() ? gorunur : null, kazanim || null).lastInsertRowid);
       denetle(o.user_id, 'odev-ekle', { id, atamaId: a.id });
     }
     json(res, 200, { tamam: true });

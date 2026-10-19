@@ -349,7 +349,7 @@ function kazanimAlani(girdi) {
   return kutu;
 }
 
-function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, kazanimli, planli }) {
+function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, kazanimli, kazanimEtiket, planli }) {
   const f = el('form', undefined, 'ekle-form');
   const satir = el('div', undefined, 'form-satir');
   const sol = document.createElement('div');
@@ -369,7 +369,7 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, 
   f.append(satir, l3, ac);
   let kaz = null;
   if (kazanimli) {
-    const l4 = el('label', 'Kazanım (isteğe bağlı; sınavda bu kazanımı ölçen sorular için "dersi aldı mı" kontrolünde kullanılır)'); l4.htmlFor = 'f-kazanim';
+    const l4 = el('label', kazanimEtiket || 'Kazanım (isteğe bağlı; sınavda bu kazanımı ölçen sorular için "dersi aldı mı" kontrolünde kullanılır)'); l4.htmlFor = 'f-kazanim';
     kaz = el('input'); kaz.id = 'f-kazanim'; kaz.maxLength = 300; kaz.autocomplete = 'off'; kaz.placeholder = 'Kod veya kelimeyle arayın';
     f.append(l4, kaz, kazanimAlani(kaz));
   }
@@ -417,14 +417,14 @@ async function odevlerCiz() {
   k.replaceChildren();
   k.appendChild(ekleForm({
     tarihEtiket: 'Son teslim tarihi', tarihDeger: gunKaydir(bugun, 7), tarihMin: bugun,
-    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g), planli: true,
+    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g), planli: true, kazanimli: true, kazanimEtiket: 'Ödevin kazanımı (isteğe bağlı)',
   }));
   const r = await api('/api/ders/odevler?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   k.appendChild(el('h3', 'Verilen ödevler', 'baslik3'));
   if (!r.veri.odevler.length) k.appendChild(el('p', 'Henüz ödev verilmemiş.', 'alt'));
   for (const x of r.veri.odevler) {
-    k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), [x.gorunur && x.gorunur > bugun ? 'Planlı: ' + kisaTarih(x.gorunur) + ' tarihinde öğrencilere görünür' : '', x.aciklama].filter(Boolean).join(' · '), async () => {
+    k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), [x.gorunur && x.gorunur > bugun ? 'Planlı: ' + kisaTarih(x.gorunur) + ' tarihinde öğrencilere görünür' : '', x.aciklama, x.kazanim ? 'Kazanım: ' + x.kazanim : ''].filter(Boolean).join(' · '), async () => {
       const s = await api('/api/ders/odev-sil', { id: x.id });
       if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
       sekmeAc(sekme);

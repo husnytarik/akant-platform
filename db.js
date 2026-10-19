@@ -255,6 +255,9 @@ okulNoDoldur();
 if (!sutunlar('odevler').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE odevler ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }
+if (!sutunlar('odevler').some(c => c.name === 'kazanim')) {
+  db.exec('ALTER TABLE odevler ADD COLUMN kazanim TEXT');
+}
 if (!sutunlar('konular').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE konular ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }

@@ -66,14 +66,16 @@ async function bitirCiz(k, bitince) {
   // Ödev
   const ob = el('input'); ob.id = 'b-odev'; ob.maxLength = 120; ob.placeholder = 'Örn. Sayfa 40-41 alıştırmaları'; ob.value = r.veri.odev?.baslik || '';
   const oa = el('input'); oa.id = 'b-odev-ac'; oa.maxLength = 500; oa.value = r.veri.odev?.aciklama || '';
+  const ok = el('input'); ok.id = 'b-odev-kaz'; ok.maxLength = 300; ok.autocomplete = 'off'; ok.placeholder = 'Kod veya kelimeyle arayın'; ok.value = r.veri.odev?.kazanim || '';
   const ot = el('input'); ot.id = 'b-odev-tarih'; ot.type = 'date';
   ot.value = r.veri.odev?.sonTarih || new Date(Date.now() + 7 * 864e5).toLocaleDateString('sv-SE');
   const l1 = el('label', 'Ödev'); l1.htmlFor = 'b-odev';
   const l2 = el('label', 'Açıklama'); l2.htmlFor = 'b-odev-ac';
+  const lok = el('label', 'Ödevin kazanımı (isteğe bağlı)'); lok.htmlFor = 'b-odev-kaz';
   const l3 = el('label', 'Son teslim tarihi'); l3.htmlFor = 'b-odev-tarih';
   const odevKutu = el('div', undefined, 'adim');
   const odevUst = el('div', undefined, 'adim-ust'); odevUst.append(el('h3', 'Ödev'), el('span', 'isteğe bağlı', 'alt'));
-  odevKutu.append(odevUst, l1, ob, l2, oa, l3, ot);
+  odevKutu.append(odevUst, l1, ob, l2, oa, lok, ok, kazanimAlani(ok), l3, ot);
 
   // Düğmeler
   const iptal = el('button', 'Dersi iptal et', 'ikincil tehlike'); iptal.type = 'button';
@@ -100,7 +102,7 @@ async function bitirCiz(k, bitince) {
       tarih, sinifId: ders.sinifId, dersSaati: ders.dersSaati,
       kayitlar: ogrenciler.map(o => ({ ogrenciId: o.ogrenciId, durum: durum.get(o.ogrenciId) })),
       konu: konu.value, kazanim: kaz.value,
-      odev: { baslik: ob.value, aciklama: oa.value, sonTarih: ot.value },
+      odev: { baslik: ob.value, aciklama: oa.value, kazanim: ok.value, sonTarih: ot.value },
     });
     if (!s.ok) return hataGoster(s.veri.hata || 'Hata');
     hataTemizle();

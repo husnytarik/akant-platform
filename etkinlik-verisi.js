@@ -74,18 +74,18 @@ function calistir() {
     }
 
     // Konular ve ödevler
-    const odevEkle = db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at) VALUES (?,?,?,?,?)');
+    const odevEkle = db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, kazanim) VALUES (?,?,?,?,?,?)');
     let odevSayisi = 0;
     for (const a of atamalar) {
       if (Math.random() < 0.7) {
-        odevEkle.run(a.id, sec(ODEVLER), 'Ders kitabından belirtilen bölümler.', kaydir(bugun, Math.floor(Math.random() * 12) - 3), simdi);
+        odevEkle.run(a.id, sec(ODEVLER), 'Ders kitabından belirtilen bölümler.', kaydir(bugun, Math.floor(Math.random() * 12) - 3), simdi, sonrakiKonu(a.id).kazanim);
         odevSayisi++;
       }
     }
     // Demo öğretmenin dersleri için garanti kayıt
     const demoOgrt = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.full_name = 'Demo Öğretmen' AND m.role = 'ogretmen'`).get()?.id;
     for (const a of atamalar.filter(a => a.ogr === demoOgrt)) {
-      odevEkle.run(a.id, 'Alıştırma çalışması', 'Sayfa 40-41 alıştırmaları.', kaydir(bugun, 4), simdi);
+      odevEkle.run(a.id, 'Alıştırma çalışması', 'Sayfa 40-41 alıştırmaları.', kaydir(bugun, 4), simdi, sonrakiKonu(a.id).kazanim);
       odevSayisi++;
     }
 

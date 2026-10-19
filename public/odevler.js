@@ -37,6 +37,7 @@ const kisa = t => t.split('-').reverse().join('.');
       const orta = el('div', undefined, 'etut-orta');
       orta.append(el('strong', x.baslik), el('span', `${x.ders}${x.ogretmen ? ' · ' + x.ogretmen : ''}`, 'alt'));
       if (x.aciklama) orta.appendChild(el('span', x.aciklama, 'odev-aciklama'));
+      if (x.kazanim) orta.appendChild(el('span', 'Kazanım: ' + x.kazanim, 'odev-aciklama'));
       const sag = el('span', gecmis ? 'Süresi doldu' : fark === 0 ? 'Bugün' : fark === 1 ? 'Yarın' : `${fark} gün`, 'etiket odev-etiket');
       kart.append(rozet, orta, sag);
       liste.appendChild(kart);
