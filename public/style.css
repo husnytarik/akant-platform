@@ -1327,3 +1327,15 @@ h1, h2, h3, strong, .alt { font-variant-numeric: lining-nums tabular-nums; }
 .yok-ozet .gosterge { margin-top: 10px; }
 .yok-toplu { display: inline-flex; align-items: center; gap: 8px; height: 38px; margin: 0 0 12px; padding: 0 16px 0 8px; border: 0; border-radius: 999px; background: #f1ede4; color: var(--murekkep); font: inherit; font-size: .88rem; cursor: pointer; }
 .yok-toplu-ikon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #2e9e5b; color: #fff; font-size: .8rem; }
+
+/* Pasta menü: birleşik halka dilimleri */
+.pasta-svg { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); overflow: visible; animation: pastaAcil .18s ease-out; }
+@keyframes pastaAcil { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.pasta-pay { cursor: pointer; outline: 0; }
+.pasta-pay path { fill: var(--dk); stroke: #fff; stroke-width: 2; stroke-linejoin: round; opacity: .88; transition: opacity .12s, transform .12s; transform-origin: 0 0; }
+.pasta-pay:hover path, .pasta-pay:focus path { opacity: 1; transform: scale(1.04); }
+.pasta-pay[aria-pressed="true"] path { opacity: 1; stroke: var(--murekkep); stroke-width: 2.5; }
+.pasta-pay.s-geldi { --dk: #2e9e5b; } .pasta-pay.s-gelmedi { --dk: #d64545; } .pasta-pay.s-gec { --dk: #e0a100; } .pasta-pay.s-izinli { --dk: #8a867d; }
+.pasta-ikon { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.pasta-yazi { fill: #fff; font-size: 10.5px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; pointer-events: none; letter-spacing: .02em; }
+.pasta-ad { width: 70px; z-index: 1; pointer-events: none; }
