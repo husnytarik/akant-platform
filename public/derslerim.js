@@ -55,19 +55,22 @@ function kisaTarih(t) {
   return `${g}.${a}.${y}`;
 }
 
-function etutDetayCiz(k, g, e) {
+// Etüt de aynı alt panelde açılır (günlük ve haftalık görünümde aynı yer)
+function etutAc(e, t) {
+  ders = null;
+  $('p-baslik').replaceChildren(dersChip(e.kisa || 'E', e.renk), ` Etüt · ${e.ders || 'Genel'}`);
+  $('p-alt').textContent = `${tarihYaz(t)} · ${e.saat} · ${e.sure} dk${e.yer ? ' · ' + e.yer : ''}`;
+  $('p-kapat').classList.remove('gizli');
+  $('sekmeler').classList.add('gizli');
+  const k = $('icerik');
   k.replaceChildren();
-  k.classList.remove('gizli');
-  const ust = el('div', undefined, 'detay-ust');
-  ust.append(dersChip(e.kisa || 'E', e.renk), el('strong', `Etüt · ${e.ders || 'Genel'}`));
-  k.appendChild(ust);
-  k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${e.saat} · ${e.sure} dk${e.yer ? ' · ' + e.yer : ''}`, 'alt'));
   if (e.konu) k.appendChild(el('p', `Konu: ${e.konu}`));
   k.appendChild(el('p', `${e.kisi} öğrenci davetli`));
-  const a = el('a', 'Etüt sayfası', 'dugme-link');
-  a.href = '/etut';
-  k.appendChild(a);
-  k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const git = el('a', 'Etüt sayfası', 'dugme-link');
+  git.href = '/etut';
+  k.appendChild(git);
+  zamanCiz();
+  $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Gelecek gün ya da bugünün henüz başlamamış dersi bitirilemez
@@ -75,24 +78,6 @@ function dersBasladi(t, aralik) {
   if (t !== bugun) return t < bugun;
   const simdi = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
   return (aralik || '').slice(0, 5) <= simdi;
-}
-
-function detayCiz(k, g, d) {
-  k.replaceChildren();
-  k.classList.remove('gizli');
-  const ust = el('div', undefined, 'detay-ust');
-  ust.append(dersChip(d.kisa, d.renk), el('strong', `${d.sinif} · ${d.ders}`));
-  k.appendChild(ust);
-  k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}`, 'alt'));
-  k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
-  const butonlar = el('div', undefined, 'hafta-butonlar');
-  const basladi = dersBasladi(g.tarih, d.aralik);
-  const b = el('button', basladi ? (d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi aç' : 'Dersi bitir') : 'Öğrenciler, konu, ödev', basladi ? 'birincil' : 'ikincil');
-  b.type = 'button';
-  b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
-  butonlar.appendChild(b);
-  k.appendChild(butonlar);
-  k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function haftaYukle() {
@@ -114,17 +99,13 @@ async function haftaYukle() {
     bas.appendChild(th);
   }
   t.appendChild(bas);
-  const detay = el('div', undefined, 'hafta-detay gizli');
   let secilen = null;
   const secim = (b, g, d, etut) => {
     secilen?.classList.remove('secili');
     secilen = b;
     b.classList.add('secili');
-    if (etut) { etutDetayCiz(detay, g, d); return; }
-    // Ders: özet kutusu yerine doğrudan tam ders detayı (yoklama, öğrenciler, konu, ödev) açılır
-    detay.classList.add('gizli');
     tarih = g.tarih;
-    dersAc(d, true);
+    if (etut) etutAc(d, g.tarih); else dersAc(d, true);
   };
   for (const satir of saatSatirlari(r.veri.zamanlar, gunler)) {
     const tr = document.createElement('tr');
@@ -163,7 +144,7 @@ async function haftaYukle() {
   if (etutler.length) ozet.append(` · ${etutler.length} etüt (${etutDk} dk)`);
   const aciklama = el('p', undefined, 'hafta-not');
   aciklama.append(el('span', '✓ ders işlendi'), el('span', '⊘ ders iptal'), el('span', '! süresi geçti, tamamlanmadı'), el('span', 'Kesik çizgi: etüt'));
-  $('hafta').replaceChildren(ozet, t, aciklama, detay);
+  $('hafta').replaceChildren(ozet, t, aciklama);
   atamaCiz();
 }
 
@@ -215,7 +196,7 @@ function zamanCiz() {
       if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + d.durum); i.title = isaret[1]; i.setAttribute('aria-label', isaret[1]); satir.appendChild(i); }
       satir.addEventListener('click', () => dersAc(d, true));
     } else {
-      satir.addEventListener('click', () => { location.href = '/etut'; });
+      satir.addEventListener('click', () => etutAc(d, tarih));
     }
     k.appendChild(satir);
   }
@@ -246,6 +227,7 @@ function dersBos() {
   $('p-baslik').textContent = 'Ders detayı';
   $('p-alt').textContent = 'Yukarıdan bir ders seçin.';
   $('p-kapat').classList.add('gizli');
+  $('sekmeler').classList.remove('gizli');
   sekme = 'ogrenciler';
   for (const b of $('sekmeler').children) { b.disabled = true; b.classList.toggle('gizli', b.dataset.sekme === 'bitir'); b.setAttribute('aria-pressed', String(b.dataset.sekme === 'ogrenciler')); }
   $('icerik').replaceChildren(el('p', 'Bir ders seçtiğinizde öğrenci listesi, işlenen konular ve ödevler burada görünür.', 'bos-not'));
@@ -256,6 +238,7 @@ function dersAc(d, programdan) {
   $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), ` ${d.sinif} · ${d.ders}`);
   $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
   $('p-kapat').classList.remove('gizli');
+  $('sekmeler').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
   const bitirVar = ders.dersSaati !== null && dersBasladi(tarih, d.aralik);
