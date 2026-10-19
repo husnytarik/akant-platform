@@ -43,6 +43,36 @@ function bitis(saat, sure) {
 }
 const zamanYaz = e => `${tarihYaz(e.tarih)} · ${e.saat}–${bitis(e.saat, e.sureDk)} (${e.sureDk} dk)`;
 
+
+const AY = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+// Kart başlığı: tarih rozeti + konu + saat/yer satırları (ikonlu)
+function etutBaslik(e, baslik, bilgiler) {
+  const ust = el('div', undefined, 'etut-ust');
+  const [, a, g] = e.tarih.split('-');
+  const rozet = el('div', undefined, 'tarih-rozet');
+  rozet.append(el('strong', String(Number(g))), el('span', AY[Number(a) - 1]));
+  const orta = el('div', undefined, 'etut-orta');
+  orta.appendChild(el('strong', baslik));
+  orta.appendChild(el('span', `${e.saat}–${bitis(e.saat, e.sureDk)} · ${e.sureDk} dk`, 'etut-saat'));
+  for (const b of bilgiler.filter(Boolean)) orta.appendChild(el('span', b, 'alt'));
+  ust.append(rozet, orta);
+  return ust;
+}
+
+// Davet yanıtlarının dağılımı: yığın çubuk + gösterge
+function katilimOzeti(katilimcilar) {
+  const say = { gelecek: 0, gelmeyecek: 0, bekliyor: 0 };
+  for (const k of katilimcilar) say[k.yanit]++;
+  const d = [
+    { deger: say.gelecek, renk: '#2e9e5b', etiket: 'gelecek' },
+    { deger: say.gelmeyecek, renk: '#d64545', etiket: 'gelmeyecek' },
+    { deger: say.bekliyor, renk: '#c9c2b2', etiket: 'bekliyor' },
+  ];
+  const k = el('div', undefined, 'katilim');
+  k.append(yiginCubuk(d), gosterge(d));
+  return k;
+}
+
 function onayKutusu(metin, kume, id, degisti) {
   const l = el('label', undefined, 'onay');
   const c = document.createElement('input');
@@ -163,12 +193,9 @@ function bilgiSatiri(e) {
 function ogretmenKarti(e) {
   const kart = el('div', undefined, 'kutu');
   const iptal = e.durum === 'iptal';
-  kart.appendChild(el('strong', e.konu + (iptal ? ' (iptal edildi)' : '')));
-  kart.appendChild(el('p', zamanYaz(e), 'alt'));
-  if (e.ders || e.yer) kart.appendChild(bilgiSatiri(e));
-  const say = { bekliyor: 0, gelecek: 0, gelmeyecek: 0 };
-  for (const k of e.katilimcilar) say[k.yanit]++;
-  kart.appendChild(el('p', `Davetli ${e.katilimcilar.length} · Gelecek ${say.gelecek} · Gelmeyecek ${say.gelmeyecek} · Bekliyor ${say.bekliyor}`));
+  if (iptal) kart.classList.add('iptal');
+  kart.appendChild(etutBaslik(e, e.konu + (iptal ? ' (iptal)' : ''), [[e.ders, e.yer].filter(Boolean).join(' · ')]));
+  kart.appendChild(katilimOzeti(e.katilimcilar));
 
   const d = document.createElement('details');
   const alinan = e.katilimcilar.filter(k => k.devam).length;
@@ -234,12 +261,13 @@ function ogretmenKarti(e) {
 function veliKarti(e) {
   const kart = el('div', undefined, 'kutu');
   const iptal = e.durum === 'iptal';
-  kart.appendChild(el('strong', `${e.ogrenci}: ${e.konu}` + (iptal ? ' (iptal edildi)' : '')));
-  kart.appendChild(el('p', zamanYaz(e), 'alt'));
-  kart.appendChild(el('p', ['Öğretmen: ' + e.ogretmen, e.ders, e.yer].filter(Boolean).join(' · '), 'alt'));
-  if (e.not) kart.appendChild(el('p', 'Not: ' + e.not));
-  kart.appendChild(el('p', 'Durum: ' + YANIT_ADI[e.yanit]));
-  if (e.devam) kart.appendChild(el('p', 'Etüt yoklaması: ' + DEVAM_ADI[e.devam]));
+  if (iptal) kart.classList.add('iptal');
+  kart.appendChild(etutBaslik(e, `${e.ogrenci}: ${e.konu}` + (iptal ? ' (iptal)' : ''), ['Öğretmen: ' + e.ogretmen, [e.ders, e.yer].filter(Boolean).join(' · ')]));
+  if (e.not) kart.appendChild(el('p', 'Not: ' + e.not, 'etut-not'));
+  const rozetler = el('div', undefined, 'etut-rozetler');
+  rozetler.appendChild(el('span', 'Yanıt: ' + YANIT_ADI[e.yanit], 'etiket y-' + e.yanit));
+  if (e.devam) rozetler.appendChild(el('span', 'Yoklama: ' + DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
+  kart.appendChild(rozetler);
   if (!iptal) {
     const yanitla = yanit => async () => {
       const r = await api('/api/etut/yanit', { etutId: e.id, ogrenciId: e.ogrenciId, yanit });
@@ -257,12 +285,13 @@ function veliKarti(e) {
 
 function ogrenciKarti(e) {
   const kart = el('div', undefined, 'kutu');
-  kart.appendChild(el('strong', e.konu + (e.durum === 'iptal' ? ' (iptal edildi)' : '')));
-  kart.appendChild(el('p', zamanYaz(e), 'alt'));
-  kart.appendChild(el('p', ['Öğretmen: ' + e.ogretmen, e.ders, e.yer].filter(Boolean).join(' · '), 'alt'));
-  if (e.not) kart.appendChild(el('p', 'Not: ' + e.not));
-  kart.appendChild(el('p', 'Veli yanıtı: ' + YANIT_ADI[e.yanit]));
-  if (e.devam) kart.appendChild(el('p', 'Etüt yoklaması: ' + DEVAM_ADI[e.devam]));
+  if (e.durum === 'iptal') kart.classList.add('iptal');
+  kart.appendChild(etutBaslik(e, e.konu + (e.durum === 'iptal' ? ' (iptal)' : ''), ['Öğretmen: ' + e.ogretmen, [e.ders, e.yer].filter(Boolean).join(' · ')]));
+  if (e.not) kart.appendChild(el('p', 'Not: ' + e.not, 'etut-not'));
+  const rozetler = el('div', undefined, 'etut-rozetler');
+  rozetler.appendChild(el('span', 'Veli yanıtı: ' + YANIT_ADI[e.yanit], 'etiket y-' + e.yanit));
+  if (e.devam) rozetler.appendChild(el('span', 'Yoklama: ' + DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
+  kart.appendChild(rozetler);
   return kart;
 }
 

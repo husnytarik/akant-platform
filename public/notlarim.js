@@ -23,6 +23,13 @@ const tarihYaz = t => t.split('-').reverse().join('.');
       ust.append(el('strong', s.ad), el('span', tarihYaz(s.tarih), 'alt'));
       kart.appendChild(ust);
       kart.appendChild(el('p', `Ortalama puan: ${s.ortalama} · Sınav sırası: ${s.sira} / ${s.giren}`));
+      const yatay = el('div', undefined, 'yatay');
+      for (const d of s.dersler) {
+        const s2 = el('div', undefined, 'yatay-satir'); const cubuk = el('span', undefined, 'yatay-cubuk'); const i = el('i');
+        i.style.setProperty('--w', Math.max(0, Math.min(100, Number(d.puan))) + '%'); cubuk.append(i);
+        s2.append(el('span', d.ders, 'yatay-ad'), cubuk, el('b', String(Math.round(Number(d.puan))))); yatay.append(s2);
+      }
+      kart.appendChild(yatay);
       const tablo = el('table', undefined, 'sinav-tablo');
       const bas = el('tr');
       for (const t of ['Ders', 'Doğru', 'Yanlış', 'Boş', 'Net', 'Puan']) bas.append(el('th', t));

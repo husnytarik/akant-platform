@@ -117,10 +117,13 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   const bant = document.getElementById('bant');
   let anim = false;
   try { anim = sessionStorage.getItem('giris-anim') === '1'; sessionStorage.removeItem('giris-anim'); } catch {}
+  const kok = document.documentElement;
   if (anim) {
     bant.classList.add('buyuk');
-    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => bant.classList.remove('buyuk'), 350)));
-  }
+    kok.classList.remove('giris-gec');
+    // İlk çizim büyük halde yapıldı; kısa bir bekleyişten sonra mevcut konumdan yukarı daralır
+    setTimeout(() => bant.classList.remove('buyuk'), 450);
+  } else kok.classList.remove('giris-gec');
   document.getElementById('rol').textContent = ROL_ADI[k.rol] || k.rol;
   document.getElementById('sube').textContent = k.sube || '';
   if (k.coklu) document.getElementById('profil-degis').classList.remove('gizli');

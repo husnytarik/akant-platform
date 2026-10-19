@@ -301,6 +301,37 @@ async function sonucCiz() {
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   const v = r.veri;
   kutu.append(el('p', `${v.giren} / ${v.beklenen} öğrenci sınava girdi. ${KAT_YAZI(v.sinav.yanlisKat)}; puan = net / soru sayısı × 100. Karne için öğrencinin adına tıklayın.`, 'alt'));
+  // Özet grafikler: ortalama, dağılım (puan aralığı), ders ortalamaları
+  const ortalamalar = v.ogrenciler.filter(g => g.ortalama !== null).map(g => g.ortalama);
+  if (ortalamalar.length) {
+    const ort = ortalamalar.reduce((t, x) => t + x, 0) / ortalamalar.length;
+    const ozet = el('div', undefined, 'sinav-ozet');
+    for (const [say, ad] of [[ort.toFixed(1), 'Sınıf ortalaması'], [Math.max(...ortalamalar).toFixed(1), 'En yüksek'], [Math.min(...ortalamalar).toFixed(1), 'En düşük']]) {
+      const k = el('div', undefined, 'odev-sayac'); k.append(el('strong', say), el('span', ad)); ozet.append(k);
+    }
+    kutu.append(ozet);
+    const araliklar = ['0-20', '20-40', '40-60', '60-80', '80-100'];
+    const sayilar = araliklar.map(() => 0);
+    for (const o of ortalamalar) sayilar[Math.min(4, Math.floor(o / 20))]++;
+    const renkler = ['#d64545', '#e0803a', '#e0a100', '#7bb661', '#2e9e5b'];
+    const kart = el('div', undefined, 'kutu');
+    kart.append(el('h3', 'Puan dağılımı (öğrenci sayısı)', 'mini-baslik'), sutunGrafik(araliklar.map((a, i) => ({ etiket: a, deger: sayilar[i], renk: renkler[i] })), 100));
+    const dersOrt = v.dersler.map(d => {
+      const p = v.ogrenciler.map(g => g.dersler[d.id]).filter(Boolean).map(x => Number(x.puan));
+      return { ders: d.ders, ort: p.length ? p.reduce((t, x) => t + x, 0) / p.length : 0 };
+    });
+    if (dersOrt.length > 1) {
+      kart.append(el('h3', 'Ders ortalamaları', 'mini-baslik'));
+      const kap = el('div', undefined, 'yatay');
+      for (const d of dersOrt) {
+        const s = el('div', undefined, 'yatay-satir'); const cubuk = el('span', undefined, 'yatay-cubuk'); const i = el('i');
+        i.style.setProperty('--w', Math.min(100, d.ort) + '%'); cubuk.append(i);
+        s.append(el('span', d.ders, 'yatay-ad'), cubuk, el('b', d.ort.toFixed(0))); kap.append(s);
+      }
+      kart.append(kap);
+    }
+    kutu.append(kart);
+  }
   const tablo = el('table', '', 'sinav-tablo');
   const bas = el('tr'); bas.append(el('th', 'Sıra'), el('th', 'No'), el('th', 'Öğrenci'), el('th', 'Sınıf'));
   for (const d of v.dersler) bas.append(el('th', `${d.ders} D/Y/B`), el('th', 'Net'), el('th', 'Puan'));
@@ -336,6 +367,10 @@ async function analizCiz() {
   for (const a of r.veri.analiz) {
     kutu.append(el('h3', `${a.ders} · ${a.giren} öğrenci`, 'baslik3'));
     if (!a.giren) { kutu.append(el('p', 'Henüz cevap girilmedi.', 'alt')); continue; }
+    const renkB = b => (b < 40 ? '#d64545' : b < 70 ? '#e0a100' : '#2e9e5b');
+    const grafikKart = el('div', undefined, 'kutu');
+    grafikKart.append(el('h3', 'Soru başarısı (%)', 'mini-baslik'), sutunGrafik(a.sorular.map(q => ({ etiket: String(q.no), deger: q.basari, renk: q.iptal ? '#c9c2b2' : renkB(q.basari) })), 90));
+    kutu.append(grafikKart);
     const tablo = el('table', '', 'sinav-tablo');
     const bas = el('tr');
     for (const t of ['Soru', 'Doğru şık', 'Doğru', 'Yanlış', 'Boş', 'Başarı', 'Zorluk', 'Ayırt edicilik', 'A', 'B', 'C', 'D', 'E']) bas.append(el('th', t));
