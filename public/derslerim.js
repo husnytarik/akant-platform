@@ -243,6 +243,7 @@ function dersBos() {
   $('p-baslik').textContent = 'Ders detayı';
   $('p-alt').textContent = 'Yukarıdan bir ders seçin.';
   $('p-kapat').classList.add('gizli');
+  $('bitir-sabit').classList.add('gizli');
   for (const b of $('sekmeler').children) { b.disabled = true; b.classList.remove('gizli'); b.setAttribute('aria-pressed', String(b.dataset.sekme === 'ogrenciler')); }
   $('icerik').replaceChildren(el('p', 'Bir ders seçtiğinizde öğrenci listesi, işlenen konular ve ödevler burada görünür.', 'bos-not'));
 }
@@ -254,9 +255,11 @@ function dersAc(d, programdan) {
   $('p-kapat').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
-  const bitirVar = ders.dersSaati !== null;
-  $('sekmeler').querySelector('[data-sekme="yoklama"]').classList.toggle('gizli', !bitirVar);
-  if (!bitirVar && sekme === 'yoklama') sekme = 'ogrenciler';
+  if (sekme === 'yoklama') sekme = 'ogrenciler';
+  const bitir = $('bitir-sabit');
+  const bitirVar = ders.dersSaati !== null && tarih <= bugun;
+  bitir.classList.toggle('gizli', !bitirVar);
+  if (bitirVar) bitir.href = `/yoklama?tarih=${tarih}&sinifId=${ders.sinifId}&dersSaati=${ders.dersSaati}`;
   sekmeAc(sekme);
   $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -264,7 +267,7 @@ function dersAc(d, programdan) {
 function sekmeAc(ad) {
   sekme = ad;
   for (const b of $('sekmeler').children) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
-  const yukle = { ogrenciler: ogrencilerCiz, yoklama: yoklamaCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
+  const yukle = { ogrenciler: ogrencilerCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
   yukle();
 }
 
@@ -312,24 +315,6 @@ async function ogrencilerCiz() {
   sar.appendChild(t);
   k.appendChild(sar);
   if (gunluk && r.veri.yoklamaAlindi) k.appendChild(el('p', '✓ geldi (yeşil) · G geç (sarı) · ✗ gelmedi (kırmızı) · İ izinli (gri)', 'alt'));
-}
-
-function yoklamaCiz() {
-  const k = $('icerik');
-  k.replaceChildren();
-  const tar = tarih > bugun ? bugun : tarih;
-  if (!ders.dersSaati) {
-    k.appendChild(el('p', 'Dersi bitirmek için yukarıdaki günlük programdan bir ders saati seçin.', 'alt'));
-    return;
-  }
-  if (tarih > bugun) k.appendChild(el('p', 'Gelecek tarih için yoklama alınamaz.', 'alt'));
-  else {
-    k.appendChild(el('p', 'Yoklama, işlenen konu ve kazanımı girerek dersi tamamlayın.', 'alt'));
-    const a = el('a', 'Dersi bitir');
-    a.href = `/yoklama?tarih=${tar}&sinifId=${ders.sinifId}&dersSaati=${ders.dersSaati}`;
-    a.className = 'dugme-link';
-    k.appendChild(a);
-  }
 }
 
 function listeKart(baslik, alt, aciklama, sil) {
