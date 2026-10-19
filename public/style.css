@@ -1363,3 +1363,24 @@ main .hafta-tablo .hucre.iptal { opacity: .55; text-decoration: line-through; }
 main .hafta-tablo .hucre.secili { outline: 2px solid var(--ana); outline-offset: 1px; }
 main .hafta-tablo .hucre.etut { background: #f4eefc; color: #6d3fc0; border: 1px dashed #c9b3ee; flex-direction: column; min-height: 34px; }
 main .hafta-tablo .hucre.etut span { font-size: .56rem; }
+
+/* Günlük ders satırları: temiz kart, solda ince renk çizgisi, sağda durum noktası */
+main .ders-satir, main .ders-satir:not(.etut-satir) { position: relative; display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; min-height: 62px; margin: 0 0 8px; padding: 10px 14px 10px 22px; text-align: left;
+  background: #fff; color: var(--murekkep); border: 1px solid #eee8db; border-left: 1px solid #eee8db; border-radius: 20px; outline: 0; filter: none; }
+main .ders-satir::before { content: ""; position: absolute; left: 9px; top: 15px; bottom: 15px; width: 4px; border-radius: 4px; background: var(--ders, var(--ana)); }
+main .ders-satir:hover, main .ders-satir:not(.etut-satir):hover { background: color-mix(in srgb, var(--ders, var(--ana)) 5%, #fff); }
+main .ders-satir.secili, main .ders-satir.secili:not(.etut-satir) { background: color-mix(in srgb, var(--ders, var(--ana)) 10%, #fff); border-color: color-mix(in srgb, var(--ders, var(--ana)) 55%, #fff); outline: 0; }
+main .ders-satir .ders-zaman { display: flex; flex-direction: column; gap: 1px; color: var(--soluk); font-size: .72rem; }
+main .ders-satir .ders-zaman strong { font-family: inherit; font-size: .98rem; font-weight: 600; color: var(--murekkep); font-variant-numeric: tabular-nums; }
+main .ders-satir .ders-orta strong { font-family: inherit; font-size: 1.05rem; font-weight: 600; color: var(--murekkep); }
+main .ders-satir .ders-orta span { color: var(--soluk); font-size: .8rem; }
+main .ders-satir .durum-isaret { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: #f1ede4; color: var(--soluk); }
+main .ders-satir .durum-isaret.gecikti { background: #fdebe8; color: #b3261e; }
+main .ders-satir .durum-isaret.tamam { background: #e3f4ea; color: #1f7a43; }
+main .ders-satir.etut-satir { background: #f8f4fd; border: 1px dashed #cdb8ee; }
+main .ders-satir.etut-satir::before { background: #8b5cd6; }
+main .ders-satir.etut-satir .ders-zaman, main .ders-satir.etut-satir .ders-zaman strong, main .ders-satir.etut-satir .ders-orta strong { color: #6d3fc0; }
+main .ders-satir.etut-satir .ders-orta span { color: #8c78b0; }
+main .ders-satir.secili:not(.etut-satir), main .ders-satir:not(.etut-satir):hover { border: 1px solid #eee8db; border-radius: 20px; padding: 10px 14px 10px 22px; margin: 0 0 8px; min-height: 62px; }
+main .ders-satir.secili:not(.etut-satir) { border-color: color-mix(in srgb, var(--ders, var(--ana)) 55%, #fff); }
+main .ders-satir.etut-satir, main .ders-satir.etut-satir:hover, main .ders-satir.etut-satir.secili { border: 1px dashed #cdb8ee; border-radius: 20px; padding: 10px 14px 10px 22px; margin: 0 0 8px; min-height: 62px; background: #f8f4fd; }
