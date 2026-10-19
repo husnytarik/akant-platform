@@ -95,8 +95,50 @@ function ozetGuncelle() {
   hepsi.checked = g.length > 0 && secili === g.length;
   hepsi.indeterminate = secili > 0 && secili < g.length;
   hepsi.disabled = !g.length;
+  sinifChipleriCiz();
   const n = seciliOgrenciler.size;
   $('secim-ozet').textContent = n ? `Davet edilecek öğrenci: ${n}` : 'Henüz öğrenci seçilmedi.';
+}
+
+// Sınıf düğmeleri: dokununca sınıfın tüm öğrencileri eklenir/çıkarılır; kısmi seçim "7/17" olarak görünür
+function sinifChipleriCiz() {
+  const kap = $('sinif-chips');
+  if (!kap || !secenek) return;
+  kap.replaceChildren();
+  const seviyeler = new Map();
+  for (const s of secenek.siniflar) {
+    const sv = (String(s.ad).match(/^\d+/) || ['Diğer'])[0];
+    if (!seviyeler.has(sv)) seviyeler.set(sv, []);
+    seviyeler.get(sv).push(s);
+  }
+  const oglar = sid => secenek.ogrenciler.filter(o => o.sinifId === sid);
+  const degistir = (sinifler, ekle) => {
+    for (const s of sinifler) for (const o of oglar(s.id)) ekle ? seciliOgrenciler.add(o.id) : seciliOgrenciler.delete(o.id);
+    ogrenciListesiCiz();
+  };
+  for (const [sv, sinifler] of [...seviyeler].sort((x, y) => x[0].localeCompare(y[0], 'tr', { numeric: true }))) {
+    const grup = el('div', undefined, 'sinif-grup');
+    const toplamSeciliTum = sinifler.every(s => oglar(s.id).length && oglar(s.id).every(o => seciliOgrenciler.has(o.id)));
+    const ust = el('div', undefined, 'sinif-grup-ust');
+    const tum = el('button', toplamSeciliTum ? 'Tümünü kaldır' : 'Tümü', 'sinif-tum');
+    tum.type = 'button';
+    tum.addEventListener('click', () => degistir(sinifler, !toplamSeciliTum));
+    ust.append(el('span', /^\d+$/.test(sv) ? sv + '. sınıflar' : sv, 'mini-baslik'), tum);
+    const satir = el('div', undefined, 'sinif-satir');
+    for (const s of sinifler) {
+      const og = oglar(s.id);
+      const sec = og.filter(o => seciliOgrenciler.has(o.id)).length;
+      const durum = !sec ? 'yok' : sec === og.length ? 'tam' : 'kismi';
+      const b = el('button', undefined, 'sinif-chip ' + durum);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(durum === 'tam'));
+      b.append(el('strong', s.ad), el('small', durum === 'yok' ? String(og.length) : `${sec}/${og.length}`));
+      b.addEventListener('click', () => degistir([s], durum !== 'tam'));
+      satir.appendChild(b);
+    }
+    grup.append(ust, satir);
+    kap.appendChild(grup);
+  }
 }
 
 function ogrenciListesiCiz() {

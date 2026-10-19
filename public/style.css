@@ -1287,3 +1287,18 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .etut-satir-sayi { flex: none; padding: 3px 10px; border-radius: 999px; background: #e3f4ea; color: #1f7a43; font-size: .78rem; font-weight: 600; }
 .etut-detay { margin-top: 14px; }
 .etut-detay > .bos-not { margin: 0; }
+
+/* Etüt: sınıf düğmeleri */
+.sinif-grup { margin: 10px 0 4px; }
+.sinif-grup-ust { display: flex; align-items: center; justify-content: space-between; }
+.sinif-grup-ust .mini-baslik { margin: 8px 0; }
+.sinif-tum { min-height: 0; height: 28px; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; background: #efe9dd; color: var(--soluk); font-size: .78rem; }
+.sinif-satir { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.sinif-chip { display: grid; justify-items: center; gap: 1px; min-height: 0; height: 58px; margin: 0; padding: 8px 4px; border: 1px solid #e8e1d3; border-radius: 16px; background: #fff; color: var(--murekkep); }
+.sinif-chip strong { font-size: 1rem; font-weight: 600; }
+.sinif-chip small { font-size: .74rem; color: var(--soluk); }
+.sinif-chip.kismi { background: color-mix(in srgb, var(--ana) 10%, #fff); border-color: color-mix(in srgb, var(--ana) 45%, #fff); }
+.sinif-chip.kismi small { color: var(--ana); font-weight: 600; }
+.sinif-chip.tam { background: var(--ana); border-color: var(--ana); color: #fff; }
+.sinif-chip.tam small { color: rgba(255,255,255,.85); }
+#tek-tek { margin-top: 14px; }
