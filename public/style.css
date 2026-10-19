@@ -1266,3 +1266,10 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .yok-ad { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; overflow: visible; white-space: normal; text-overflow: clip; }
 .yok-ad > span { overflow: visible; text-overflow: clip; white-space: normal; }
 .yok-ad small.etiket { margin-top: 0; flex: none; }
+
+/* Etüt yoklaması: pasta menülü hap ızgarası */
+.yoklama-liste.hapli { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.yok-hap.iki { height: auto; min-height: 54px; padding: 7px 7px 7px 12px; border-radius: 20px; }
+.yok-govde { display: grid; gap: 3px; min-width: 0; justify-items: start; }
+.yok-isim { font-size: .84rem; font-weight: 600; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.yok-govde .etiket.mini { height: 20px; padding: 0 8px; font-size: .7rem; }

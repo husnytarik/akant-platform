@@ -195,6 +195,7 @@ function ogretmenKarti(e) {
   const iptal = e.durum === 'iptal';
   if (iptal) kart.classList.add('iptal');
   kart.appendChild(etutBaslik(e, e.konu + (iptal ? ' (iptal)' : ''), [[e.ders, e.yer].filter(Boolean).join(' · ')]));
+  if (e.not) kart.appendChild(el('p', 'Not: ' + e.not, 'etut-not'));
   kart.appendChild(katilimOzeti(e.katilimcilar));
 
   const d = document.createElement('details');
@@ -203,34 +204,31 @@ function ogretmenKarti(e) {
   const bugun = new Date().toLocaleDateString('sv-SE');
   const yoklamaAcik = !iptal && e.tarih <= bugun;
   const durum = new Map(e.katilimcilar.map(k => [k.ogrenciId, k.devam || 'geldi']));
-  const t = el('div', undefined, 'yoklama-liste');
+  const t = el('div', undefined, 'yoklama-liste' + (yoklamaAcik ? ' hapli' : ''));
   const IS = { geldi: '✓', gelmedi: '✗', izinli: 'İ' };
   for (const k of e.katilimcilar) {
-    const satir = el('div', undefined, 'yok-satir' + (yoklamaAcik ? ' d-' + durum.get(k.ogrenciId) : ''));
+    if (yoklamaAcik) {
+      const hap = el('button', undefined, 'yok-hap iki d-' + durum.get(k.ogrenciId));
+      hap.type = 'button';
+      const govde = el('span', undefined, 'yok-govde');
+      govde.append(el('span', k.ad, 'yok-isim'), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
+      const ikon = el('span', PASTA_IKON[durum.get(k.ogrenciId)], 'yok-ikon');
+      hap.append(govde, ikon);
+      hap.addEventListener('click', () => pastaAc(k.ad, hap, DEVAM_SECENEK, durum.get(k.ogrenciId), deger => {
+        durum.set(k.ogrenciId, deger);
+        hap.className = 'yok-hap iki d-' + deger;
+        ikon.textContent = PASTA_IKON[deger];
+      }));
+      t.appendChild(hap);
+      continue;
+    }
+    const satir = el('div', undefined, 'yok-satir');
     const ad = el('div', undefined, 'yok-ad');
     ad.append(el('span', k.ad), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
     satir.appendChild(ad);
-    if (yoklamaAcik) {
-      const grup = el('div', undefined, 'segment uc');
-      grup.setAttribute('role', 'group');
-      grup.setAttribute('aria-label', k.ad + ' yoklama durumu');
-      for (const [deger, adi] of DEVAM_SECENEK) {
-        const b = el('button', adi, 's-' + deger);
-        b.type = 'button';
-        b.setAttribute('aria-pressed', String(durum.get(k.ogrenciId) === deger));
-        b.addEventListener('click', () => {
-          durum.set(k.ogrenciId, deger);
-          satir.className = 'yok-satir d-' + deger;
-          for (const x of grup.children) x.setAttribute('aria-pressed', String(x === b));
-        });
-        grup.appendChild(b);
-      }
-      satir.appendChild(grup);
-    } else {
-      const m = el('span', k.devam ? IS[k.devam] : '–', 'isaret ' + (k.devam || 'yok'));
-      m.setAttribute('aria-label', k.devam ? DEVAM_ADI[k.devam] : 'Kayıt yok');
-      satir.appendChild(m);
-    }
+    const m = el('span', k.devam ? IS[k.devam] : '–', 'isaret ' + (k.devam || 'yok'));
+    m.setAttribute('aria-label', k.devam ? DEVAM_ADI[k.devam] : 'Kayıt yok');
+    satir.appendChild(m);
     t.appendChild(satir);
   }
   d.appendChild(t);

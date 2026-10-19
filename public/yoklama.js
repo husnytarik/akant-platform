@@ -36,38 +36,7 @@ function ozetGuncelle() {
   $('hepsi-geldi').checked = ogrenciler.length > 0 && say.geldi === ogrenciler.length;
 }
 
-const IKON = { geldi: '✓', gelmedi: '✗', gec: 'G', izinli: 'İ' };
-// Pasta menü: öğrenci hapına dokununca dört yuvarlak buton çevresinde açılır
-const pasta = el('div', undefined, 'pasta gizli');
-const pastaPerde = el('div', undefined, 'pasta-perde gizli');
-document.body.append(pastaPerde, pasta);
-const pastaKapat = () => { pasta.classList.add('gizli'); pastaPerde.classList.add('gizli'); pasta.replaceChildren(); };
-pastaPerde.addEventListener('click', pastaKapat);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') pastaKapat(); });
-const PASTA_YON = { geldi: [0, -1], izinli: [1, 0], gelmedi: [0, 1], gec: [-1, 0] };
-
-function pastaAc(o, hap, guncelle) {
-  pasta.replaceChildren();
-  const r = hap.getBoundingClientRect(), R = 64, pay = R + 30;
-  const cx = Math.min(Math.max(r.left + r.width / 2, pay), window.innerWidth - pay);
-  const cy = Math.min(Math.max(r.top + r.height / 2, pay), window.innerHeight - pay);
-  pasta.style.setProperty('left', cx + 'px');
-  pasta.style.setProperty('top', cy + 'px');
-  pasta.appendChild(el('span', o.ad, 'pasta-ad'));
-  for (const [deger, ad] of SECENEKLER) {
-    const b = el('button', IKON[deger], 'pasta-dugme s-' + deger);
-    b.type = 'button';
-    b.title = ad;
-    b.setAttribute('aria-label', ad);
-    b.setAttribute('aria-pressed', String(durumlar.get(o.ogrenciId) === deger));
-    b.style.setProperty('--x', PASTA_YON[deger][0] * R + 'px');
-    b.style.setProperty('--y', PASTA_YON[deger][1] * R + 'px');
-    b.addEventListener('click', () => { durumlar.set(o.ogrenciId, deger); guncelle(deger); ozetGuncelle(); pastaKapat(); });
-    pasta.appendChild(b);
-  }
-  pastaPerde.classList.remove('gizli');
-  pasta.classList.remove('gizli');
-}
+const IKON = PASTA_IKON;
 
 function tabloCiz() {
   const t = $('ogrenci-liste');
@@ -77,9 +46,11 @@ function tabloCiz() {
     hap.type = 'button';
     const ikon = el('span', IKON[durumlar.get(o.ogrenciId)], 'yok-ikon');
     hap.append(el('span', o.ad, 'yok-ad'), ikon);
-    hap.addEventListener('click', () => pastaAc(o, hap, deger => {
+    hap.addEventListener('click', () => pastaAc(o.ad, hap, SECENEKLER, durumlar.get(o.ogrenciId), deger => {
+      durumlar.set(o.ogrenciId, deger);
       hap.className = 'yok-hap d-' + deger;
       ikon.textContent = IKON[deger];
+      ozetGuncelle();
     }));
     t.appendChild(hap);
   }
