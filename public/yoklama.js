@@ -83,10 +83,11 @@ async function dersleriYukle() {
     b.type = 'button';
     b.dataset.key = d.sinifId + '-' + d.dersSaati;
     b.setAttribute('aria-pressed', 'false');
-    const [durum, tur] = d.iptal ? ['İptal', 'iptal'] : d.tamam ? ['Tamamlandı', 'tamam'] : ['Bekliyor', 'bekliyor'];
+    const isaret = d.iptal ? ['İptal', 'iptal'] : d.tamam ? ['✓', 'tamam'] : null;
     const sol = el('div', undefined, 'ders-oge-metin');
-    sol.append(el('strong', `${d.sinif} · ${d.ders}`), el('span', `${d.dersSaati}. ders · ${d.aralik}` + (d.tamam && d.gelmedi ? ` · ${d.gelmedi} devamsız` : ''), 'alt'));
-    b.append(sol, el('span', durum, 'rozet ' + tur));
+    sol.append(el('strong', d.sinif), el('span', `${d.aralik.split('–')[0]} · ${d.dersSaati}. ders` + (d.tamam && d.gelmedi ? ` · ${d.gelmedi} devamsız` : ''), 'alt'));
+    b.appendChild(sol);
+    if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + isaret[1]); i.setAttribute('aria-label', d.iptal ? 'İptal edildi' : 'Tamamlandı'); b.appendChild(i); }
     b.addEventListener('click', () => dersAc(d));
     liste.appendChild(b);
   }
