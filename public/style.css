@@ -807,7 +807,7 @@ a.modul-kart.hazir .durum::after { content: ' →'; }
   --soluk: #78746c;
   --ince: #e7e3da;
   --vurgu: #a4161a;
-  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, "Times New Roman", serif;
   --bg: var(--kagit); --text: var(--murekkep); --navy: var(--murekkep);
   --navy-soft: #f1ede4; --accent: var(--vurgu); --muted: var(--soluk);
   --border: var(--ince); --soft: #f4f1ea; --yuzey: var(--kagit); --zemin: var(--kagit);
@@ -1317,3 +1317,13 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 /* Ders detay sekmeleri: dört sekme kaydırmadan sığar */
 .ders-panel .sekmeler { overflow: visible; }
 .ders-panel .sekmeler button { flex: 1 1 0; min-width: 0; padding: 0 4px; font-size: .8rem; }
+
+/* Rakamlar her yerde aynı boyda (eski tip inişli çıkışlı rakam yok) */
+html { font-variant-numeric: lining-nums; }
+h1, h2, h3, strong, .alt { font-variant-numeric: lining-nums tabular-nums; }
+
+/* Yoklama özeti ve toplu işaretleme */
+.yok-ozet { margin: 4px 0 12px; }
+.yok-ozet .gosterge { margin-top: 10px; }
+.yok-toplu { display: inline-flex; align-items: center; gap: 8px; height: 38px; margin: 0 0 12px; padding: 0 16px 0 8px; border: 0; border-radius: 999px; background: #f1ede4; color: var(--murekkep); font: inherit; font-size: .88rem; cursor: pointer; }
+.yok-toplu-ikon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #2e9e5b; color: #fff; font-size: .8rem; }

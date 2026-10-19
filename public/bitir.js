@@ -12,16 +12,19 @@ async function bitirCiz(k, bitince) {
 
   const durumEtiket = el('span', r.veri.iptal ? 'İptal edilmiş' : r.veri.tamam ? 'Düzenleniyor' : 'Yeni kayıt', 'rozet ' + (r.veri.iptal ? 'iptal' : r.veri.tamam ? 'tamam' : 'bekliyor'));
 
-  // Yoklama
-  const ozet = el('span', undefined, 'alt');
-  const hepsi = document.createElement('input');
-  hepsi.type = 'checkbox'; hepsi.id = 'b-hepsi'; hepsi.checked = true;
+  // Yoklama: oransal çubuk + sayılar; toplu işaretleme tek bir yumuşak düğme
+  const RENK = { geldi: '#2e9e5b', gelmedi: '#d64545', gec: '#e0a100', izinli: '#8a867d' };
+  const AD = { geldi: 'geldi', gelmedi: 'gelmedi', gec: 'geç', izinli: 'izinli' };
+  const ozet = el('div', undefined, 'yok-ozet');
   const liste = el('div', undefined, 'yoklama-liste hapli');
+  const toplu = el('button', undefined, 'yok-toplu'); toplu.type = 'button';
+  toplu.append(el('span', '✓', 'yok-toplu-ikon'), document.createTextNode('Hepsini geldi yap'));
   const ozetYaz = () => {
     const say = { geldi: 0, gelmedi: 0, gec: 0, izinli: 0 };
     for (const o of ogrenciler) say[durum.get(o.ogrenciId)]++;
-    ozet.textContent = `${say.geldi} geldi` + (say.gelmedi ? ` · ${say.gelmedi} gelmedi` : '') + (say.gec ? ` · ${say.gec} geç` : '') + (say.izinli ? ` · ${say.izinli} izinli` : '');
-    hepsi.checked = ogrenciler.length > 0 && say.geldi === ogrenciler.length;
+    const dilimler = Object.keys(say).map(d => ({ deger: say[d], renk: RENK[d], etiket: AD[d] }));
+    ozet.replaceChildren(yiginCubuk(dilimler), gosterge(dilimler.filter(d => d.deger > 0 || d.etiket === 'geldi')));
+    toplu.classList.toggle('gizli', ogrenciler.length === 0 || say.geldi === ogrenciler.length);
   };
   const hapCiz = () => {
     liste.replaceChildren();
@@ -40,19 +43,16 @@ async function bitirCiz(k, bitince) {
     }
     ozetYaz();
   };
-  hepsi.addEventListener('change', () => {
-    if (!hepsi.checked) return ozetYaz();
+  toplu.addEventListener('click', () => {
     for (const o of ogrenciler) durum.set(o.ogrenciId, 'geldi');
     hapCiz();
   });
-  const hepsiEtiket = el('label', undefined, 'onay hepsi');
-  hepsiEtiket.append(hepsi, document.createTextNode(' '), el('strong', 'Hepsi geldi'), el('span', 'Yalnızca gelmeyenleri değiştirin', 'alt'));
 
   const yok = el('div', undefined, 'adim');
   const yokUst = el('div', undefined, 'adim-ust');
   yokUst.append(el('h3', 'Yoklama'), durumEtiket);
-  yok.append(yokUst, ozet, hepsiEtiket, liste);
-  if (!ogrenciler.length) ozet.textContent = 'Bu sınıfta aktif öğrenci yok.';
+  yok.append(yokUst, ozet, toplu, liste);
+  if (!ogrenciler.length) yok.append(el('p', 'Bu sınıfta aktif öğrenci yok.', 'alt'));
 
   // İşlenen konu + kazanım
   const konu = el('input'); konu.id = 'b-konu'; konu.maxLength = 120; konu.placeholder = 'Örn. Doğal sayılarla işlemler'; konu.value = r.veri.konu || '';

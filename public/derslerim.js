@@ -70,6 +70,13 @@ function etutDetayCiz(k, g, e) {
   k.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// Gelecek gün ya da bugünün henüz başlamamış dersi bitirilemez
+function dersBasladi(t, aralik) {
+  if (t !== bugun) return t < bugun;
+  const simdi = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+  return (aralik || '').slice(0, 5) <= simdi;
+}
+
 function detayCiz(k, g, d) {
   k.replaceChildren();
   k.classList.remove('gizli');
@@ -79,7 +86,8 @@ function detayCiz(k, g, d) {
   k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}`, 'alt'));
   k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
   const butonlar = el('div', undefined, 'hafta-butonlar');
-  const b = el('button', g.tarih <= bugun ? (d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi aç' : 'Dersi bitir') : 'Öğrenciler, konu, ödev', g.tarih <= bugun ? 'birincil' : 'ikincil');
+  const basladi = dersBasladi(g.tarih, d.aralik);
+  const b = el('button', basladi ? (d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi aç' : 'Dersi bitir') : 'Öğrenciler, konu, ödev', basladi ? 'birincil' : 'ikincil');
   b.type = 'button';
   b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
   butonlar.appendChild(b);
@@ -243,7 +251,7 @@ function dersAc(d, programdan) {
   $('p-kapat').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
-  const bitirVar = ders.dersSaati !== null && tarih <= bugun;
+  const bitirVar = ders.dersSaati !== null && dersBasladi(tarih, d.aralik);
   $('sekmeler').querySelector('[data-sekme="bitir"]').classList.toggle('gizli', !bitirVar);
   if (bitirVar) sekme = 'bitir';
   else if (sekme === 'bitir') sekme = 'ogrenciler';

@@ -6,6 +6,9 @@ const tamSayi = (v, min, max) => {
   return Number.isInteger(n) && n >= min && n <= max ? n : null;
 };
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
+// Gelecek gün ya da bugünün henüz başlamamış dersi için yoklama alınamaz
+const simdiSaat = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+const baslamadi = (tarih, dersSaati) => tarih > bugun() || (tarih === bugun() && simdiSaat() < (DERS_ZAMANLARI[dersSaati - 1]?.[0] || '00:00'));
 const tarihGecerli = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !Number.isNaN(Date.parse(t));
 const gunNo = t => new Date(t + 'T00:00:00Z').getUTCDay(); // 1=Pazartesi ... 5=Cuma
 const DURUMLAR = ['geldi', 'gelmedi', 'gec', 'izinli'];
@@ -99,7 +102,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const sinifId = tamSayi(url.searchParams.get('sinifId'), 1, 1e9);
     const dersSaati = tamSayi(url.searchParams.get('dersSaati'), 1, 20);
     if (!tarihGecerli(tarih) || !sinifId || !dersSaati) return hata(400, 'Geçersiz istek');
-    if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
+    if (baslamadi(tarih, dersSaati)) return hata(400, 'Bu ders henüz başlamadı');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
     const y = db.prepare('SELECT id, topic, kazanim, completed_at, cancelled FROM yoklama WHERE class_id = ? AND date = ? AND period = ?').get(sinifId, tarih, dersSaati);
@@ -121,7 +124,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const sinifId = tamSayi(b.sinifId, 1, 1e9);
     const dersSaati = tamSayi(b.dersSaati, 1, 20);
     if (!tarihGecerli(tarih) || !sinifId || !dersSaati || !Array.isArray(b.kayitlar)) return hata(400, 'Geçersiz istek');
-    if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
+    if (baslamadi(tarih, dersSaati)) return hata(400, 'Bu ders henüz başlamadı');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
     const konu = String(b.konu || '').trim();
@@ -184,6 +187,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const sinifId = tamSayi(b.sinifId, 1, 1e9);
     const dersSaati = tamSayi(b.dersSaati, 1, 20);
     if (!tarihGecerli(tarih) || !sinifId || !dersSaati) return hata(400, 'Geçersiz istek');
+    if (baslamadi(tarih, dersSaati)) return hata(400, 'Bu ders henüz başlamadı');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
     const simdi = Date.now();
