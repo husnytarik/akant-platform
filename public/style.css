@@ -1253,3 +1253,6 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 #geciken details > summary::after { margin-left: auto; }
 #geciken details[open] > summary { border-bottom: 1px solid #f3d4d1; margin-bottom: 4px; }
 #geciken .uyari-liste a { border-bottom-color: #f6dcdc; color: var(--murekkep); }
+#geciken.uyari { margin: 8px 0 0; padding: 0 12px; border-radius: 14px; }
+#geciken details > summary { min-height: 38px; gap: 8px; font-size: .88rem; }
+#geciken details > summary::before { width: 22px; height: 22px; border-radius: 8px; font-size: .8rem; }
