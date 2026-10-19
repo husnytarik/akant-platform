@@ -23,6 +23,8 @@ const yukle = () => {
   }
   return liste;
 };
+// Örnek veri için: bir dersin (Akant ders adı) bir sınıf düzeyindeki kazanımları, program sırasıyla
+export const dersKazanimlari = (ders, sinif) => yukle().filter(k => k.ders === ders && k.sinif === sinif);
 const kucuk = s => String(s).toLocaleLowerCase('tr');
 
 export async function kazanimApi({ url, res, json }) {

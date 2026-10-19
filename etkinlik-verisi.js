@@ -1,6 +1,7 @@
 // Örnek etkinlik verisi: geçmiş yoklamalar, işlenen konular, ödevler ve etütler.
 // Önce ornek-veri.js çalışmış olmalı (sınıf, öğretmen, program). Tekrar çalıştırılırsa bir şey eklemez.
 import { db } from './db.js';
+import { dersKazanimlari } from './kazanim.js';
 
 const bugun = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const kaydir = (t, n) => {
@@ -21,7 +22,7 @@ function calistir() {
     console.log('Etkinlik verisi zaten var, atlandı.');
     return;
   }
-  const atamalar = db.prepare(`SELECT id, class_id AS sinif, teacher_membership_id AS ogr FROM assignments WHERE teacher_membership_id IS NOT NULL`).all();
+  const atamalar = db.prepare(`SELECT a.id, a.class_id AS sinif, a.teacher_membership_id AS ogr, c.name AS ders, cl.name AS sinifAd FROM assignments a JOIN courses c ON c.id = a.course_id JOIN classes cl ON cl.id = a.class_id WHERE a.teacher_membership_id IS NOT NULL`).all();
   if (!atamalar.length) { console.log('Önce ornek-veri.js çalıştırılmalı.'); return; }
   const demoOgr = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.full_name = 'Demo Öğrenci' AND m.role = 'ogrenci'`).get()?.id;
   const sinifOgr = new Map();
@@ -30,12 +31,22 @@ function calistir() {
     sinifOgr.get(r.sinif).push(r.id);
   }
   const simdi = Date.now();
+  // Her ders ataması için gerçek (MEB) kazanımlar sırayla işlenir; kazanım bulunamayan derste genel konu kullanılır
+  const kazSirasi = new Map(atamalar.map(a => [a.id, { liste: dersKazanimlari(a.ders, parseInt(a.sinifAd, 10)), i: 0 }]));
+  const sonrakiKonu = atamaId => {
+    const k = kazSirasi.get(atamaId);
+    if (!k.liste.length) return { konu: sec(KONULAR), kazanim: null };
+    const x = k.liste[k.i++ % k.liste.length];
+    const metin = x.metin.replace(/-\s+/g, '');
+    return { konu: metin.length > 110 ? metin.slice(0, 107).replace(/\s+\S*$/, '') + '…' : metin, kazanim: ((x.kod ? x.kod + ' – ' : '') + metin).slice(0, 300) };
+  };
 
   db.exec('BEGIN');
   try {
     // Son 3 haftanın geçmiş iş günleri için yoklama
     const programlar = db.prepare('SELECT class_id, day, period, assignment_id FROM schedule').all();
-    const yEkle = db.prepare('INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at, topic, completed_at) VALUES (?,?,?,?,?,?,?,?,?)');
+    const yEkle = db.prepare('INSERT INTO yoklama (class_id, date, period, assignment_id, teacher_membership_id, created_at, updated_at, topic, kazanim, completed_at) VALUES (?,?,?,?,?,?,?,?,?,?)');
+    const konuEkle = db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id) VALUES (?,?,?,?,?,?)');
     const kEkle = db.prepare('INSERT INTO yoklama_kayit (yoklama_id, student_membership_id, status) VALUES (?,?,?)');
     const ogrOf = new Map(atamalar.map(a => [a.id, a.ogr]));
     // Her öğrenci için hafif bir devamsızlık eğilimi: çoğu öğrenci neredeyse hiç, bazıları sık
@@ -43,13 +54,15 @@ function calistir() {
     for (const ids of sinifOgr.values()) for (const id of ids) egilim.set(id, Math.random() < 0.15 ? 0.15 : 0.02);
     if (demoOgr) egilim.set(demoOgr, 0.12);
     let yoklamaSayisi = 0;
-    for (let n = 1; n <= 21; n++) {
+    for (let n = 21; n >= 1; n--) {
       const t = kaydir(bugun, -n);
       const gun = gunNo(t);
       if (gun < 1 || gun > 5) continue;
       for (const p of programlar.filter(p => p.day === gun)) {
         const bitti = Math.random() < 0.92; // %8 ders tamamlanmamış (süresi geçen ders hatırlatması için örnek)
-        const yid = Number(yEkle.run(p.class_id, t, p.period, p.assignment_id, ogrOf.get(p.assignment_id), simdi, simdi, bitti ? sec(KONULAR) : null, bitti ? simdi : null).lastInsertRowid);
+        const kv = bitti ? sonrakiKonu(p.assignment_id) : null;
+        const yid = Number(yEkle.run(p.class_id, t, p.period, p.assignment_id, ogrOf.get(p.assignment_id), simdi, simdi, kv?.konu ?? null, kv?.kazanim ?? null, bitti ? simdi : null).lastInsertRowid);
+        if (kv) konuEkle.run(p.assignment_id, t, kv.konu, kv.kazanim ? 'Kazanım: ' + kv.kazanim : null, simdi, yid);
         for (const id of sinifOgr.get(p.class_id) || []) {
           const x = Math.random();
           const e = egilim.get(id) || 0.02;
@@ -61,12 +74,9 @@ function calistir() {
     }
 
     // Konular ve ödevler
-    const konuEkle = db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at) VALUES (?,?,?,?,?)');
     const odevEkle = db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at) VALUES (?,?,?,?,?)');
-    let konuSayisi = 0, odevSayisi = 0;
+    let odevSayisi = 0;
     for (const a of atamalar) {
-      const gunler = karistir([...Array(14).keys()].map(i => kaydir(bugun, -i - 1)).filter(t => gunNo(t) >= 1 && gunNo(t) <= 5)).slice(0, 3);
-      for (const t of gunler) { konuEkle.run(a.id, t, sec(KONULAR), null, simdi); konuSayisi++; }
       if (Math.random() < 0.7) {
         odevEkle.run(a.id, sec(ODEVLER), 'Ders kitabından belirtilen bölümler.', kaydir(bugun, Math.floor(Math.random() * 12) - 3), simdi);
         odevSayisi++;
@@ -111,7 +121,7 @@ function calistir() {
       }
     }
     db.exec('COMMIT');
-    console.log(`Eklendi: ${yoklamaSayisi} ders yoklaması, ${konuSayisi} konu, ${odevSayisi} ödev, ${etutSayisi} etüt.`);
+    console.log(`Eklendi: ${yoklamaSayisi} ders yoklaması, ${db.prepare('SELECT COUNT(*) AS n FROM konular').get().n} konu, ${odevSayisi} ödev, ${etutSayisi} etüt.`);
   } catch (e) {
     db.exec('ROLLBACK');
     throw e;
