@@ -74,6 +74,9 @@ function demoOgretmenBagla() {
                         WHERE u.tc_no = '10000000214' AND m.role = 'ogretmen' AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get();
   const ders = db.prepare("SELECT id FROM courses WHERE name = 'Fen Bilimleri'").get();
   if (!d || !ders) return 0;
+  // Demo öğretmen: profil fotoğrafı ve bir sınıfın mentoru (Öğrencilerim ekranı için)
+  db.prepare("UPDATE users SET full_name = 'Ceren Husny', foto = '/foto/ceren-husny.jpg' WHERE tc_no = '10000000214'").run();
+  db.prepare("UPDATE classes SET homeroom_membership_id = ? WHERE branch_id = ? AND name = '6-C'").run(d.id, d.branch_id);
   db.prepare('INSERT OR IGNORE INTO teacher_courses (teacher_membership_id, course_id) VALUES (?,?)').run(d.id, ders.id);
   const n = Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?
     WHERE course_id = ? AND class_id IN (SELECT id FROM classes WHERE branch_id = ?)`).run(d.id, ders.id, d.branch_id).changes);

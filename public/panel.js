@@ -69,7 +69,7 @@ const IKON_YOL = {
   etut: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   derslerim: 'M4 5h16v14H4zM4 10h16M9 5v14',
   'not-girisi': 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5',
-  siniflarim: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
+  ogrencilerim: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
   'veli-bilgilendirme': 'M4 5h16v11H9l-5 4zM8 9h8M8 12h5',
   'kullanici-rol': 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.8-4.2 4-6 8-6s7.2 1.8 8 6',
   'okul-kurulum': 'M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18',
@@ -112,7 +112,13 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
 
   document.getElementById('ad').textContent = k.ad;
   document.getElementById('unvan').textContent = k.unvan;
-  document.getElementById('bas-harf').textContent = k.ad.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toLocaleUpperCase('tr-TR');
+  if (k.foto) {
+    const im = document.createElement('img');
+    im.src = k.foto; im.alt = ''; im.className = 'avatar-foto';
+    document.getElementById('avatar').replaceChildren(im);
+  }
+  const bh = document.getElementById('bas-harf');
+  if (bh) bh.textContent = k.ad.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toLocaleUpperCase('tr-TR');
   if (k.renk) document.documentElement.style.setProperty('--ana', k.renk);
   const bant = document.getElementById('bant');
   let anim = false;

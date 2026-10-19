@@ -83,7 +83,7 @@ function calistir() {
       }
     }
     // Demo öğretmenin dersleri için garanti kayıt
-    const demoOgrt = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.full_name = 'Demo Öğretmen' AND m.role = 'ogretmen'`).get()?.id;
+    const demoOgrt = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.full_name = 'Ceren Husny' AND m.role = 'ogretmen'`).get()?.id;
     for (const a of atamalar.filter(a => a.ogr === demoOgrt)) {
       odevEkle.run(a.id, 'Alıştırma çalışması', 'Sayfa 40-41 alıştırmaları.', kaydir(bugun, 4), simdi, sonrakiKonu(a.id).kazanim);
       odevSayisi++;

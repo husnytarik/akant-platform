@@ -11,6 +11,7 @@ import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
 import { sinavApi } from './sinav.js';
+import { ogrencilerimApi } from './ogrencilerim.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
@@ -39,7 +40,7 @@ const MODULLER = [
   { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
   { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
-  { id: 'siniflarim', ad: 'Sınıflarım', aciklama: 'Sorumlu olduğum sınıf ve öğrenciler', roller: ['ogretmen'] },
+  { id: 'ogrencilerim', ad: 'Öğrencilerim', aciklama: 'Mentor olduğum sınıfın öğrencileri ve profilleri', roller: ['ogretmen'], yol: '/ogrencilerim' },
   { id: 'derslerim', ad: 'Derslerim', aciklama: 'Günlük program; devamsızlık, konu ve ödev işlemleri', roller: ['ogretmen'], yol: '/derslerim' },
   { id: 'odev-takip', ad: 'Ödevler', aciklama: 'Verilen ödevler ve son tarihleri', roller: ['ogrenci', 'veli'], yol: '/odevler' },
   { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Optik/test sınavı: cevap anahtarı, cevaplar, sonuç ve madde analizi', roller: ['ogretmen'], yol: '/sinav' },
@@ -167,7 +168,8 @@ async function api(req, res, url) {
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     const { unvan, renk } = profilBilgisi({ id: o.membership_id, role: o.role });
     const coklu = profilListesi(o.user_id).length > 1;
-    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu });
+    const foto = db.prepare('SELECT foto FROM users WHERE id = ?').get(o.user_id)?.foto || null;
+    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/moduller') {
@@ -295,6 +297,12 @@ async function api(req, res, url) {
     if (await sinavApi({ req, res, url, o, json, govde: r => govde(r, 1_000_000), denetle })) return;
   }
 
+  if (url.pathname.startsWith('/api/ogrencilerim')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await ogrencilerimApi({ req, res, url, o, json })) return;
+  }
+
   if (url.pathname.startsWith('/api/ders/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -395,7 +403,7 @@ async function yonetimApi(req, res, url) {
   json(res, 404, { hata: 'Bulunamadı' });
 }
 
-const turler = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+const turler = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png' };
 
 function statik(req, res, url) {
   let ad = url.pathname === '/' ? '/index.html' : url.pathname;
@@ -409,6 +417,7 @@ function statik(req, res, url) {
   if (ad === '/derslerim') ad = '/derslerim.html';
   if (ad === '/program') ad = '/program.html';
   if (ad === '/odevler') ad = '/odevler.html';
+  if (ad === '/ogrencilerim') ad = '/ogrencilerim.html';
   if (ad === '/sinav') ad = '/sinav.html';
   if (ad === '/notlarim') ad = '/notlarim.html';
   const tam = path.normalize(path.join(publicDir, ad));

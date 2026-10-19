@@ -209,6 +209,29 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   };
 
 
+  // Bir öğrencinin yayınlanmış sınav sonuçları (öğrenci/veli ve mentor öğretmen görünümü ortak kullanır)
+  const yayinliSinavlar = ogrId => db.prepare(`SELECT s.* FROM sinavlar s JOIN sinav_siniflar ss ON ss.sinav_id = s.id
+      JOIN class_students cs ON cs.class_id = ss.class_id WHERE cs.student_membership_id = ? AND s.yayin = 1 ORDER BY s.date DESC, s.id DESC`).all(ogrId).map(s => {
+    const r = sonucHesapla(s, true);
+    const g = r.ogrenciler.find(x => x.ogrenciId === ogrId);
+    if (!g || g.ortalama === null) return null;
+    return {
+      ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, ortalama: g.ortalama, sira: g.sira, giren: r.giren,
+      dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], kazanimlar: g.kazanim[d.id] })),
+    };
+  }).filter(Boolean);
+
+  // Mentor öğretmen: sınıfındaki bir öğrencinin yayınlanmış sınav sonuçları
+  if (req.method === 'GET' && yol === '/api/sinav/ogrenci') {
+    if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
+    const id = Number(url.searchParams.get('id'));
+    const mentor = db.prepare(`SELECT 1 FROM class_students cs JOIN classes c ON c.id = cs.class_id
+      WHERE cs.student_membership_id = ? AND c.homeroom_membership_id = ?`).get(id, o.membership_id);
+    if (!mentor) return hata(404, 'Öğrenci bulunamadı');
+    json(res, 200, { sinavlar: yayinliSinavlar(id) });
+    return true;
+  }
+
   // Öğrenci/veli: yalnızca öğretmenin yayınladığı sınavlar
   if (req.method === 'GET' && yol === '/api/sinav/notlarim') {
     let cocuklar;
@@ -216,22 +239,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     else if (o.role === 'veli') cocuklar = db.prepare(`SELECT m.id, u.full_name AS ad FROM guardians g JOIN memberships m ON m.id = g.student_membership_id
       JOIN users u ON u.id = m.user_id WHERE g.parent_membership_id = ? ORDER BY u.full_name`).all(o.membership_id);
     else return hata(403, 'Bu işlem için yetkiniz yok');
-    const sinavlar = db.prepare(`SELECT s.* FROM sinavlar s JOIN sinav_siniflar ss ON ss.sinav_id = s.id
-      JOIN class_students cs ON cs.class_id = ss.class_id WHERE cs.student_membership_id = ? AND s.yayin = 1 ORDER BY s.date DESC, s.id DESC`);
-    json(res, 200, {
-      ogrenciler: cocuklar.map(c => ({
-        ad: c.ad,
-        sinavlar: sinavlar.all(c.id).map(s => {
-          const r = sonucHesapla(s, true);
-          const g = r.ogrenciler.find(x => x.ogrenciId === c.id);
-          if (!g || g.ortalama === null) return null;
-          return {
-            ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, ortalama: g.ortalama, sira: g.sira, giren: r.giren,
-            dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], kazanimlar: g.kazanim[d.id] })),
-          };
-        }).filter(Boolean),
-      })),
-    });
+    json(res, 200, { ogrenciler: cocuklar.map(c => ({ ad: c.ad, sinavlar: yayinliSinavlar(c.id) })) });
     return true;
   }
 

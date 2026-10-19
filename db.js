@@ -255,6 +255,10 @@ okulNoDoldur();
 if (!sutunlar('odevler').some(c => c.name === 'yoklama_id')) {
   db.exec('ALTER TABLE odevler ADD COLUMN yoklama_id INTEGER REFERENCES yoklama(id)');
 }
+if (!sutunlar('users').some(c => c.name === 'foto')) {
+  // Profil fotoğrafı: public/ altındaki yol (örn. /foto/ad.jpg)
+  db.exec('ALTER TABLE users ADD COLUMN foto TEXT');
+}
 if (!sutunlar('odevler').some(c => c.name === 'kazanim')) {
   db.exec('ALTER TABLE odevler ADD COLUMN kazanim TEXT');
 }
@@ -309,7 +313,7 @@ function seed() {
   // Yalnızca DEMO verisidir; gerçek kişilerle ilgisi yoktur.
   const demo = [
     ['100000001', '5550000001', 'Demo Yönetici', [[merkez, 'yonetim']]],
-    ['100000002', '5550000002', 'Demo Öğretmen', [[merkez, 'ogretmen']]],
+    ['100000002', '5550000002', 'Ceren Husny', [[merkez, 'ogretmen']]],
     ['100000003', '5550000003', 'Demo Öğrenci', [[merkez, 'ogrenci']]],
     ['100000004', '5550000004', 'Demo Veli', [[merkez, 'veli']]],
     // Aynı hesap, birden fazla rol/şube: hesap ≠ üyelik
