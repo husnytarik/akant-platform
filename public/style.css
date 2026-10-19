@@ -1239,3 +1239,9 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .gun-baslik #bugun.ikon-dugme { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--ana) 12%, #fff); color: var(--ana); }
 .gun-baslik #bugun.ikon-dugme.bugunde { background: var(--ana); color: #fff; }
 .gun-baslik #bugun.ikon-dugme:hover:not(:disabled) { background: color-mix(in srgb, var(--ana) 22%, #fff); color: var(--ana); }
+
+/* Panel karoları: daha alçak ve ince */
+.kare { aspect-ratio: auto; min-height: 0; gap: 14px; padding: 14px 16px; border-radius: 20px; }
+.kare .kare-ikon { width: 38px; height: 38px; border-radius: 12px; }
+.kare .kare-ikon svg { width: 20px; height: 20px; }
+.kare strong { font-size: 1rem; }
