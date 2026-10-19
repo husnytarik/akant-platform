@@ -141,6 +141,24 @@ async function dersAc(d) {
   $('yoklama').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Hatayı ilgili alanın altında göster, ekranı oraya kaydır
+function alanHataTemizle() {
+  for (const x of document.querySelectorAll('.alan-hata')) x.remove();
+  for (const x of document.querySelectorAll('.hatali')) x.classList.remove('hatali');
+}
+function alanHata(metin) {
+  alanHataTemizle();
+  const m = metin.toLowerCase();
+  const hedef = $(m.includes('konu') ? 'konu' : m.includes('ödev başlığı') ? 'odev-baslik' : m.includes('ödev') ? 'odev-tarih' : 'kaydet');
+  const p = el('p', metin, 'alan-hata');
+  p.setAttribute('role', 'alert');
+  if (hedef.id === 'kaydet') hedef.closest('.kaydet-cubuk').before(p);
+  else { hedef.classList.add('hatali'); hedef.after(p); }
+  hedef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (hedef.id !== 'kaydet') hedef.focus({ preventScroll: true });
+}
+for (const id of ['konu', 'odev-baslik', 'odev-tarih']) $(id).addEventListener('input', alanHataTemizle);
+
 $('hepsi-geldi').addEventListener('change', () => {
   if (!$('hepsi-geldi').checked) return ozetGuncelle();
   for (const o of ogrenciler) durumlar.set(o.ogrenciId, 'geldi');
@@ -155,7 +173,8 @@ $('kaydet').addEventListener('click', async () => {
     konu: $('konu').value, kazanim: $('kazanim').value,
     odev: { baslik: $('odev-baslik').value, aciklama: $('odev-aciklama').value, sonTarih: $('odev-tarih').value },
   });
-  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  if (!r.ok) return alanHata(r.veri.hata || 'Hata');
+  alanHataTemizle();
   mesaj(`Ders tamamlandı: ${r.veri.gelmedi} gelmedi, ${r.veri.gec} geç, ${r.veri.izinli} izinli.`, 'tamam');
   $('yoklama').classList.add('gizli');
   await dersleriYukle();

@@ -972,3 +972,6 @@ a.modul-kart.hazir { border-color: var(--ince); }
 .pasta-dugme { position: absolute; left: 0; top: 0; width: 56px; height: 56px; margin: 0; padding: 0; border: 3px solid #fff; border-radius: 50%; color: #fff; font-size: 1.3rem; font-weight: 700; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))); }
 .pasta-dugme.s-geldi { background: #2e9e5b; } .pasta-dugme.s-gelmedi { background: #d64545; } .pasta-dugme.s-gec { background: #e0a100; } .pasta-dugme.s-izinli { background: #8a867d; }
 .pasta-dugme[aria-pressed="true"] { border-color: var(--murekkep); }
+
+.alan-hata { margin: 6px 0 0; color: var(--vurgu); font-size: .88rem; font-weight: 500; }
+input.hatali { border-bottom: 2px solid var(--vurgu); }
