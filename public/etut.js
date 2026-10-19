@@ -208,7 +208,7 @@ function ogretmenKarti(e) {
   for (const k of e.katilimcilar) {
     const satir = el('div', undefined, 'yok-satir' + (yoklamaAcik ? ' d-' + durum.get(k.ogrenciId) : ''));
     const ad = el('div', undefined, 'yok-ad');
-    ad.append(el('span', k.ad), el('small', 'Veli yanıtı: ' + YANIT_ADI[k.yanit], 'alt'));
+    ad.append(el('span', k.ad), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
     satir.appendChild(ad);
     if (yoklamaAcik) {
       const grup = el('div', undefined, 'segment uc');
@@ -266,7 +266,7 @@ function veliKarti(e) {
   if (e.not) kart.appendChild(el('p', 'Not: ' + e.not, 'etut-not'));
   const rozetler = el('div', undefined, 'etut-rozetler');
   rozetler.appendChild(el('span', 'Yanıt: ' + YANIT_ADI[e.yanit], 'etiket y-' + e.yanit));
-  if (e.devam) rozetler.appendChild(el('span', 'Yoklama: ' + DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
+  if (e.devam) rozetler.appendChild(el('span', DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
   kart.appendChild(rozetler);
   if (!iptal) {
     const yanitla = yanit => async () => {
@@ -289,8 +289,8 @@ function ogrenciKarti(e) {
   kart.appendChild(etutBaslik(e, e.konu + (e.durum === 'iptal' ? ' (iptal)' : ''), ['Öğretmen: ' + e.ogretmen, [e.ders, e.yer].filter(Boolean).join(' · ')]));
   if (e.not) kart.appendChild(el('p', 'Not: ' + e.not, 'etut-not'));
   const rozetler = el('div', undefined, 'etut-rozetler');
-  rozetler.appendChild(el('span', 'Veli yanıtı: ' + YANIT_ADI[e.yanit], 'etiket y-' + e.yanit));
-  if (e.devam) rozetler.appendChild(el('span', 'Yoklama: ' + DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
+  rozetler.appendChild(el('span', YANIT_ADI[e.yanit], 'etiket y-' + e.yanit));
+  if (e.devam) rozetler.appendChild(el('span', DEVAM_ADI[e.devam], 'etiket y-' + e.devam));
   kart.appendChild(rozetler);
   return kart;
 }

@@ -1256,3 +1256,13 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 #geciken.uyari { margin: 8px 0 0; padding: 0 12px; border-radius: 14px; }
 #geciken details > summary { min-height: 38px; gap: 8px; font-size: .88rem; }
 #geciken details > summary::before { width: 22px; height: 22px; border-radius: 8px; font-size: .8rem; }
+
+/* Etüt katılımcı satırları: yanıt renkli rozet olarak */
+.yok-ad small.etiket { display: inline-flex; width: fit-content; height: 22px; margin-top: 4px; padding: 0 10px; font-size: .74rem; font-weight: 600; }
+.etiket.y-bekliyor { background: #efece4; color: #7a756a; }
+.yoklama-liste > .yok-satir:not([class*="d-"]) { border-left: 4px solid #cfc8b8; padding-left: 12px; }
+.yoklama-liste > .yok-satir:has(.y-gelecek):not([class*="d-"]) { border-left-color: #2e9e5b; }
+.yoklama-liste > .yok-satir:has(.y-gelmeyecek):not([class*="d-"]) { border-left-color: #d64545; }
+.yok-ad { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; overflow: visible; white-space: normal; text-overflow: clip; }
+.yok-ad > span { overflow: visible; text-overflow: clip; white-space: normal; }
+.yok-ad small.etiket { margin-top: 0; flex: none; }
