@@ -7,14 +7,12 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1>Haftalık ders programı</h1>
+    <a href="/kurulum" class="bant-geri bant-yazi">Okul kurulumu</a>
+  </header>
   <main class="kart panel genis">
-    <div class="panel-ust">
-      <div>
-        <h1>Haftalık ders programı</h1>
-        <a href="/panel" class="alt">&larr; Panele dön</a>
-        <a href="/kurulum" class="alt">Okul kurulumu</a>
-      </div>
-    </div>
 
     <div class="sekmeler" role="group" aria-label="Bölümler">
       <button type="button" data-sekme="program" aria-pressed="true">Sınıf programı hazırla</button>
@@ -39,5 +37,6 @@
     </section>
   </main>
   <script src="/ders-programi.js"></script>
+  <script src="/bant.js"></script>
 </body>
 </html>
