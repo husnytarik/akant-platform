@@ -73,34 +73,28 @@ function katilimOzeti(katilimcilar) {
   return k;
 }
 
-function onayKutusu(metin, kume, id, degisti) {
-  const l = el('label', undefined, 'onay');
-  const c = document.createElement('input');
-  c.type = 'checkbox';
-  c.checked = kume.has(id);
-  c.addEventListener('change', () => { c.checked ? kume.add(id) : kume.delete(id); degisti(); });
-  l.append(c, document.createTextNode(' ' + metin));
-  return l;
-}
+// Sınıf seçimi: seçilen sınıfların tüm öğrencileri aşağıda listelenir; dokunulan öğrenci listeden çıkarılır
+const seciliSiniflar = new Set();
+const cikarilan = new Set();
+const oglar = sid => secenek.ogrenciler.filter(o => o.sinifId === sid);
 
-function gorunenOgrenciler() {
-  const f = $('ogrenci-sinif').value;
-  return secenek.ogrenciler.filter(o => String(o.sinifId) === f);
-}
-
-function ozetGuncelle() {
-  const g = gorunenOgrenciler();
-  const secili = g.filter(o => seciliOgrenciler.has(o.id)).length;
-  const hepsi = $('hepsi');
-  hepsi.checked = g.length > 0 && secili === g.length;
-  hepsi.indeterminate = secili > 0 && secili < g.length;
-  hepsi.disabled = !g.length;
+function secimiYenile() {
+  seciliOgrenciler.clear();
+  for (const sid of seciliSiniflar) for (const o of oglar(sid)) if (!cikarilan.has(o.id)) seciliOgrenciler.add(o.id);
   sinifChipleriCiz();
+  secilenListesiCiz();
   const n = seciliOgrenciler.size;
-  $('secim-ozet').textContent = n ? `Davet edilecek öğrenci: ${n}` : 'Henüz öğrenci seçilmedi.';
+  $('secim-ozet').textContent = n ? `Davet edilecek öğrenci: ${n}` : 'Henüz sınıf seçilmedi.';
 }
 
-// Sınıf düğmeleri: dokununca sınıfın tüm öğrencileri eklenir/çıkarılır; kısmi seçim "7/17" olarak görünür
+function sinifDegistir(sinifler, ekle) {
+  for (const s of sinifler) {
+    if (ekle) seciliSiniflar.add(s.id);
+    else { seciliSiniflar.delete(s.id); for (const o of oglar(s.id)) cikarilan.delete(o.id); }
+  }
+  secimiYenile();
+}
+
 function sinifChipleriCiz() {
   const kap = $('sinif-chips');
   if (!kap || !secenek) return;
@@ -111,29 +105,24 @@ function sinifChipleriCiz() {
     if (!seviyeler.has(sv)) seviyeler.set(sv, []);
     seviyeler.get(sv).push(s);
   }
-  const oglar = sid => secenek.ogrenciler.filter(o => o.sinifId === sid);
-  const degistir = (sinifler, ekle) => {
-    for (const s of sinifler) for (const o of oglar(s.id)) ekle ? seciliOgrenciler.add(o.id) : seciliOgrenciler.delete(o.id);
-    ogrenciListesiCiz();
-  };
   for (const [sv, sinifler] of [...seviyeler].sort((x, y) => x[0].localeCompare(y[0], 'tr', { numeric: true }))) {
     const grup = el('div', undefined, 'sinif-grup');
-    const toplamSeciliTum = sinifler.every(s => oglar(s.id).length && oglar(s.id).every(o => seciliOgrenciler.has(o.id)));
+    const hepsiSecili = sinifler.every(s => seciliSiniflar.has(s.id));
     const ust = el('div', undefined, 'sinif-grup-ust');
-    const tum = el('button', toplamSeciliTum ? 'Tümünü kaldır' : 'Tümü', 'sinif-tum');
+    const tum = el('button', hepsiSecili ? 'Tümünü kaldır' : 'Tümü', 'sinif-tum');
     tum.type = 'button';
-    tum.addEventListener('click', () => degistir(sinifler, !toplamSeciliTum));
+    tum.addEventListener('click', () => sinifDegistir(sinifler, !hepsiSecili));
     ust.append(el('span', /^\d+$/.test(sv) ? sv + '. sınıflar' : sv, 'mini-baslik'), tum);
     const satir = el('div', undefined, 'sinif-satir');
     for (const s of sinifler) {
       const og = oglar(s.id);
-      const sec = og.filter(o => seciliOgrenciler.has(o.id)).length;
-      const durum = !sec ? 'yok' : sec === og.length ? 'tam' : 'kismi';
+      const sec = seciliSiniflar.has(s.id) ? og.filter(o => !cikarilan.has(o.id)).length : 0;
+      const durum = !seciliSiniflar.has(s.id) ? 'yok' : sec === og.length ? 'tam' : 'kismi';
       const b = el('button', undefined, 'sinif-chip ' + durum);
       b.type = 'button';
-      b.setAttribute('aria-pressed', String(durum === 'tam'));
+      b.setAttribute('aria-pressed', String(durum !== 'yok'));
       b.append(el('strong', s.ad), el('small', durum === 'yok' ? String(og.length) : `${sec}/${og.length}`));
-      b.addEventListener('click', () => degistir([s], durum !== 'tam'));
+      b.addEventListener('click', () => sinifDegistir([s], durum === 'yok'));
       satir.appendChild(b);
     }
     grup.append(ust, satir);
@@ -141,14 +130,28 @@ function sinifChipleriCiz() {
   }
 }
 
-function ogrenciListesiCiz() {
-  const liste = $('ogrenci-liste');
-  liste.replaceChildren();
-  const g = gorunenOgrenciler();
-  for (const o of g) liste.appendChild(onayKutusu(o.ad, seciliOgrenciler, o.id, ozetGuncelle));
-  if (!g.length) liste.appendChild(el('p', 'Bu sınıfta öğrenci yok.', 'alt'));
-  ozetGuncelle();
+function secilenListesiCiz() {
+  const kap = $('secilen-liste');
+  kap.replaceChildren();
+  for (const s of secenek.siniflar.filter(x => seciliSiniflar.has(x.id)).sort((x, y) => String(x.ad).localeCompare(String(y.ad), 'tr', { numeric: true }))) {
+    const og = oglar(s.id);
+    const sec = og.filter(o => !cikarilan.has(o.id)).length;
+    const blok = el('div', undefined, 'secilen-sinif');
+    blok.appendChild(el('h3', `${s.ad} · ${sec}/${og.length} öğrenci`, 'mini-baslik'));
+    const izgara = el('div', undefined, 'secilen-izgara');
+    for (const o of og) {
+      const b = el('button', undefined, 'ogr-chip' + (cikarilan.has(o.id) ? ' cikti' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(!cikarilan.has(o.id)));
+      b.append(el('span', o.ad), el('i', cikarilan.has(o.id) ? '+' : '✓'));
+      b.addEventListener('click', () => { cikarilan.has(o.id) ? cikarilan.delete(o.id) : cikarilan.add(o.id); secimiYenile(); });
+      izgara.appendChild(b);
+    }
+    blok.appendChild(izgara);
+    kap.appendChild(blok);
+  }
 }
+const ogrenciListesiCiz = secimiYenile;
 
 function sekmeSec(ad) {
   for (const b of $('e-sekmeler').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
@@ -156,7 +159,6 @@ function sekmeSec(ad) {
   $('liste-bolum').classList.toggle('gizli', ad !== 'liste');
 }
 
-let dinleyiciVar = false;
 async function secenekYukle() {
   const r = await api('/api/etut/secenek');
   secenek = r.veri;
@@ -168,18 +170,7 @@ async function secenekYukle() {
   for (const s of secenek.sureler) sure.appendChild(new Option(`${s} dakika`, s));
   sure.value = '40';
 
-  const f = $('ogrenci-sinif');
-  f.replaceChildren();
-  for (const s of secenek.siniflar) f.appendChild(new Option(s.ad, s.id));
-  if (!secenek.siniflar.length) f.appendChild(new Option('Şubenizde sınıf yok', ''));
-  if (!dinleyiciVar) {
-    dinleyiciVar = true;
-    f.addEventListener('change', ogrenciListesiCiz);
-    $('hepsi').addEventListener('change', () => {
-      for (const o of gorunenOgrenciler()) $('hepsi').checked ? seciliOgrenciler.add(o.id) : seciliOgrenciler.delete(o.id);
-      ogrenciListesiCiz();
-    });
-  }
+  seciliSiniflar.clear(); cikarilan.clear();
   ogrenciListesiCiz();
 }
 
@@ -215,7 +206,6 @@ async function gonder(onayla) {
   mesaj(`Etüt oluşturuldu, ${r.veri.ogrenciSayisi} öğrencinin velisine onay isteği iletildi.`, 'tamam');
   $('etut-form').reset();
   $('sure').value = '40';
-  seciliOgrenciler.clear();
   await secenekYukle();
   await listeYukle();
   sekmeSec('liste');

@@ -56,15 +56,9 @@
 
         <fieldset class="kutu">
           <legend>Öğrenciler</legend>
-          <p class="alt">Sınıfa dokunarak tüm öğrencilerini ekleyin; birden fazla sınıf seçebilirsiniz.</p>
+          <p class="alt">Sınıfa dokunun, öğrencileri aşağıda listelenir. Katılmayacak öğrenciye dokunarak listeden çıkarın.</p>
           <div id="sinif-chips"></div>
-          <details id="tek-tek">
-            <summary>Öğrencileri tek tek ayarla</summary>
-            <label for="ogrenci-sinif">Sınıf</label>
-            <select id="ogrenci-sinif"></select>
-            <label class="onay"><input type="checkbox" id="hepsi"> <strong>Hepsini seç</strong></label>
-            <div class="onay-liste" id="ogrenci-liste"></div>
-          </details>
+          <div id="secilen-liste"></div>
         </fieldset>
 
         <div id="cakisma" class="kutu gizli">

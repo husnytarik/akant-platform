@@ -1302,3 +1302,14 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .sinif-chip.tam { background: var(--ana); border-color: var(--ana); color: #fff; }
 .sinif-chip.tam small { color: rgba(255,255,255,.85); }
 #tek-tek { margin-top: 14px; }
+
+/* Etüt: seçilen sınıfların öğrenci listesi */
+#tek-tek { display: none; }
+.secilen-sinif { margin-top: 12px; }
+.secilen-izgara { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
+.ogr-chip { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 0; height: 40px; margin: 0; padding: 0 6px 0 12px; border: 1px solid #cfe9d9; border-radius: 14px; background: #eef8f2; color: var(--murekkep); font-size: .84rem; text-align: left; }
+.ogr-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ogr-chip i { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #2e9e5b; color: #fff; font-style: normal; font-size: .75rem; font-weight: 700; }
+.ogr-chip.cikti { background: #fbeeee; border-color: #f1d2d0; color: #9a6a68; }
+.ogr-chip.cikti span { text-decoration: line-through; }
+.ogr-chip.cikti i { background: #d64545; }
