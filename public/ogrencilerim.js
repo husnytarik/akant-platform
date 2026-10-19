@@ -116,7 +116,7 @@ async function sinavCiz() {
     alt.append(el('b', String(s.ortalama)), el('span', `ortalama · ${s.sira}/${s.giren}. sıra`));
     const dersler = el('div', undefined, 'sinav-dersler');
     for (const d of s.dersler) {
-      const c = el('span', undefined, 'sinav-ders');
+      const c = el('span', undefined, 'ogr-sinav-ders');
       c.append(document.createTextNode(d.ders + ' '), el('b', String(d.net)));
       dersler.appendChild(c);
     }
