@@ -506,12 +506,12 @@ async function kazanimCiz() {
         gi.addEventListener('focus', () => { aktif = gi; ara(); });
         gi.addEventListener('keydown', e => { if (e.key === 'Escape') { liste.classList.add('gizli'); aktif = null; } });
       }
-      hucre.append(gi);
+      const kazSatir = el('div', undefined, 'kaz-satir'); kazSatir.append(gi); hucre.append(kazSatir);
       if (q.kim) hucre.append(el('span', ' Son giren: ' + q.kim, 'alt kucuk-yazi'));
       if (d.duzenle && q.no > 1) {
-        const ayni = el('button', '↑ Üsttekiyle aynı', 'ikincil kucuk'); ayni.type = 'button';
+        const ayni = el('button', '↑', 'kaz-ayni'); ayni.type = 'button'; ayni.title = 'Üsttekiyle aynı'; ayni.setAttribute('aria-label', 'Üsttekiyle aynı');
         ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].value; liste.classList.add('gizli'); });
-        hucre.append(ayni);
+        kazSatir.append(ayni);
       }
       tr.append(el('td', q.no + (q.iptal ? ' (iptal)' : '')), el('td', q.dogruSik), hucre);
       girdiler.push(gi);
