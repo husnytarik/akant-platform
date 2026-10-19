@@ -371,34 +371,43 @@ async function analizCiz() {
     const grafikKart = el('div', undefined, 'kutu');
     grafikKart.append(el('h3', 'Soru başarısı (%)', 'mini-baslik'), sutunGrafik(a.sorular.map(q => ({ etiket: String(q.no), deger: q.basari, renk: q.iptal ? '#c9c2b2' : renkB(q.basari) })), 90));
     kutu.append(grafikKart);
-    const tablo = el('table', '', 'sinav-tablo');
-    const bas = el('tr');
-    for (const t of ['Soru', 'Doğru şık', 'Doğru', 'Yanlış', 'Boş', 'Başarı', 'Zorluk', 'Ayırt edicilik', 'A', 'B', 'C', 'D', 'E']) bas.append(el('th', t));
-    tablo.append(bas);
     for (const q of a.sorular) {
-      const tr = el('tr', undefined, q.iptal ? 'iptal-soru' : '');
-      tr.append(el('td', q.no + (q.iptal ? ' (iptal)' : '')), el('td', q.dogruSik), el('td', String(q.dogru)), el('td', String(q.yanlis)), el('td', String(q.bos)));
-      const bt = el('td'); const cubuk = el('span', '', 'basari-cubuk'); cubuk.style.setProperty('--oran', q.basari + '%');
-      bt.append(cubuk, document.createTextNode(' %' + q.basari)); tr.append(bt);
-      tr.append(el('td', q.zorluk || ''), el('td', q.ayirt === null ? '–' : String(q.ayirt)));
-      for (const s of 'ABCDE') tr.append(el('td', String(q.dagilim[s]), s === q.dogruSik ? 'dogru-sik' : ''));
-      tablo.append(tr);
+      const kart = el('div', undefined, 'mad-kart' + (q.iptal ? ' iptal' : ''));
+      const no = el('span', String(q.no), 'mad-no'); no.style.setProperty('--c', q.iptal ? '#c9c2b2' : renkB(q.basari));
+      const orta = el('div', undefined, 'mad-orta');
+      const ust = el('div', undefined, 'mad-ust');
+      ust.append(el('strong', q.iptal ? 'İptal edildi' : `Doğru şık ${q.dogruSik}`));
+      if (q.zorluk) ust.append(el('span', q.zorluk, 'mad-etiket'));
+      if (q.ayirt !== null) ust.append(el('span', `ayırt edicilik ${q.ayirt}`, 'mad-ince'));
+      const cubuk = yiginCubuk([{ deger: q.dogru, renk: '#2e9e5b', etiket: 'doğru' }, { deger: q.yanlis, renk: '#d64545', etiket: 'yanlış' }, { deger: q.bos, renk: '#cfc8b8', etiket: 'boş' }]);
+      const say = el('div', `${q.dogru} doğru · ${q.yanlis} yanlış · ${q.bos} boş`, 'mad-ince');
+      const sik = el('div', undefined, 'mad-sik');
+      for (const h of 'ABCDE') {
+        const x = el('span', undefined, 'mad-sik-oge' + (h === q.dogruSik ? ' dogru' : ''));
+        x.append(el('b', h), document.createTextNode(String(q.dagilim[h])));
+        sik.append(x);
+      }
+      orta.append(ust, cubuk, say, sik);
+      const yuz = el('span', `%${q.basari}`, 'mad-yuzde'); yuz.style.setProperty('--c', q.iptal ? '#8a867d' : renkB(q.basari));
+      kart.append(no, orta, yuz);
+      kutu.append(kart);
     }
-    kutu.append(tablo);
     if (a.kazanimlar.length) {
       kutu.append(el('h4', 'Kazanım başarısı (sınıf geneli)', 'baslik3'));
-      const kt = el('table', '', 'sinav-tablo');
-      const kb = el('tr'); for (const t of ['Kazanım', 'Sorular', 'Başarı', 'Ders işlendi mi?']) kb.append(el('th', t));
-      kt.append(kb);
       for (const k of a.kazanimlar) {
-        const tr = el('tr'); const bt = el('td'); const cubuk = el('span', '', 'basari-cubuk'); cubuk.style.setProperty('--oran', k.oran + '%');
-        bt.append(cubuk, document.createTextNode(' %' + k.oran));
-        const im = el('td', k.islenmedi === k.giren ? 'Sınıfta işlenmedi' : k.islenmedi ? `${k.islenmedi} öğrenci için işlenmedi` : 'İşlendi');
-        if (k.devamsiz) im.append(document.createTextNode(` · ${k.devamsiz} öğrenci derse katılmadı`));
-        if (k.islenmedi) im.classList.add('durum-eksik');
-        tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), bt, im); kt.append(tr);
+        const kart = el('div', undefined, 'mad-kaz');
+        const ust = el('div', undefined, 'mad-kaz-ust');
+        const yuz = el('b', `%${k.oran}`); yuz.style.setProperty('--c', renkB(k.oran));
+        ust.append(el('span', k.kazanim), yuz);
+        const cubuk = el('span', '', 'basari-cubuk'); cubuk.style.setProperty('--oran', k.oran + '%');
+        const alt = el('div', undefined, 'mad-kaz-alt');
+        alt.append(el('span', `Soru ${k.sorular.join(', ')}`, 'mad-ince'));
+        let durum = k.islenmedi === k.giren ? 'Sınıfta işlenmedi' : k.islenmedi ? `${k.islenmedi} öğrenci için işlenmedi` : 'İşlendi';
+        if (k.devamsiz) durum += ` · ${k.devamsiz} öğrenci derse katılmadı`;
+        alt.append(el('span', durum, 'mad-durum' + (k.islenmedi ? ' eksik' : '')));
+        kart.append(ust, cubuk, alt);
+        kutu.append(kart);
       }
-      kutu.append(kt);
     } else kutu.append(el('p', 'Bu derste soru-kazanım eşlemesi yapılmamış; "Kazanımlar" sekmesinden girin.', 'alt'));
   }
 }
