@@ -975,3 +975,45 @@ a.modul-kart.hazir { border-color: var(--ince); }
 
 .alan-hata { margin: 6px 0 0; color: var(--vurgu); font-size: .88rem; font-weight: 500; }
 input.hatali { border-bottom: 2px solid var(--vurgu); }
+
+/* =====================================================================
+   v4 — Yumuşak, modern üst bant (giriş + panel)
+   Bant rengi --ana: öğretmende dersin rengi, diğerlerinde marka rengi.
+   ===================================================================== */
+:root { --ana: #5a78a8; }
+.bant { --bh: max(38vh, 250px); position: relative; height: 92px; margin: 0 0 4px; color: #fff; border-radius: 0 0 30px 30px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--ana) 82%, #fff) 0%, var(--ana) 70%);
+  box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--ana) 70%, transparent) !important;
+  transition: height .7s cubic-bezier(.65,0,.25,1), margin .7s cubic-bezier(.65,0,.25,1), background .4s; }
+.bant.buyuk { height: var(--bh); margin-bottom: 64px; }
+.bant-avatar { position: absolute; left: 18px; top: 20px; width: 52px; height: 52px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%;
+  background: #fbf7ef; color: var(--ana); font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; border: 2px solid rgba(255,255,255,.55);
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,.35) !important;
+  transition: left .7s cubic-bezier(.65,0,.25,1), top .7s cubic-bezier(.65,0,.25,1), width .7s cubic-bezier(.65,0,.25,1), height .7s cubic-bezier(.65,0,.25,1), border-color .7s, border-width .7s, font-size .7s; }
+.bant.buyuk .bant-avatar { left: calc(50% - 62px); top: calc(var(--bh) - 62px); width: 124px; height: 124px; border: 7px solid var(--kagit); font-size: 2.4rem;
+  box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--ana) 60%, #000) !important; }
+.bant-kimlik { position: absolute; left: 84px; right: 84px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; min-width: 0; transition: opacity .5s .35s; }
+.bant-kimlik h1 { margin: 0; color: #fff; font-size: 1.12rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bant-kimlik p { margin: 2px 0 0; font-size: .8rem; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bant-marka { position: absolute; left: 0; right: 0; top: calc(var(--bh) * .3); text-align: center; display: grid; gap: 4px; opacity: 0; pointer-events: none; transition: opacity .35s; }
+.bant-marka strong { font-family: var(--serif); font-size: 1.7rem; font-weight: 600; letter-spacing: -.01em; }
+.bant-marka span { font-size: .85rem; opacity: .85; }
+.bant.buyuk .bant-marka { opacity: 1; transition: opacity .5s .2s; }
+.bant.buyuk .bant-kimlik, .bant.buyuk .bant-cikis { opacity: 0; pointer-events: none; transition: opacity .2s; }
+.bant-cikis { position: absolute; right: 14px; top: 28px; height: 36px; padding: 0 16px; margin: 0; border: 0; border-radius: 999px; background: rgba(255,255,255,.2); color: #fff; font: inherit; font-size: .85rem; cursor: pointer; transition: opacity .5s .35s; }
+.bant-cikis:hover { background: rgba(255,255,255,.3); }
+.bant-avatar svg { display: block; }
+main.panel { max-width: 560px; margin: 0 auto; padding: 16px 18px 32px; }
+
+/* Giriş kartı: yumuşak alanlar */
+.giris-kart { max-width: 420px; margin: 0 auto; padding: 0 20px 32px; }
+.giris-kart .sekmeler { display: flex; gap: 2px; padding: 4px; margin: 0 0 20px; border: 0; border-radius: 999px; background: #efe9dd; }
+.giris-kart .sekmeler button { flex: 1; height: 38px; margin: 0; padding: 0 4px; border: 0; border-radius: 999px; background: transparent; color: var(--soluk); font-size: .88rem; }
+.giris-kart .sekmeler button[aria-pressed="true"] { background: #fff; color: var(--murekkep); font-weight: 600; box-shadow: 0 2px 8px -2px rgba(60,50,30,.2) !important; }
+.giris-kart label { display: block; margin: 14px 0 6px; font-size: .82rem; color: var(--soluk); }
+.giris-kart input { width: 100%; height: 50px; padding: 0 16px; background: #fff; border: 1px solid #e8e1d3; border-radius: 14px; font-size: 1rem; }
+.giris-kart input:focus { border-color: var(--ana); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ana) 22%, transparent) !important; outline: 0; }
+.giris-kart .birincil { width: 100%; height: 52px; margin-top: 22px; border-radius: 14px; background: var(--ana); border-color: var(--ana); font-size: 1rem; }
+.giris-kart .ikincil { width: 100%; margin-top: 10px; height: 44px; border: 0; color: var(--soluk); }
+.giris-kart h1, .giris-kart > .alt { display: none; }
+body:has(.bant) { padding: 0 0 48px; }

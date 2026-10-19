@@ -136,7 +136,20 @@ async function api(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/ben') {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
-    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch });
+    let unvan = { yonetim: 'Okul yönetimi', veli: 'Veli', ogretmen: 'Öğretmen', ogrenci: 'Öğrenci' }[o.role] || '';
+    let renk = null;
+    if (o.role === 'ogretmen') {
+      // Asıl branş: en çok sınıfa girilen ders; yoksa verebildiği dersler
+      let d = db.prepare(`SELECT c.name, c.renk FROM assignments a JOIN courses c ON c.id = a.course_id
+        WHERE a.teacher_membership_id = ? GROUP BY c.id ORDER BY COUNT(*) DESC, c.name`).all(o.membership_id);
+      if (!d.length) d = db.prepare(`SELECT c.name, c.renk FROM teacher_courses t JOIN courses c ON c.id = t.course_id
+        WHERE t.teacher_membership_id = ? ORDER BY c.name`).all(o.membership_id);
+      if (d.length) { unvan = d[0].name + ' öğretmeni'; renk = d[0].renk || null; }
+    } else if (o.role === 'ogrenci') {
+      const c = db.prepare('SELECT c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(o.membership_id);
+      if (c) unvan = c.name + ' sınıfı öğrencisi';
+    }
+    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/moduller') {

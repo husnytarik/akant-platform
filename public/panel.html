@@ -7,15 +7,17 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main class="kart panel">
-    <div class="panel-ust">
-      <div>
-        <h1 id="ad">Yükleniyor...</h1>
-        <span class="rozet" id="rol"></span>
-        <span class="alt" id="sube"></span>
-      </div>
-      <button class="ikincil" id="cikis" type="button">Çıkış</button>
+  <header class="bant" id="bant">
+    <div class="bant-marka"><strong>Akant Koleji</strong><span>Okul yönetim platformu</span></div>
+    <div class="bant-avatar" id="avatar"><span id="bas-harf"></span></div>
+    <div class="bant-kimlik">
+      <h1 id="ad">&nbsp;</h1>
+      <p id="unvan"></p>
     </div>
+    <button class="bant-cikis" id="cikis" type="button">Çıkış</button>
+  </header>
+  <main class="kart panel">
+    <span id="rol" class="gizli"></span><span id="sube" class="gizli"></span>
     <section id="bugun-dersler" class="gizli">
       <div id="geciken" class="uyari gizli"></div>
       <h2 class="baslik2" id="bugun-baslik">Bugünkü derslerim</h2>

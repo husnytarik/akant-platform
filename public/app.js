@@ -22,7 +22,7 @@ document.querySelectorAll('.sekmeler button').forEach(b => {
     rol = b.dataset.rol;
     // Test aşaması: sunucu izin veriyorsa role göre demo hesapla doğrudan gir.
     const d = await istek('/api/giris/demo', { rol });
-    if (d.ok) { location.href = '/panel'; return; }
+    if (d.ok) { { try { sessionStorage.setItem('giris-anim', '1'); } catch {} location.href = '/panel'; } return; }
     document.querySelectorAll('.sekmeler button').forEach(x =>
       x.setAttribute('aria-pressed', String(x === b)));
     adim(1);
@@ -60,7 +60,7 @@ $('adim2').addEventListener('submit', async e => {
     rol, kimlik: $('kimlik').value, telefon: $('telefon').value, kod: $('kod').value,
   });
   if (!ok) return mesaj(veri.hata || 'Bir hata oluştu', 'hata');
-  location.href = '/panel';
+  { try { sessionStorage.setItem('giris-anim', '1'); } catch {} location.href = '/panel'; }
 });
 
 $('geri').addEventListener('click', () => { adim(1); mesaj(''); });

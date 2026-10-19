@@ -69,6 +69,16 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   const { moduller } = await mod.json();
 
   document.getElementById('ad').textContent = k.ad;
+  document.getElementById('unvan').textContent = k.unvan;
+  document.getElementById('bas-harf').textContent = k.ad.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toLocaleUpperCase('tr-TR');
+  if (k.renk) document.documentElement.style.setProperty('--ana', k.renk);
+  const bant = document.getElementById('bant');
+  let anim = false;
+  try { anim = sessionStorage.getItem('giris-anim') === '1'; sessionStorage.removeItem('giris-anim'); } catch {}
+  if (anim) {
+    bant.classList.add('buyuk');
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => bant.classList.remove('buyuk'), 350)));
+  }
   document.getElementById('rol').textContent = ROL_ADI[k.rol] || k.rol;
   document.getElementById('sube').textContent = k.sube || '';
   document.getElementById('aciklama').textContent = k.rol === 'ogretmen' ? '' : 'Yetkili olduğunuz modüller:';
