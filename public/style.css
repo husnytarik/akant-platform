@@ -1245,3 +1245,11 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 .kare .kare-ikon { width: 38px; height: 38px; border-radius: 12px; }
 .kare .kare-ikon svg { width: 20px; height: 20px; }
 .kare strong { font-size: 1rem; }
+
+/* Tamamlanmamış dersler: kare/kart diliyle uyumlu yumuşak uyarı kartı */
+#geciken.uyari { margin: 12px 0 0; padding: 4px 14px; border: 1px solid #f3d4d1; border-left: 1px solid #f3d4d1; border-radius: 20px; background: #fdf3f2; }
+#geciken details > summary { display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-height: 52px; padding: 0; background: transparent; color: #a12b2b; font-weight: 600; font-size: .95rem; }
+#geciken details > summary::before { content: "!"; flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 11px; background: #f9dcda; color: #b3261e; font-weight: 700; }
+#geciken details > summary::after { margin-left: auto; }
+#geciken details[open] > summary { border-bottom: 1px solid #f3d4d1; margin-bottom: 4px; }
+#geciken .uyari-liste a { border-bottom-color: #f6dcdc; color: var(--murekkep); }
