@@ -344,6 +344,8 @@ async function listeYukle() {
 
 // Öğretmen: derslerdeki gibi kısa satırlar (tarih · saat), seçilen etüdün detayı altta
 let seciliEtut = null;
+let kapatici = null;   // boşluğa dokununca açık etüdü kapatır
+document.addEventListener('click', ev => kapatici?.(ev));
 function ogretmenListesi(liste, etutler) {
   const bugun = new Date().toLocaleDateString('sv-SE');
   const detay = el('div', undefined, 'etut-detay');
@@ -352,6 +354,16 @@ function ogretmenListesi(liste, etutler) {
     seciliEtut = e.id;
     for (const [id, s] of satirlar) s.setAttribute('aria-pressed', String(id === e.id));
     detay.replaceChildren(ogretmenKarti(e));
+  };
+  const kapat = () => {
+    seciliEtut = null;
+    for (const s of satirlar.values()) s.setAttribute('aria-pressed', 'false');
+    detay.replaceChildren();
+  };
+  kapatici = ev => {
+    if (seciliEtut === null || !ev.target.isConnected) return;
+    if (ev.target.closest('.etut-satir, .etut-detay, .pasta, .pasta-perde')) return;
+    kapat();
   };
   const grup = (baslik, dizi) => {
     if (!dizi.length) return;
@@ -369,7 +381,11 @@ function ogretmenListesi(liste, etutler) {
       const gel = e.katilimcilar.filter(k => k.yanit === 'gelecek').length;
       const sag = el('span', `${gel}/${e.katilimcilar.length}`, 'etut-satir-sayi');
       s.append(rozet, orta, sag);
-      s.addEventListener('click', () => { goster(e); detay.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+      s.addEventListener('click', () => {
+        if (seciliEtut === e.id) return kapat();
+        goster(e);
+        detay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       satirlar.set(e.id, s);
       liste.appendChild(s);
     }
@@ -379,7 +395,6 @@ function ogretmenListesi(liste, etutler) {
   liste.appendChild(detay);
   const eskisi = etutler.find(e => e.id === seciliEtut);
   if (eskisi) goster(eskisi);
-  else detay.appendChild(el('p', 'Listeden bir etüt seçin; katılım ve yoklama burada görünür.', 'bos-not'));
 }
 
 (async () => {
