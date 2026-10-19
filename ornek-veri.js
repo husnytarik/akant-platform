@@ -1,6 +1,6 @@
 // Örnek (DEMO) veri: 20 öğretmen, 200 öğrenci, 4-5-6. sınıflardan 12 sınıf, atamalar ve haftalık program.
 // Kullanım: npm run ornek   (veritabanı sıfırlanmaz; zaten sınıf varsa işlem yapmaz)
-import { db } from './db.js';
+import { db, programCakismalariniDuzelt } from './db.js';
 
 const GUN = 5, SAAT = 8;
 const ADLAR = ['Ahmet', 'Mehmet', 'Mustafa', 'Ali', 'Emre', 'Burak', 'Can', 'Deniz', 'Efe', 'Kerem', 'Yusuf', 'Ömer',
@@ -75,8 +75,12 @@ function demoOgretmenBagla() {
   const ders = db.prepare("SELECT id FROM courses WHERE name = 'Fen Bilimleri'").get();
   if (!d || !ders) return 0;
   db.prepare('INSERT OR IGNORE INTO teacher_courses (teacher_membership_id, course_id) VALUES (?,?)').run(d.id, ders.id);
-  return Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?
+  const n = Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?
     WHERE course_id = ? AND class_id IN (SELECT id FROM classes WHERE branch_id = ?)`).run(d.id, ders.id, d.branch_id).changes);
+  // Aynı öğretmen birden çok sınıfa atandığı için oluşan saat çakışmalarını çöz
+  const c = programCakismalariniDuzelt(GUN, SAAT);
+  if (c.tasindi || c.kalan) console.log(`Program çakışması: ${c.tasindi} ders taşındı, ${c.kalan} çözülemedi.`);
+  return n;
 }
 
 if (db.prepare("SELECT COUNT(*) AS n FROM classes WHERE name = '4-A'").get().n > 0) {

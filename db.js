@@ -329,3 +329,56 @@ if (process.argv.includes('--seed')) {
 }
 
 export { seed };
+
+// Aynı öğretmen aynı gün/saatte iki sınıfta ders veremez (veritabanı düzeyinde güvence).
+for (const olay of ['INSERT', 'UPDATE']) {
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS schedule_ogretmen_cakisma_${olay.toLowerCase()}
+    BEFORE ${olay} ON schedule
+    WHEN EXISTS (
+      SELECT 1 FROM schedule s
+      JOIN assignments a ON a.id = s.assignment_id
+      JOIN memberships m ON m.id = a.teacher_membership_id
+      JOIN assignments na ON na.id = NEW.assignment_id
+      JOIN memberships nm ON nm.id = na.teacher_membership_id
+      WHERE m.user_id = nm.user_id AND s.day = NEW.day AND s.period = NEW.period
+        AND s.class_id != NEW.class_id
+    )
+    BEGIN SELECT RAISE(ABORT, 'Öğretmen bu saatte başka bir sınıfta derste'); END;
+  `);
+}
+
+// Mevcut çakışmaları çözer: çakışan dersi o sınıf ve öğretmen için boş başka bir saate taşır.
+export function programCakismalariniDuzelt(gunSayisi = 5, saatSayisi = 8) {
+  const ogretmenSatir = `SELECT s.id, s.class_id, s.day, s.period, m.user_id AS u
+    FROM schedule s JOIN assignments a ON a.id = s.assignment_id
+    JOIN memberships m ON m.id = a.teacher_membership_id`;
+  const hepsi = db.prepare(ogretmenSatir + ' ORDER BY s.id').all();
+  const ogrMesgul = new Set(hepsi.map(r => `${r.u}-${r.day}-${r.period}`));
+  const sinifDolu = new Set(hepsi.map(r => `${r.class_id}-${r.day}-${r.period}`));
+  const gorulen = new Set();
+  const tasinacak = [];
+  for (const r of hepsi) {
+    const k = `${r.u}-${r.day}-${r.period}`;
+    if (gorulen.has(k)) tasinacak.push(r); else gorulen.add(k);
+  }
+  // Taşınanların eski yuvası yalnızca kendi sınıfı için boşalır; öğretmen yuvası ilk dersle dolu kalır.
+  let tasindi = 0, kalan = 0;
+  const upd = db.prepare('UPDATE schedule SET day = ?, period = ? WHERE id = ?');
+  for (const r of tasinacak) {
+    sinifDolu.delete(`${r.class_id}-${r.day}-${r.period}`);
+    let yer = null;
+    for (let g = 0; g < gunSayisi && !yer; g++) {
+      const gun = ((r.day - 1 + g) % gunSayisi) + 1;
+      for (let p = 1; p <= saatSayisi; p++) {
+        if (!sinifDolu.has(`${r.class_id}-${gun}-${p}`) && !ogrMesgul.has(`${r.u}-${gun}-${p}`)) { yer = { gun, p }; break; }
+      }
+    }
+    if (!yer) { sinifDolu.add(`${r.class_id}-${r.day}-${r.period}`); kalan++; continue; }
+    upd.run(yer.gun, yer.p, r.id);
+    sinifDolu.add(`${r.class_id}-${yer.gun}-${yer.p}`);
+    ogrMesgul.add(`${r.u}-${yer.gun}-${yer.p}`);
+    tasindi++;
+  }
+  return { tasindi, kalan };
+}
