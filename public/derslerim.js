@@ -79,12 +79,7 @@ function detayCiz(k, g, d) {
   k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}`, 'alt'));
   k.appendChild(el('p', DURUM_YAZI[d.durum](d)));
   const butonlar = el('div', undefined, 'hafta-butonlar');
-  if (g.tarih <= bugun) {
-    const a = el('a', d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi düzenle' : 'Dersi bitir', 'dugme-link');
-    a.href = `/yoklama?tarih=${g.tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
-    butonlar.appendChild(a);
-  }
-  const b = el('button', 'Öğrenciler, konu, ödev', 'ikincil');
+  const b = el('button', g.tarih <= bugun ? (d.durum === 'tamam' || d.durum === 'iptal' ? 'Dersi aç' : 'Dersi bitir') : 'Öğrenciler, konu, ödev', g.tarih <= bugun ? 'birincil' : 'ikincil');
   b.type = 'button';
   b.addEventListener('click', () => { tarih = g.tarih; gorunumSec('gun', d); });
   butonlar.appendChild(b);
@@ -236,8 +231,8 @@ function dersBos() {
   $('p-baslik').textContent = 'Ders detayı';
   $('p-alt').textContent = 'Yukarıdan bir ders seçin.';
   $('p-kapat').classList.add('gizli');
-  $('bitir-sabit').classList.add('gizli');
-  for (const b of $('sekmeler').children) { b.disabled = true; b.classList.remove('gizli'); b.setAttribute('aria-pressed', String(b.dataset.sekme === 'ogrenciler')); }
+  sekme = 'ogrenciler';
+  for (const b of $('sekmeler').children) { b.disabled = true; b.classList.toggle('gizli', b.dataset.sekme === 'bitir'); b.setAttribute('aria-pressed', String(b.dataset.sekme === 'ogrenciler')); }
   $('icerik').replaceChildren(el('p', 'Bir ders seçtiğinizde öğrenci listesi, işlenen konular ve ödevler burada görünür.', 'bos-not'));
 }
 
@@ -248,11 +243,10 @@ function dersAc(d, programdan) {
   $('p-kapat').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
-  if (sekme === 'yoklama') sekme = 'ogrenciler';
-  const bitir = $('bitir-sabit');
   const bitirVar = ders.dersSaati !== null && tarih <= bugun;
-  bitir.classList.toggle('gizli', !bitirVar);
-  if (bitirVar) bitir.href = `/yoklama?tarih=${tarih}&sinifId=${ders.sinifId}&dersSaati=${ders.dersSaati}`;
+  $('sekmeler').querySelector('[data-sekme="bitir"]').classList.toggle('gizli', !bitirVar);
+  if (bitirVar) sekme = 'bitir';
+  else if (sekme === 'bitir') sekme = 'ogrenciler';
   sekmeAc(sekme);
   $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -260,8 +254,16 @@ function dersAc(d, programdan) {
 function sekmeAc(ad) {
   sekme = ad;
   for (const b of $('sekmeler').children) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
-  const yukle = { ogrenciler: ogrencilerCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
+  const yukle = { bitir: () => bitirCiz($('icerik'), bitirildi), ogrenciler: ogrencilerCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
   yukle();
+}
+
+// Ders bitirildi/iptal edildi: listeyi tazele, aynı dersi açık tut
+async function bitirildi() {
+  const acik = { atamaId: ders.atamaId, dersSaati: ders.dersSaati };
+  await gunYukle();
+  const d = veri?.gunluk.find(x => x.atamaId === acik.atamaId && x.dersSaati === acik.dersSaati);
+  if (d) dersAc(d, true);
 }
 
 async function ogrencilerCiz() {
@@ -444,7 +446,7 @@ async function gorunumSec(ad, acilacak) {
   $('gun-seridi').classList.toggle('gizli', ad === 'siniflar');
   await gunYukle();
   if (acilacak && veri) {
-    const d = veri.gunluk.find(x => x.atamaId === acilacak.atamaId && x.dersSaati === acilacak.dersSaati);
+    const d = veri.gunluk.find(x => (acilacak.atamaId ? x.atamaId === acilacak.atamaId : x.sinifId === acilacak.sinifId) && x.dersSaati === acilacak.dersSaati);
     if (d) dersAc(d, true);
   }
 }
@@ -466,5 +468,10 @@ $('sekmeler').addEventListener('click', e => {
   const ben = await fetch('/api/ben');
   if (!ben.ok) { location.href = '/'; return; }
   tarih = new Date().toLocaleDateString('sv-SE');
-  await gunYukle();
+  const q = new URLSearchParams(location.search);
+  const t = q.get('tarih');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t || '') && t <= tarih) tarih = t;
+  const sinifId = Number(q.get('sinifId')), dersSaati = Number(q.get('dersSaati'));
+  if (sinifId && dersSaati) await gorunumSec('gun', { sinifId, dersSaati });
+  else await gunYukle();
 })();

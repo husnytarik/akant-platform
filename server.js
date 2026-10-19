@@ -42,7 +42,6 @@ const MODULLER = [
   { id: 'siniflarim', ad: 'Sınıflarım', aciklama: 'Sorumlu olduğum sınıf ve öğrenciler', roller: ['ogretmen'] },
   { id: 'derslerim', ad: 'Derslerim', aciklama: 'Günlük program; devamsızlık, konu ve ödev işlemleri', roller: ['ogretmen'], yol: '/derslerim' },
   { id: 'odev-takip', ad: 'Ödevler', aciklama: 'Verilen ödevler ve son tarihleri', roller: ['ogrenci', 'veli'], yol: '/odevler' },
-  { id: 'yoklama', ad: 'Dersi bitir', aciklama: 'Yoklama, işlenen konu ve kazanımı gir', roller: ['ogretmen'], yol: '/yoklama' },
   { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Optik/test sınavı: cevap anahtarı, cevaplar, sonuç ve madde analizi', roller: ['ogretmen'], yol: '/sinav' },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
   { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
@@ -405,7 +404,7 @@ function statik(req, res, url) {
   if (ad === '/ders-programi') ad = '/ders-programi.html';
   if (ad === '/kurulum') ad = '/kurulum.html';
   if (ad === '/etut') ad = '/etut.html';
-  if (ad === '/yoklama') ad = '/yoklama.html';
+  if (ad === '/yoklama') { res.writeHead(302, { Location: '/derslerim' + url.search }); res.end(); return; }
   if (ad === '/devamsizlik') ad = '/devamsizlik.html';
   if (ad === '/derslerim') ad = '/derslerim.html';
   if (ad === '/program') ad = '/program.html';

@@ -13,7 +13,7 @@ function durumRozeti(d) {
   return el('span', 'Bekliyor', 'durum-etiket');
 }
 
-const dersLink = (tarih, d) => `/yoklama?tarih=${tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
+const dersLink = (tarih, d) => `/derslerim?tarih=${tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
 
 // Öğretmen ana sayfası: bugünkü dersler (tıklayınca "Dersi bitir") ve tamamlanmamış geçmiş dersler
 async function ogretmenDersleri() {
@@ -132,7 +132,6 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
 
   const grid = document.getElementById('moduller');
   for (const m of moduller) {
-    if (k.rol === 'ogretmen' && m.id === 'yoklama') continue; // dersler listesinden zaten ulaşılıyor
     const kare = document.createElement(m.yol ? 'a' : 'div');
     kare.className = 'kare' + (m.yol ? '' : ' soon');
     if (m.yol) kare.href = m.yol;

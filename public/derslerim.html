@@ -41,6 +41,7 @@
         <button type="button" id="p-kapat" class="ikincil gizli">Kapat</button>
       </div>
       <div class="sekmeler" id="sekmeler">
+        <button type="button" data-sekme="bitir" aria-pressed="false" class="gizli">Dersi bitir</button>
         <button type="button" data-sekme="ogrenciler" aria-pressed="true" disabled>Öğrenciler</button>
         <button type="button" data-sekme="konular" aria-pressed="false" disabled>Konular</button>
         <button type="button" data-sekme="odevler" aria-pressed="false" disabled>Ödevler</button>
@@ -53,8 +54,9 @@
       <div id="atamalar" class="modul-grid"></div>
     </section>
   </main>
-  <a id="bitir-sabit" class="dugme-link gizli" href="/yoklama">Dersi bitir</a>
+  <script src="/pasta.js"></script>
   <script src="/ders-stil.js"></script>
+  <script src="/bitir.js"></script>
   <script src="/derslerim.js"></script>
   <script src="/bant.js"></script>
 </body>
