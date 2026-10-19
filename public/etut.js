@@ -305,8 +305,49 @@ async function listeYukle() {
     }
     return;
   }
-  const kart = rol === 'ogretmen' ? ogretmenKarti : rol === 'veli' ? veliKarti : ogrenciKarti;
+  if (rol === 'ogretmen') return ogretmenListesi(liste, etutler);
+  const kart = rol === 'veli' ? veliKarti : ogrenciKarti;
   for (const e of etutler) liste.appendChild(kart(e));
+}
+
+// Öğretmen: derslerdeki gibi kısa satırlar (tarih · saat), seçilen etüdün detayı altta
+let seciliEtut = null;
+function ogretmenListesi(liste, etutler) {
+  const bugun = new Date().toLocaleDateString('sv-SE');
+  const detay = el('div', undefined, 'etut-detay');
+  const satirlar = new Map();
+  const goster = e => {
+    seciliEtut = e.id;
+    for (const [id, s] of satirlar) s.setAttribute('aria-pressed', String(id === e.id));
+    detay.replaceChildren(ogretmenKarti(e));
+  };
+  const grup = (baslik, dizi) => {
+    if (!dizi.length) return;
+    liste.appendChild(el('h3', baslik, 'mini-baslik'));
+    for (const e of dizi) {
+      const [, a, g] = e.tarih.split('-');
+      const s = el('button', undefined, 'etut-satir' + (e.durum === 'iptal' ? ' iptal' : ''));
+      s.type = 'button';
+      s.setAttribute('aria-pressed', 'false');
+      const rozet = el('span', undefined, 'tarih-rozet kucuk');
+      rozet.append(el('strong', String(Number(g))), el('span', AY[Number(a) - 1]));
+      const orta = el('span', undefined, 'etut-satir-orta');
+      orta.append(el('strong', e.konu + (e.durum === 'iptal' ? ' (iptal)' : '')),
+        el('small', `${e.saat}–${bitis(e.saat, e.sureDk)}${[e.ders, e.yer].filter(Boolean).length ? ' · ' + [e.ders, e.yer].filter(Boolean).join(' · ') : ''}`));
+      const gel = e.katilimcilar.filter(k => k.yanit === 'gelecek').length;
+      const sag = el('span', `${gel}/${e.katilimcilar.length}`, 'etut-satir-sayi');
+      s.append(rozet, orta, sag);
+      s.addEventListener('click', () => { goster(e); detay.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+      satirlar.set(e.id, s);
+      liste.appendChild(s);
+    }
+  };
+  grup('Yaklaşan', etutler.filter(e => e.tarih >= bugun).sort((x, y) => (x.tarih + x.saat).localeCompare(y.tarih + y.saat)));
+  grup('Geçmiş', etutler.filter(e => e.tarih < bugun).sort((x, y) => (y.tarih + y.saat).localeCompare(x.tarih + x.saat)));
+  liste.appendChild(detay);
+  const eskisi = etutler.find(e => e.id === seciliEtut);
+  if (eskisi) goster(eskisi);
+  else detay.appendChild(el('p', 'Listeden bir etüt seçin; katılım ve yoklama burada görünür.', 'bos-not'));
 }
 
 (async () => {
