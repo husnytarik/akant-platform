@@ -1414,3 +1414,9 @@ main .ogr-kart.secili { background: color-mix(in srgb, var(--ana) 10%, #fff); bo
 .sinav-ozet-alt { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 8px; } .sinav-ozet-alt b { font-size: 1.5rem; color: var(--ana); } .sinav-ozet-alt span { color: var(--soluk); font-size: .8rem; }
 .sinav-dersler { display: flex; flex-wrap: wrap; gap: 6px; }
 .sinav-ders { padding: 3px 10px; border-radius: 999px; background: #f4f0e6; font-size: .78rem; }
+
+/* Panel bandı: daha alçak, daha büyük fotoğraf */
+.bant.profil:not(.buyuk) { height: 148px; }
+.bant.profil:not(.buyuk) .bant-avatar { top: 30px; width: 88px; height: 88px; font-size: 1.6rem; }
+.bant.profil:not(.buyuk) .bant-kimlik { left: 126px; top: 30px; height: 88px; }
+#bugun-dersler { margin-top: -22px; }

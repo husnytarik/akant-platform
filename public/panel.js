@@ -120,6 +120,7 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   const bh = document.getElementById('bas-harf');
   if (bh) bh.textContent = k.ad.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toLocaleUpperCase('tr-TR');
   if (k.renk) document.documentElement.style.setProperty('--ana', k.renk);
+  try { localStorage.setItem('ana-renk', k.renk || ''); } catch {}
   const bant = document.getElementById('bant');
   let anim = false;
   try { anim = sessionStorage.getItem('giris-anim') === '1'; sessionStorage.removeItem('giris-anim'); } catch {}

@@ -16,8 +16,13 @@ async function istek(yol, govde) {
   return { ok: r.ok, durum: r.status, veri: v };
 }
 
-function panele() {
+// Panel açılmadan önce bant rengini önbelleğe al: ilk çizim doğru renkle başlar, yenileme gerekmez
+async function panele() {
   try { sessionStorage.setItem('giris-anim', '1'); } catch {}
+  try {
+    const r = await fetch('/api/ben');
+    if (r.ok) { const k = await r.json(); localStorage.setItem('ana-renk', k.renk || ''); }
+  } catch {}
   location.href = '/panel';
 }
 
