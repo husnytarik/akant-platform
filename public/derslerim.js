@@ -434,7 +434,9 @@ async function odevlerCiz() {
 
 async function gorunumSec(ad, acilacak) {
   gorunum = ad;
-  $('bugun').textContent = ad === 'hafta' ? 'Bu hafta' : 'Bugün';
+  $('bugun').dataset.gorunum = ad;
+  $('bugun').setAttribute('aria-label', ad === 'hafta' ? 'Bu hafta' : 'Bugün');
+  $('bugun').title = ad === 'hafta' ? 'Bu hafta' : 'Bugün';
   for (const b of $('gorunum').children) b.setAttribute('aria-pressed', String(b.dataset.gorunum === ad));
   $('zaman').classList.toggle('gizli', ad !== 'gun');
   $('hafta').classList.toggle('gizli', ad !== 'hafta');

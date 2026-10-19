@@ -1230,3 +1230,12 @@ main details { border: 0; background: transparent; padding: 0; margin: 12px 0 0;
 #yeni-ac { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--ana); color: #fff; font-weight: 600; font-size: .9rem; }
 .kutu-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .kutu-ust .mini-baslik, .kutu-ust h2 { margin: 0; }
+
+/* Bugün / Bu hafta: yalnızca simge */
+.ikon-dugme { display: inline-grid; place-items: center; width: 40px; min-height: 40px; height: 40px; padding: 0; border-radius: 14px; color: var(--ana); }
+.ikon-dugme svg { width: 20px; height: 20px; }
+.ikon-dugme .ik-hafta, .ikon-dugme[data-gorunum="hafta"] .ik-gun { display: none; }
+.ikon-dugme[data-gorunum="hafta"] .ik-hafta { display: block; }
+.gun-baslik #bugun.ikon-dugme { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--ana) 12%, #fff); color: var(--ana); }
+.gun-baslik #bugun.ikon-dugme.bugunde { background: var(--ana); color: #fff; }
+.gun-baslik #bugun.ikon-dugme:hover:not(:disabled) { background: color-mix(in srgb, var(--ana) 22%, #fff); color: var(--ana); }
