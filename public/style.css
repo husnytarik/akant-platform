@@ -1079,3 +1079,11 @@ body:has(.bant) { padding: 0 0 48px; }
 .demo-link { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 26px; padding-top: 14px; border-top: 1px dashed #ddd5c4; font-size: .78rem; color: var(--soluk); }
 .demo-link button { height: 28px; padding: 0 12px; border: 1px solid #ddd5c4; border-radius: 999px; background: transparent; color: var(--soluk); font: inherit; font-size: .78rem; cursor: pointer; }
 .demo-link button:hover { color: var(--murekkep); border-color: var(--murekkep); }
+
+/* Alt sayfa bandı */
+.bant.alt-bant { height: 76px; display: flex; align-items: center; gap: 12px; padding: 0 18px; margin: 0 0 8px; border-radius: 0 0 28px 28px; box-sizing: border-box; }
+.alt-bant h1 { margin: 0; color: #fff; font-size: 1.2rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bant-geri { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; text-decoration: none; font-size: 1.2rem; }
+.bant-geri:hover { background: rgba(255,255,255,.26); }
+main.panel.genis { padding-top: 10px; }
+.bant-geri.bant-yazi { width: auto; padding: 0 14px; border-radius: 999px; font-size: .8rem; }

@@ -7,13 +7,11 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1>Dersi bitir</h1>
+  </header>
   <main class="kart panel genis">
-    <div class="panel-ust">
-      <div>
-        <h1>Dersi bitir</h1>
-        <a href="/panel" class="alt">&larr; Panele dön</a>
-      </div>
-    </div>
 
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
@@ -71,5 +69,6 @@
     <p id="yoklama-bos" class="bos-not">Yukarıdan bir ders seçin; yoklama, işlenen konu, kazanım ve ödev burada girilir.</p>
   </main>
   <script src="/yoklama.js"></script>
+  <script src="/bant.js"></script>
 </body>
 </html>

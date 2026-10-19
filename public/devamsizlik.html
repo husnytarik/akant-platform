@@ -7,17 +7,16 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1>Devamsızlık</h1>
+  </header>
   <main class="kart panel genis">
-    <div class="panel-ust">
-      <div>
-        <h1>Devamsızlık</h1>
-        <a href="/panel" class="alt">&larr; Panele dön</a>
-      </div>
-    </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
     <div id="liste"></div>
   </main>
   <script src="/devamsizlik.js"></script>
   <script src="/tablo.js"></script>
+  <script src="/bant.js"></script>
 </body>
 </html>
