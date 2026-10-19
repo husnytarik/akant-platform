@@ -88,8 +88,7 @@ async function haftaYukle() {
   const son = r.veri.gunler[6].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
-  // Dersi/etüdü olmayan hafta sonu günleri gösterilmez
-  const gunler = r.veri.gunler.filter(g => (g.gun >= 1 && g.gun <= 5) || g.dersler.length || g.etutler.length);
+  const gunler = r.veri.gunler;
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
