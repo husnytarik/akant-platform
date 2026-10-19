@@ -41,9 +41,13 @@ async function ogretmenDersleri() {
   const k = document.getElementById('bugun-liste');
   if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders yok (hafta sonu).', 'bos-not'));
   if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'bos-not'));
-  for (const d of liste.gunluk) {
+  // Yalnızca en yakın ders: şu an süren ya da sıradaki; hepsi bittiyse sonuncusu
+  const simdi = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const yakin = liste.gunluk.find(d => d.aralik.split('–')[1] >= simdi) || liste.gunluk[liste.gunluk.length - 1];
+  document.getElementById('bugun-baslik').textContent = liste.gunluk.length > 1 ? `Sıradaki ders · bugün ${liste.gunluk.length} ders` : 'Bugünkü dersim';
+  for (const d of [yakin]) {
     const satir = el('a', undefined, 'ders-satir');
-    satir.href = dersLink(liste.tarih, d);
+    satir.href = '/derslerim';
     satir.style.setProperty('--ders', d.renk || '#475569');
     const zaman = el('div', undefined, 'ders-zaman');
     zaman.append(el('strong', d.aralik.split('–')[0]), el('span', `${d.dersSaati}. ders`));
