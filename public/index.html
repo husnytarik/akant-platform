@@ -14,30 +14,36 @@
     </div>
   </header>
   <main class="kart giris-kart">
-    <div class="sekmeler" role="group" aria-label="Giriş türü">
-      <button type="button" data-rol="yonetim" aria-pressed="true">Yönetim</button>
-      <button type="button" data-rol="ogretmen" aria-pressed="false">Öğretmen</button>
-      <button type="button" data-rol="ogrenci" aria-pressed="false">Öğrenci</button>
-      <button type="button" data-rol="veli" aria-pressed="false">Veli</button>
-    </div>
-
     <form id="adim1">
       <label for="kimlik">T.C. kimlik no veya pasaport no</label>
       <input id="kimlik" autocomplete="username" inputmode="text" required maxlength="20">
       <label for="telefon">Telefon numarası</label>
       <input id="telefon" type="tel" autocomplete="tel" placeholder="5XX XXX XX XX" required maxlength="20">
-      <button class="birincil" type="submit">Doğrulama kodu gönder</button>
+      <button class="birincil" type="submit">Giriş yap</button>
     </form>
 
     <form id="adim2" class="gizli">
       <label for="kod">Telefonunuza gelen 6 haneli kod</label>
       <input id="kod" inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" maxlength="6" required>
-      <button class="birincil" type="submit">Giriş yap</button>
+      <button class="birincil" type="submit">Doğrula</button>
       <button class="ikincil" type="button" id="geri">Bilgileri değiştir</button>
       <div id="dev" class="dev gizli"></div>
     </form>
 
+    <section id="adim3" class="gizli">
+      <h2 class="profil-baslik">Hangi profille devam edelim?</h2>
+      <div id="profiller" class="profil-liste"></div>
+    </section>
+
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+    <div id="demo" class="demo-link gizli">
+      <span>Test girişi:</span>
+      <button type="button" data-rol="yonetim">Yönetim</button>
+      <button type="button" data-rol="ogretmen">Öğretmen</button>
+      <button type="button" data-rol="ogrenci">Öğrenci</button>
+      <button type="button" data-rol="veli">Veli</button>
+      <button type="button" data-rol="coklu">Çok profilli</button>
+    </div>
   </main>
   <script src="/app.js"></script>
 </body>

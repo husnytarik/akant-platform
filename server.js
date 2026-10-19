@@ -113,6 +113,36 @@ function oturum(req) {
   return o;
 }
 
+// Bir üyeliğin (profilin) görünen başlığı ve rengi
+function profilBilgisi(m) {
+  let unvan = { yonetim: 'Okul yönetimi', veli: 'Veli', ogretmen: 'Öğretmen', ogrenci: 'Öğrenci' }[m.role] || '';
+  let renk = null;
+  if (m.role === 'ogretmen') {
+    // Asıl branş: en çok sınıfa girilen ders; yoksa verebildiği dersler
+    let d = db.prepare(`SELECT c.name, c.renk FROM assignments a JOIN courses c ON c.id = a.course_id
+      WHERE a.teacher_membership_id = ? GROUP BY c.id ORDER BY COUNT(*) DESC, c.name`).all(m.id);
+    if (!d.length) d = db.prepare(`SELECT c.name, c.renk FROM teacher_courses t JOIN courses c ON c.id = t.course_id
+      WHERE t.teacher_membership_id = ? ORDER BY c.name`).all(m.id);
+    if (d.length) { unvan = d[0].name + ' öğretmeni'; renk = d[0].renk || null; }
+  } else if (m.role === 'ogrenci') {
+    const c = db.prepare('SELECT c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(m.id);
+    if (c) unvan = c.name + ' sınıfı öğrencisi';
+  } else if (m.role === 'veli') {
+    const cocuklar = db.prepare(`SELECT u.full_name FROM guardians g JOIN memberships sm ON sm.id = g.student_membership_id
+      JOIN users u ON u.id = sm.user_id WHERE g.parent_membership_id = ? ORDER BY u.full_name`).all(m.id).map(r => r.full_name);
+    if (cocuklar.length) unvan = cocuklar.join(', ') + ' velisi';
+  }
+  return { unvan, renk };
+}
+
+// Bir kullanıcının tüm aktif profilleri (yönetim, öğretmen, veli, öğrenci)
+function profilListesi(userId) {
+  const satirlar = db.prepare(`SELECT m.id, m.role, b.name AS sube FROM memberships m LEFT JOIN branches b ON b.id = m.branch_id
+    WHERE m.user_id = ? AND m.status = 'aktif'
+    ORDER BY CASE m.role WHEN 'yonetim' THEN 0 WHEN 'ogretmen' THEN 1 WHEN 'veli' THEN 2 ELSE 3 END, m.id`).all(userId);
+  return satirlar.map(m => ({ id: m.id, rol: m.role, sube: m.sube, ...profilBilgisi(m) }));
+}
+
 function kullaniciBul(kimlik) {
   const k = String(kimlik || '').trim().toUpperCase();
   if (/^\d{11}$/.test(k)) {
@@ -136,20 +166,9 @@ async function api(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/ben') {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
-    let unvan = { yonetim: 'Okul yönetimi', veli: 'Veli', ogretmen: 'Öğretmen', ogrenci: 'Öğrenci' }[o.role] || '';
-    let renk = null;
-    if (o.role === 'ogretmen') {
-      // Asıl branş: en çok sınıfa girilen ders; yoksa verebildiği dersler
-      let d = db.prepare(`SELECT c.name, c.renk FROM assignments a JOIN courses c ON c.id = a.course_id
-        WHERE a.teacher_membership_id = ? GROUP BY c.id ORDER BY COUNT(*) DESC, c.name`).all(o.membership_id);
-      if (!d.length) d = db.prepare(`SELECT c.name, c.renk FROM teacher_courses t JOIN courses c ON c.id = t.course_id
-        WHERE t.teacher_membership_id = ? ORDER BY c.name`).all(o.membership_id);
-      if (d.length) { unvan = d[0].name + ' öğretmeni'; renk = d[0].renk || null; }
-    } else if (o.role === 'ogrenci') {
-      const c = db.prepare('SELECT c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(o.membership_id);
-      if (c) unvan = c.name + ' sınıfı öğrencisi';
-    }
-    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk });
+    const { unvan, renk } = profilBilgisi({ id: o.membership_id, role: o.role });
+    const coklu = profilListesi(o.user_id).length > 1;
+    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/moduller') {
@@ -167,19 +186,29 @@ async function api(req, res, url) {
     return json(res, 200, { tamam: true }, { 'Set-Cookie': 'sid=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0' });
   }
 
-  // Yalnızca test aşaması (DEV_KOD açıkken): role göre demo hesapla doğrudan giriş.
+  // Giriş ekranı ayarı: demo kısayolları yalnızca test aşamasında görünür
+  if (req.method === 'GET' && url.pathname === '/api/giris/ayar') return json(res, 200, { demo: !!DEV_KOD });
+
+  // Yalnızca test aşaması (DEV_KOD açıkken): demo hesapla doğrudan giriş.
+  // rol: yonetim/ogretmen/ogrenci/veli veya 'coklu' (birden çok profili olan hesap)
   if (req.method === 'POST' && url.pathname === '/api/giris/demo') {
     if (!DEV_KOD) return json(res, 404, { hata: 'Bulunamadı' });
     const b = await govde(req);
-    const demo = DEMO_HESAPLAR[b.rol];
-    if (!demo) return json(res, 400, { hata: 'Geçersiz giriş türü' });
-    const kullanici = kullaniciBul(demo[0]);
-    const uyelikler = yetkiliUyelikler(kullanici, demo[1], b.rol);
+    let kullanici, uyelikler;
+    if (b.rol === 'coklu') {
+      kullanici = db.prepare('SELECT * FROM users WHERE phone = ? AND full_name = ?').get(telNormalize('5550000005'), 'Demo Öğretmen-Veli');
+      uyelikler = kullanici ? profilListesi(kullanici.id) : [];
+    } else {
+      const demo = DEMO_HESAPLAR[b.rol];
+      if (!demo) return json(res, 400, { hata: 'Geçersiz giriş türü' });
+      kullanici = kullaniciBul(demo[0]);
+      uyelikler = yetkiliUyelikler(kullanici, demo[1], b.rol);
+    }
     if (!uyelikler.length) return json(res, 404, { hata: 'Demo hesap bulunamadı' });
     const sid = crypto.randomBytes(32).toString('hex');
     db.prepare('INSERT INTO sessions (id, user_id, membership_id, expires_at) VALUES (?,?,?,?)')
       .run(sha(sid), kullanici.id, uyelikler[0].id, Date.now() + OTURUM_SURESI);
-    return json(res, 200, { tamam: true }, {
+    return json(res, 200, { tamam: true, coklu: uyelikler.length > 1 }, {
       'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${OTURUM_SURESI / 1000}`,
     });
   }
@@ -187,19 +216,19 @@ async function api(req, res, url) {
   if (req.method === 'POST' && (url.pathname === '/api/giris/kod' || url.pathname === '/api/giris/dogrula')) {
     if (hizAsildi(ip)) return json(res, 429, { hata: 'Çok fazla deneme. Lütfen biraz bekleyin.' });
     const b = await govde(req);
-    if (!ROLLER.includes(b.rol)) return json(res, 400, { hata: 'Geçersiz giriş türü' });
     const kullanici = kullaniciBul(b.kimlik);
-    const uyelikler = yetkiliUyelikler(kullanici, b.telefon, b.rol);
+    const dogru = kullanici && kullanici.phone === telNormalize(b.telefon);
+    const uyelikler = dogru ? profilListesi(kullanici.id) : [];
 
     if (url.pathname === '/api/giris/kod') {
       // Kullanıcı var/yok bilgisi sızdırılmaz: yanıt her durumda aynıdır.
       const yanit = { mesaj: 'Bilgiler doğruysa telefonunuza doğrulama kodu gönderildi.' };
       if (uyelikler.length) {
         const kod = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
-        db.prepare('UPDATE otps SET used = 1 WHERE user_id = ? AND role = ?').run(kullanici.id, b.rol);
+        db.prepare('UPDATE otps SET used = 1 WHERE user_id = ?').run(kullanici.id);
         db.prepare('INSERT INTO otps (user_id, role, code_hash, expires_at) VALUES (?,?,?,?)')
-          .run(kullanici.id, b.rol, sha(kod), Date.now() + KOD_SURESI);
-        console.log(`[DOĞRULAMA KODU] ${kullanici.full_name} (${b.rol}): ${kod}`);
+          .run(kullanici.id, '*', sha(kod), Date.now() + KOD_SURESI);
+        console.log(`[DOĞRULAMA KODU] ${kullanici.full_name}: ${kod}`);
         if (DEV_KOD) yanit.gelistiriciKodu = kod;
       }
       return json(res, 200, yanit);
@@ -208,8 +237,7 @@ async function api(req, res, url) {
     // /api/giris/dogrula
     const hata = { hata: 'Bilgiler veya kod hatalı' };
     if (!uyelikler.length) return json(res, 401, hata);
-    const otp = db.prepare(`SELECT * FROM otps WHERE user_id = ? AND role = ? AND used = 0
-                            ORDER BY id DESC LIMIT 1`).get(kullanici.id, b.rol);
+    const otp = db.prepare('SELECT * FROM otps WHERE user_id = ? AND used = 0 ORDER BY id DESC LIMIT 1').get(kullanici.id);
     if (!otp || otp.expires_at < Date.now() || otp.attempts >= MAKS_DENEME) return json(res, 401, hata);
     db.prepare('UPDATE otps SET attempts = attempts + 1 WHERE id = ?').run(otp.id);
     const gelen = Buffer.from(sha(String(b.kod || '')));
@@ -220,9 +248,25 @@ async function api(req, res, url) {
     const sid = crypto.randomBytes(32).toString('hex');
     db.prepare('INSERT INTO sessions (id, user_id, membership_id, expires_at) VALUES (?,?,?,?)')
       .run(sha(sid), kullanici.id, uyelikler[0].id, Date.now() + OTURUM_SURESI);
-    return json(res, 200, { tamam: true }, {
+    return json(res, 200, { tamam: true, coklu: uyelikler.length > 1 }, {
       'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${OTURUM_SURESI / 1000}`,
     });
+  }
+
+  // Aynı hesabın birden fazla profili varsa listele ve seçtir
+  if (req.method === 'GET' && url.pathname === '/api/profiller') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    return json(res, 200, { aktif: o.membership_id, profiller: profilListesi(o.user_id) });
+  }
+  if (req.method === 'POST' && url.pathname === '/api/profil/sec') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    const b = await govde(req);
+    const p = profilListesi(o.user_id).find(x => x.id === Number(b.id));
+    if (!p) return json(res, 404, { hata: 'Profil bulunamadı' });
+    db.prepare('UPDATE sessions SET membership_id = ? WHERE id = ?').run(p.id, o.id);
+    return json(res, 200, { tamam: true });
   }
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);

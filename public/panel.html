@@ -7,28 +7,25 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header class="bant" id="bant">
+  <header class="bant profil" id="bant">
     <div class="bant-marka"><strong>Akant Koleji</strong><span>Okul yönetim platformu</span></div>
     <div class="bant-avatar" id="avatar"><span id="bas-harf"></span></div>
     <div class="bant-kimlik">
       <h1 id="ad">&nbsp;</h1>
       <p id="unvan"></p>
     </div>
-    <button class="bant-cikis" id="cikis" type="button">Çıkış</button>
+    <div class="bant-aksiyon">
+      <a class="bant-cikis gizli" id="profil-degis" href="/?profil=1">Profil değiştir</a>
+      <button class="bant-cikis" id="cikis" type="button">Çıkış</button>
+    </div>
   </header>
   <main class="kart panel">
     <span id="rol" class="gizli"></span><span id="sube" class="gizli"></span>
     <section id="bugun-dersler" class="gizli">
-      <div id="geciken" class="uyari gizli"></div>
-      <h2 class="baslik2" id="bugun-baslik">Bugünkü derslerim</h2>
       <div id="bugun-liste"></div>
+      <div id="geciken" class="uyari gizli"></div>
     </section>
-    <p id="aciklama" class="alt"></p>
-    <div class="modul-grid" id="moduller"></div>
-    <section id="yakinda" class="yakinda">
-      <h2 class="baslik3">Yakında gelecek</h2>
-      <div class="cipler" id="yakinda-liste"></div>
-    </section>
+    <div class="kare-grid" id="moduller"></div>
   </main>
   <script src="/ders-stil.js"></script>
   <script src="/panel.js"></script>

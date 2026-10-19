@@ -43,21 +43,63 @@ async function ogretmenDersleri() {
   if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'bos-not'));
   // Yalnızca en yakın ders: şu an süren ya da sıradaki; hepsi bittiyse sonuncusu
   const simdi = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
-  const yakin = liste.gunluk.find(d => d.aralik.split('–')[1] >= simdi) || liste.gunluk[liste.gunluk.length - 1];
-  document.getElementById('bugun-baslik').textContent = liste.gunluk.length > 1 ? `Sıradaki ders · bugün ${liste.gunluk.length} ders` : 'Bugünkü dersim';
-  for (const d of [yakin]) {
-    const satir = el('a', undefined, 'ders-satir');
-    satir.href = '/derslerim';
-    satir.style.setProperty('--ders', d.renk || '#475569');
-    const zaman = el('div', undefined, 'ders-zaman');
-    zaman.append(el('strong', d.aralik.split('–')[0]), el('span', `${d.dersSaati}. ders`));
-    const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', d.sinif));
-    satir.append(zaman, orta);
-    const isaret = { tamam: ['✓', 'Tamamlandı'], gecikti: ['!', 'Tamamlanmadı'], iptal: ['İptal', 'İptal edildi'] }[d.durum];
-    if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + d.durum); i.title = isaret[1]; i.setAttribute('aria-label', isaret[1]); satir.appendChild(i); }
-    k.appendChild(satir);
-  }
+  const idx = liste.gunluk.findIndex(d => d.aralik.split('–')[1] >= simdi);
+  const d = liste.gunluk[idx < 0 ? liste.gunluk.length - 1 : idx];
+  const kart = el('a', undefined, 'siradaki');
+  kart.href = '/derslerim';
+  kart.style.setProperty('--ders', d.renk || '#475569');
+  const ust = el('div', undefined, 'siradaki-ust');
+  const bitti = idx < 0;
+  ust.append(el('span', bitti ? 'Bugünkü son dersiniz' : 'Sıradaki dersim'), el('span', `bugün ${liste.gunluk.length} ders`));
+  const govde = el('div', undefined, 'siradaki-govde');
+  const zaman = el('div', undefined, 'siradaki-saat');
+  zaman.append(el('strong', d.aralik.split('–')[0]), el('span', `${d.dersSaati}. ders`));
+  const orta = el('div', undefined, 'siradaki-orta');
+  orta.append(el('strong', d.sinif), el('span', d.ders));
+  govde.append(zaman, orta);
+  const isaret = { tamam: ['✓', 'Tamamlandı'], gecikti: ['!', 'Tamamlanmadı'], iptal: ['İptal', 'İptal edildi'] }[d.durum];
+  if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + d.durum); i.title = isaret[1]; i.setAttribute('aria-label', isaret[1]); govde.appendChild(i); }
+  kart.append(ust, govde);
+  k.appendChild(kart);
+}
+
+
+// Modül kareleri için çizgi ikonlar
+const IKON_YOL = {
+  etut: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  derslerim: 'M4 5h16v14H4zM4 10h16M9 5v14',
+  'not-girisi': 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5',
+  siniflarim: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
+  'veli-bilgilendirme': 'M4 5h16v11H9l-5 4zM8 9h8M8 12h5',
+  'kullanici-rol': 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.8-4.2 4-6 8-6s7.2 1.8 8 6',
+  'okul-kurulum': 'M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18',
+  'ders-programi-yonetimi': 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  'ders-programi': 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  duyuru: 'M4 10v4h3l7 4V6L7 10zM17 9a4 4 0 010 6',
+  duyurular: 'M4 10v4h3l7 4V6L7 10zM17 9a4 4 0 010 6',
+  rapor: 'M5 20V10M12 20V4M19 20v-7',
+  notlarim: 'M5 20V10M12 20V4M19 20v-7',
+  'odev-takip': 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h3',
+  ogrencim: 'M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5',
+  'devamsizlik-veli': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
+  'devamsizlik-ogrenci': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
+  teslim: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+};
+IKON_YOL['etut-ogrenci'] = IKON_YOL['etut-veli'] = IKON_YOL.etut;
+
+function modulIkon(id) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.7');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', IKON_YOL[id] || 'M12 3l2.5 6 6.5.5-5 4.2 1.7 6.3L12 16.8 6.3 20l1.7-6.3-5-4.2L9.5 9z');
+  svg.appendChild(path);
+  return svg;
 }
 
 const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğrenci', veli: 'Veli' };
@@ -81,33 +123,25 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
   }
   document.getElementById('rol').textContent = ROL_ADI[k.rol] || k.rol;
   document.getElementById('sube').textContent = k.sube || '';
-  document.getElementById('aciklama').textContent = k.rol === 'ogretmen' ? '' : 'Yetkili olduğunuz modüller:';
+  if (k.coklu) document.getElementById('profil-degis').classList.remove('gizli');
 
   if (k.rol === 'ogretmen') ogretmenDersleri();
 
   const grid = document.getElementById('moduller');
-  const yakinda = document.getElementById('yakinda-liste');
   for (const m of moduller) {
     if (k.rol === 'ogretmen' && m.id === 'yoklama') continue; // dersler listesinden zaten ulaşılıyor
-    if (!m.yol) {
-      const cip = document.createElement('span');
-      cip.className = 'cip';
-      cip.textContent = m.ad;
-      cip.title = m.aciklama;
-      yakinda.appendChild(cip);
-      continue;
-    }
-    const kart = document.createElement('a');
-    kart.className = 'modul-kart';
-    if (m.yol) { kart.href = m.yol; kart.classList.add('hazir'); }
-    const b = document.createElement('strong');
-    b.textContent = m.ad;
-    kart.append(b, document.createElement('span'));
-    kart.title = m.aciklama;
-    grid.appendChild(kart);
+    const kare = document.createElement(m.yol ? 'a' : 'div');
+    kare.className = 'kare' + (m.yol ? '' : ' soon');
+    if (m.yol) kare.href = m.yol;
+    kare.title = m.aciklama;
+    const ic = document.createElement('span');
+    ic.className = 'kare-ikon';
+    ic.appendChild(modulIkon(m.id));
+    kare.append(ic, el('strong', m.ad));
+    if (!m.yol) kare.appendChild(el('small', 'Yakında'));
+    grid.appendChild(kare);
   }
-  if (!grid.children.length) grid.appendChild(Object.assign(document.createElement('p'), { className: 'bos-not', textContent: 'Size açık modül yok.' }));
-  if (!yakinda.children.length) document.getElementById('yakinda').classList.add('gizli');
+  if (!grid.children.length) grid.appendChild(el('p', 'Size açık modül yok.', 'bos-not'));
 })();
 
 document.getElementById('cikis').addEventListener('click', async () => {

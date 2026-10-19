@@ -1017,3 +1017,65 @@ main.panel { max-width: 560px; margin: 0 auto; padding: 16px 18px 32px; }
 .giris-kart .ikincil { width: 100%; margin-top: 10px; height: 44px; border: 0; color: var(--soluk); }
 .giris-kart h1, .giris-kart > .alt { display: none; }
 body:has(.bant) { padding: 0 0 48px; }
+
+/* =====================================================================
+   v5 — Sakin bant, profil seçici, sıradaki ders kartı, kare butonlar
+   ===================================================================== */
+.bant { background: radial-gradient(circle at 94% -8%, rgba(255,255,255,.09) 0 120px, transparent 121px), radial-gradient(circle at 0 100%, rgba(255,255,255,.06) 0 85px, transparent 86px), var(--ana); box-shadow: none !important; }
+.bant-avatar { background: rgba(255,255,255,.16); color: #fff; border: 1.5px solid rgba(255,255,255,.45); box-shadow: none !important; backdrop-filter: blur(2px); }
+.bant.buyuk .bant-avatar { background: #fbf7ef; color: var(--ana); border: 7px solid var(--kagit); box-shadow: 0 10px 24px -14px rgba(0,0,0,.35) !important; }
+.bant-cikis { background: rgba(255,255,255,.14); font-size: .8rem; height: 32px; padding: 0 14px; display: inline-flex; align-items: center; text-decoration: none; position: static; }
+.bant-cikis:hover { background: rgba(255,255,255,.24); }
+.bant-aksiyon { position: absolute; right: 14px; top: 16px; display: flex; gap: 8px; z-index: 2; transition: opacity .5s .35s; }
+.bant.buyuk .bant-aksiyon { opacity: 0; pointer-events: none; }
+
+/* Panel bandı: daha yüksek, büyük avatar, isim yanında */
+.bant.profil:not(.buyuk) { height: 168px; border-radius: 0 0 34px 34px; margin-bottom: 0; }
+.bant.profil:not(.buyuk) .bant-avatar { left: 20px; top: 62px; width: 68px; height: 68px; font-size: 1.3rem; }
+.bant.profil:not(.buyuk) .bant-kimlik { left: 102px; right: 18px; top: 62px; bottom: auto; height: 68px; }
+.bant.profil:not(.buyuk) .bant-kimlik h1 { font-size: 1.3rem; }
+.bant.profil:not(.buyuk) .bant-kimlik p { font-size: .88rem; }
+
+/* Sıradaki ders kartı: banda hafifçe biner */
+#bugun-dersler { margin-top: -34px; position: relative; z-index: 3; }
+.siradaki { display: block; text-decoration: none; color: var(--murekkep); padding: 14px 16px 16px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--ders) 22%, #fff);
+  background: color-mix(in srgb, var(--ders) 9%, #fff); box-shadow: 0 14px 28px -18px color-mix(in srgb, var(--ders) 55%, #000) !important; }
+.siradaki-ust { display: flex; justify-content: space-between; font-size: .76rem; color: color-mix(in srgb, var(--ders) 70%, #000); font-weight: 600; letter-spacing: .02em; }
+.siradaki-ust span:last-child { font-weight: 500; opacity: .75; }
+.siradaki-govde { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+.siradaki-saat { display: grid; justify-items: center; min-width: 66px; padding: 8px 10px; border-radius: 16px; background: var(--ders); color: #fff; }
+.siradaki-saat strong { font-family: var(--serif); font-size: 1.3rem; font-weight: 600; line-height: 1.1; }
+.siradaki-saat span { font-size: .7rem; opacity: .9; }
+.siradaki-orta { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.siradaki-orta strong { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; }
+.siradaki-orta span { color: var(--soluk); font-size: .88rem; }
+#geciken { margin-top: 12px; border-radius: 16px; padding: 10px 14px; background: #fff; }
+
+/* Kare butonlar */
+.kare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.kare { aspect-ratio: 1 / .9; box-sizing: border-box; margin: 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; border-radius: 22px; background: #fff; border: 1px solid #eee8db; color: var(--murekkep); text-decoration: none; position: relative;
+  box-shadow: 0 10px 22px -18px rgba(60,50,30,.55) !important; transition: transform .15s; }
+.kare:active { transform: scale(.97); }
+.kare strong { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; line-height: 1.2; }
+.kare small { position: absolute; right: 14px; top: 16px; font-size: .68rem; color: var(--soluk); }
+.kare-ikon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; background: color-mix(in srgb, var(--ana) 14%, #fff); color: var(--ana); }
+.kare-ikon svg { width: 24px; height: 24px; }
+.kare.soon { opacity: .5; background: transparent; border-style: dashed; box-shadow: none !important; }
+.kare.soon .kare-ikon { background: #efe9dd; color: var(--soluk); }
+
+/* Profil seçici (oyunlardaki takım seçimi gibi) */
+.profil-baslik { text-align: center; margin: 4px 0 16px; font-family: var(--serif); text-transform: none; letter-spacing: 0; font-size: 1.2rem; color: var(--murekkep); }
+.profil-liste { display: grid; gap: 12px; }
+.profil-kart { --pr: var(--ana); display: flex; align-items: center; gap: 16px; width: 100%; padding: 14px 16px; margin: 0; text-align: left; font: inherit; cursor: pointer;
+  border-radius: 22px; border: 1.5px solid color-mix(in srgb, var(--pr) 25%, #fff); background: color-mix(in srgb, var(--pr) 8%, #fff); color: var(--murekkep);
+  transition: transform .15s, border-color .15s; }
+.profil-kart:hover { border-color: var(--pr); transform: translateY(-2px); }
+.profil-kart:active { transform: scale(.98); }
+.profil-av { flex: none; width: 60px; height: 60px; display: grid; place-items: center; border-radius: 50%; background: var(--pr); color: #fff; border: 4px solid #fff; outline: 2px solid color-mix(in srgb, var(--pr) 45%, #fff); }
+.profil-av svg { width: 28px; height: 28px; }
+.profil-yazi { display: grid; gap: 3px; min-width: 0; }
+.profil-yazi strong { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+.profil-yazi small { color: var(--soluk); font-size: .82rem; }
+.demo-link { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 26px; padding-top: 14px; border-top: 1px dashed #ddd5c4; font-size: .78rem; color: var(--soluk); }
+.demo-link button { height: 28px; padding: 0 12px; border: 1px solid #ddd5c4; border-radius: 999px; background: transparent; color: var(--soluk); font: inherit; font-size: .78rem; cursor: pointer; }
+.demo-link button:hover { color: var(--murekkep); border-color: var(--murekkep); }
