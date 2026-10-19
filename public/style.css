@@ -984,7 +984,7 @@ input.hatali { border-bottom: 2px solid var(--vurgu); }
 .bant { --bh: max(38vh, 250px); position: relative; height: 92px; margin: 0 0 4px; color: #fff; border-radius: 0 0 30px 30px;
   background: linear-gradient(165deg, color-mix(in srgb, var(--ana) 82%, #fff) 0%, var(--ana) 70%);
   box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--ana) 70%, transparent) !important;
-  transition: height .7s cubic-bezier(.65,0,.25,1), margin .7s cubic-bezier(.65,0,.25,1), background .4s; }
+  transition: height .7s cubic-bezier(.65,0,.25,1), margin .7s cubic-bezier(.65,0,.25,1); }
 .bant.buyuk { height: var(--bh); margin-bottom: 64px; }
 .bant-avatar { position: absolute; left: 18px; top: 20px; width: 52px; height: 52px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%;
   background: #fbf7ef; color: var(--ana); font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; border: 2px solid rgba(255,255,255,.55);
