@@ -1339,3 +1339,8 @@ h1, h2, h3, strong, .alt { font-variant-numeric: lining-nums tabular-nums; }
 .pasta-ikon { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 .pasta-yazi { fill: #fff; font-size: 10.5px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; pointer-events: none; letter-spacing: .02em; }
 .pasta-ad { width: 70px; z-index: 1; pointer-events: none; }
+
+/* Haftalık program hücreleri: daha ince yazı, daha alçak bar */
+.hafta-tablo .hucre { min-height: 30px; padding: 2px 1px; border-radius: 8px; }
+.hafta-tablo .hucre strong { font-size: .74rem; font-weight: 500; letter-spacing: 0; }
+.hafta-tablo .hucre span { font-size: .6rem; }

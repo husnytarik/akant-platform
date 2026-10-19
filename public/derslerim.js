@@ -108,7 +108,7 @@ async function haftaYukle() {
   bas.appendChild(el('th'));
   for (const g of r.veri.gunler) {
     const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
-    th.append(el('strong', GUN[g.gun].slice(0, 3)), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
+    th.append(el('strong', g.gun === 6 ? 'Cmt' : GUN[g.gun].slice(0, 3)), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
     bas.appendChild(th);
   }
   t.appendChild(bas);
