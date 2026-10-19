@@ -120,7 +120,11 @@ async function haftaYukle() {
     secilen?.classList.remove('secili');
     secilen = b;
     b.classList.add('secili');
-    if (etut) etutDetayCiz(detay, g, d); else detayCiz(detay, g, d);
+    if (etut) { etutDetayCiz(detay, g, d); return; }
+    // Ders: özet kutusu yerine doğrudan tam ders detayı (yoklama, öğrenciler, konu, ödev) açılır
+    detay.classList.add('gizli');
+    tarih = g.tarih;
+    dersAc(d, true);
   };
   for (const satir of saatSatirlari(r.veri.zamanlar, gunler)) {
     const tr = document.createElement('tr');
@@ -177,6 +181,7 @@ async function gunYukle() {
 }
 
 function zamanCiz() {
+  if (gorunum !== 'gun' || !veri) return;
   const k = $('zaman');
   k.replaceChildren();
   if (!veri.gunluk.length && !veri.etutler.length) {
@@ -272,6 +277,7 @@ function sekmeAc(ad) {
 async function bitirildi() {
   const acik = { atamaId: ders.atamaId, dersSaati: ders.dersSaati };
   await gunYukle();
+  if (gorunum === 'hafta') return sekmeAc(sekme);
   const d = veri?.gunluk.find(x => x.atamaId === acik.atamaId && x.dersSaati === acik.dersSaati);
   if (d) dersAc(d, true);
 }
