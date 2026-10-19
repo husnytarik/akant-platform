@@ -152,16 +152,9 @@ async function haftaYukle() {
   const ozet = el('p', undefined, 'hafta-ozet');
   ozet.append(el('strong', `${dersSayisi} saat ders`));
   if (etutler.length) ozet.append(` · ${etutler.length} etüt (${etutDk} dk)`);
-  const etutKutu = el('div', undefined, 'hafta-etut');
-  if (etutler.length) {
-    etutKutu.appendChild(el('strong', 'Etütler'));
-    for (const e of etutler) {
-      etutKutu.appendChild(el('p', `${tarihYaz(e.tarih).split(' ').slice(0, 3).join(' ')} · ${e.saat} · ${e.ders || 'Etüt'}${e.konu ? ' · ' + e.konu : ''} · ${e.kisi} öğrenci${e.yer ? ' · ' + e.yer : ''}`));
-    }
-  }
   const aciklama = el('p', undefined, 'hafta-not');
   aciklama.append(el('span', '✓ ders işlendi'), el('span', '⊘ ders iptal'), el('span', '! süresi geçti, tamamlanmadı'), el('span', 'Kesik çizgi: etüt'));
-  $('hafta').replaceChildren(ozet, t, aciklama, detay, etutKutu);
+  $('hafta').replaceChildren(ozet, t, aciklama, detay);
   atamaCiz();
 }
 
