@@ -103,12 +103,14 @@ async function haftaYukle() {
   const son = r.veri.gunler[6].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
+  // Dersi/etüdü olmayan hafta sonu günleri gösterilmez
+  const gunler = r.veri.gunler.filter(g => (g.gun >= 1 && g.gun <= 5) || g.dersler.length || g.etutler.length);
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
-  for (const g of r.veri.gunler) {
+  for (const g of gunler) {
     const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
-    th.append(el('strong', g.gun === 6 ? 'Cmt' : GUN[g.gun].slice(0, 3)), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
+    th.append(el('strong', ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'][g.gun]), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
     bas.appendChild(th);
   }
   t.appendChild(bas);
@@ -120,12 +122,12 @@ async function haftaYukle() {
     b.classList.add('secili');
     if (etut) etutDetayCiz(detay, g, d); else detayCiz(detay, g, d);
   };
-  for (const satir of saatSatirlari(r.veri.zamanlar, r.veri.gunler)) {
+  for (const satir of saatSatirlari(r.veri.zamanlar, gunler)) {
     const tr = document.createElement('tr');
     const z = el('th', undefined, 'saat-hucre');
     z.append(el('strong', satir.etiket), el('span', satir.alt));
     tr.appendChild(z);
-    for (const g of r.veri.gunler) {
+    for (const g of gunler) {
       const td = document.createElement('td');
       td.className = (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '');
       const h = hucreIcerik(r.veri.zamanlar, g, satir);

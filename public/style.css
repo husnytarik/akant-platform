@@ -1340,7 +1340,26 @@ h1, h2, h3, strong, .alt { font-variant-numeric: lining-nums tabular-nums; }
 .pasta-yazi { fill: #fff; font-size: 10.5px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; pointer-events: none; letter-spacing: .02em; }
 .pasta-ad { width: 70px; z-index: 1; pointer-events: none; }
 
-/* Haftalık program hücreleri: daha ince yazı, daha alçak bar */
-.hafta-tablo .hucre { min-height: 30px; padding: 2px 1px; border-radius: 8px; }
-.hafta-tablo .hucre strong { font-size: .74rem; font-weight: 500; letter-spacing: 0; }
-.hafta-tablo .hucre span { font-size: .6rem; }
+/* Haftalık program: çizgisiz, yumuşak hücreler; bugün sütunu vurgulu */
+main .hafta-tablo { border-collapse: separate; border-spacing: 3px; width: 100%; table-layout: fixed; margin: 6px 0 4px; }
+main .hafta-tablo th, main .hafta-tablo td { border: 0; padding: 0; background: transparent; text-align: center; vertical-align: middle; }
+main .hafta-tablo th:first-child { width: 40px; }
+main .hafta-tablo thead th, main .hafta-tablo tr:first-child th { padding: 6px 0 8px; }
+main .hafta-tablo th strong { display: block; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--soluk); }
+main .hafta-tablo th span { display: block; margin-top: 2px; font-size: .8rem; color: var(--murekkep); font-weight: 500; }
+main .hafta-tablo th.bugun-sutun { background: var(--ana); border-radius: 14px; }
+main .hafta-tablo th.bugun-sutun strong, main .hafta-tablo th.bugun-sutun span { color: #fff; }
+main .hafta-tablo td.bugun-sutun { background: color-mix(in srgb, var(--ana) 7%, #fff); border-radius: 12px; }
+main .hafta-tablo .hafta-sonu { background: transparent; }
+main .hafta-tablo .saat-hucre { background: transparent; text-align: left; padding-left: 2px; }
+main .hafta-tablo .saat-hucre strong { font-size: .95rem; font-weight: 600; color: var(--murekkep); line-height: 1.1; }
+main .hafta-tablo .saat-hucre span { font-size: .64rem; color: var(--soluk); }
+main .hafta-tablo .hucre { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 34px; margin: 2px 0; padding: 0 2px; border: 0; border-radius: 10px;
+  background: color-mix(in srgb, var(--ders) 15%, #fff); color: color-mix(in srgb, var(--ders) 70%, #000); }
+main .hafta-tablo .hucre strong { font-size: .76rem; font-weight: 600; color: inherit; letter-spacing: 0; }
+main .hafta-tablo .hucre.tamam { background: color-mix(in srgb, var(--ders) 30%, #fff); border-left: 0; }
+main .hafta-tablo .hucre.gecikti { background: #fdebe8; color: #b3261e; border: 0; outline: 0; }
+main .hafta-tablo .hucre.iptal { opacity: .55; text-decoration: line-through; }
+main .hafta-tablo .hucre.secili { outline: 2px solid var(--ana); outline-offset: 1px; }
+main .hafta-tablo .hucre.etut { background: #f4eefc; color: #6d3fc0; border: 1px dashed #c9b3ee; flex-direction: column; min-height: 34px; }
+main .hafta-tablo .hucre.etut span { font-size: .56rem; }
