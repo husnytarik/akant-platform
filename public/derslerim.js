@@ -130,7 +130,7 @@ async function haftaYukle() {
         const b = el('button', undefined, 'hucre ' + d.durum);
         b.type = 'button';
         b.style.setProperty('--ders', d.renk);
-        b.append(el('strong', d.kisa + ({ tamam: ' ✓', gecikti: ' !', iptal: ' ⊘' }[d.durum] || '')), el('span', d.sinif));
+        b.append(el('strong', d.sinif + ({ tamam: ' ✓', gecikti: ' !', iptal: ' ⊘' }[d.durum] || '')));
         b.addEventListener('click', () => secim(b, g, d, false));
         td.appendChild(b);
       }
@@ -200,16 +200,16 @@ function zamanCiz() {
     satir.type = 'button';
     if (o.tur === 'ders' && ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
     const zaman = el('div', undefined, 'ders-zaman');
-    if (o.tur === 'ders') zaman.append(el('strong', `${d.dersSaati}.`), el('span', o.bas));
+    if (o.tur === 'ders') zaman.append(el('strong', o.bas), el('span', `${d.dersSaati}. ders`));
     else zaman.append(el('strong', 'Etüt'), el('span', o.bas));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', o.tur === 'ders' ? `${d.sinif} · ${d.ders}` : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
+    orta.append(el('strong', o.tur === 'ders' ? d.sinif : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
     if (o.tur === 'etut') orta.append(el('span', `${d.kisi} öğrenci${d.yer ? ' · ' + d.yer : ''}`));
     satir.style.setProperty('--ders', d.renk || '#475569');
     satir.append(zaman, orta);
     if (o.tur === 'ders') {
-      const rozet = durumRozeti(d);
-      if (rozet.textContent) satir.appendChild(rozet);
+      const isaret = { tamam: ['✓', 'Tamamlandı'], gecikti: ['!', 'Tamamlanmadı'], iptal: ['İptal', 'İptal edildi'] }[d.durum];
+      if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + d.durum); i.title = isaret[1]; i.setAttribute('aria-label', isaret[1]); satir.appendChild(i); }
       satir.addEventListener('click', () => dersAc(d, true));
     } else {
       satir.addEventListener('click', () => { location.href = '/etut'; });
