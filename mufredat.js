@@ -96,7 +96,7 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
       const kapsam = liste.filter((_, i) => !muaf[i]);
       const islenen = liste.filter((_, i) => !muaf[i] && islendi[i]).length;
 
-      let atlanan = [], uniteIci = [], suAnki = null;
+      let atlanan = [], atlananUniteler = [], uniteIci = [], suAnki = null;
       if (uniteli && islenen) {
         let enIleri = -1, enSon = -1;
         liste.forEach((k, i) => { if (islendi[i]) { enIleri = Math.max(enIleri, uniteler.indexOf(unite(k))); enSon = i; } });
@@ -108,40 +108,37 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
           if (u < enIleri) atlanan.push(x);
           else if (u === enIleri && i < enSon) uniteIci.push(x);
         });
+        // Hiçbir kazanımı girilmemiş önceki üniteler tek tek kazanım olarak değil, "atlanan ünite" olarak bildirilir
+        const sayac = new Map();
+        liste.forEach((k, i) => { if (muaf[i]) return; const u = unite(k); const c = sayac.get(u) || { toplam: 0, islenen: 0 }; c.toplam++; if (islendi[i]) c.islenen++; sayac.set(u, c); });
+        for (const [u, c] of sayac) {
+          if (uniteler.indexOf(u) >= enIleri || c.islenen) continue;
+          atlananUniteler.push({ anahtar: u, unite: Number(u.split('.')[2]), uniteAd: UNITE_AD[u] || '', kazanimSayisi: c.toplam });
+        }
+        atlanan = atlanan.filter(x => !atlananUniteler.some(y => y.unite === x.unite));
       }
-      // Sınavda sorulmuş ama hiç girilmemiş kazanımlar da (hangi ünitede olursa olsun) atlanan sayılır
-      const sorulan = new Map();
-      for (const r of db.prepare(`SELECT sk.kazanim, s.name AS sinav, s.date AS tarih FROM sinav_kazanim sk JOIN sinav_dersler d ON d.id = sk.sinav_ders_id
-        JOIN sinavlar s ON s.id = d.sinav_id JOIN sinav_siniflar ss ON ss.sinav_id = s.id WHERE ss.class_id = ? AND d.ders = ? ORDER BY s.date`).all(a.sinifId, a.ders)) {
-        const i = r.kazanim.indexOf(' – ');
-        const kod = i > 0 ? r.kazanim.slice(0, i) : r.kazanim;
-        if (!sorulan.has(kod)) sorulan.set(kod, { sinav: r.sinav, tarih: r.tarih });
-      }
-      liste.forEach((k, i) => {
-        if (islendi[i] || muaf[i] || !sorulan.has(k.kod)) return;
-        const var_ = atlanan.find(x => x.kod === k.kod);
-        if (var_) { var_.sinavda = sorulan.get(k.kod); return; }
-        atlanan.push({ kod: k.kod, metin: k.metin, unite: uniteli ? Number(unite(k).split('.')[2]) : null, uniteAd: uniteli ? UNITE_AD[unite(k)] || '' : '', sinavda: sorulan.get(k.kod) });
-      });
       sonuc.push({
         sinifId: a.sinifId, sinif: a.sinif, ders: a.ders, toplam: kapsam.length, islenen, uniteli,
-        suAnkiUnite: suAnki ? Number(suAnki.split('.')[2]) : null, atlanan, uniteIci,
+        suAnkiUnite: suAnki ? Number(suAnki.split('.')[2]) : null, atlanan, atlananUniteler, uniteIci,
       });
     }
-    json(res, 200, { siniflar: sonuc, atlananSayi: sonuc.reduce((t, s) => t + s.atlanan.length, 0) });
+    json(res, 200, { siniflar: sonuc, atlananSayi: sonuc.reduce((t, s) => t + s.atlanan.length + s.atlananUniteler.length, 0) });
     return true;
   }
 
   // Bir kazanımı "anlatıldı (girmeyi unutmuşum)" ya da "atlanacak/ihtiyaç yok" diye işaretle
   if (req.method === 'POST' && url.pathname === '/api/mufredat/isaretle') {
     const b = await govde(req);
-    const sinifId = tamSayi(b.sinifId, 1, 1e9), ders = String(b.ders || ''), kod = String(b.kod || '');
-    if (!sinifId || !ders || !kod || !['islendi', 'atla'].includes(b.tur)) return hata(400, 'Geçersiz istek');
+    const sinifId = tamSayi(b.sinifId, 1, 1e9), ders = String(b.ders || ''), kod = String(b.kod || ''), unite = String(b.unite || '');
+    if (!sinifId || !ders || !(kod || unite) || !['islendi', 'atla'].includes(b.tur)) return hata(400, 'Geçersiz istek');
     const a = atamalar().find(x => x.sinifId === sinifId && x.ders === ders);
-    if (!a || !dersKazanimlari(ders, parseInt(a.sinif, 10)).some(k => k.kod === kod)) return hata(404, 'Kazanım bulunamadı');
-    db.prepare(`INSERT INTO mufredat_isaret (teacher_membership_id, class_id, ders, kod, tur, tarih) VALUES (?,?,?,?,?,?)
-      ON CONFLICT (teacher_membership_id, class_id, ders, kod) DO UPDATE SET tur = excluded.tur, tarih = excluded.tarih`)
-      .run(o.membership_id, sinifId, ders, kod, b.tur, Date.now());
+    const liste = a ? dersKazanimlari(ders, parseInt(a.sinif, 10)) : [];
+    // Tek kazanım ya da bir ünitenin tüm kazanımları
+    const hedef = kod ? liste.filter(k => k.kod === kod) : liste.filter(k => uniteAnahtar(k.kod) === unite);
+    if (!hedef.length) return hata(404, 'Kazanım bulunamadı');
+    const ekle = db.prepare(`INSERT INTO mufredat_isaret (teacher_membership_id, class_id, ders, kod, tur, tarih) VALUES (?,?,?,?,?,?)
+      ON CONFLICT (teacher_membership_id, class_id, ders, kod) DO UPDATE SET tur = excluded.tur, tarih = excluded.tarih`);
+    for (const k of hedef) ekle.run(o.membership_id, sinifId, ders, k.kod, b.tur, Date.now());
     json(res, 200, { tamam: true });
     return true;
   }
