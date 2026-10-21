@@ -46,7 +46,7 @@ export function kazanimCoz(dersAd, sinifAd, kodlar) {
 }
 
 // Müfredat takibi: öğretmenin ders verdiği sınıf+ders için MEB kazanım listesi ile derste, konuda ve ödevde girilen kazanımlar karşılaştırılır.
-// Sonraki bir ünitede kazanım girilmiş ama önceki bir ünitenin kazanımı hiç girilmemişse "atlanan" sayılır.
+// Sonraki bir üniteye geçilmiş ama önceki ünitenin kazanımlarından biri bile girilmemişse o ünite "tamamlanmadan geçilmiş" sayılır.
 export async function mufredatApi({ req, res, url, o, json, govde }) {
   if (!url.pathname.startsWith('/api/mufredat/')) return false;
   const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
@@ -96,33 +96,26 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
       const kapsam = liste.filter((_, i) => !muaf[i]);
       const islenen = liste.filter((_, i) => !muaf[i] && islendi[i]).length;
 
-      let atlanan = [], atlananUniteler = [], uniteIci = [], suAnki = null;
+      // Ünite ünite izlenir: sonraki bir üniteye geçilmiş ama kazanımları tamamlanmamış üniteler "tamamlanmadan geçilmiş" sayılır
+      const atlananUniteler = [];
+      let suAnki = null;
       if (uniteli && islenen) {
-        let enIleri = -1, enSon = -1;
-        liste.forEach((k, i) => { if (islendi[i]) { enIleri = Math.max(enIleri, uniteler.indexOf(unite(k))); enSon = i; } });
+        let enIleri = -1;
+        liste.forEach((k, i) => { if (islendi[i]) enIleri = Math.max(enIleri, uniteler.indexOf(unite(k))); });
         suAnki = uniteler[enIleri];
-        liste.forEach((k, i) => {
-          if (islendi[i] || muaf[i]) return;
-          const u = uniteler.indexOf(unite(k));
-          const x = { kod: k.kod, metin: k.metin, unite: Number(unite(k).split('.')[2]), uniteAd: UNITE_AD[unite(k)] || '' };
-          if (u < enIleri) atlanan.push(x);
-          else if (u === enIleri && i < enSon) uniteIci.push(x);
-        });
-        // Hiçbir kazanımı girilmemiş önceki üniteler tek tek kazanım olarak değil, "atlanan ünite" olarak bildirilir
-        const sayac = new Map();
-        liste.forEach((k, i) => { if (muaf[i]) return; const u = unite(k); const c = sayac.get(u) || { toplam: 0, islenen: 0 }; c.toplam++; if (islendi[i]) c.islenen++; sayac.set(u, c); });
-        for (const [u, c] of sayac) {
-          if (uniteler.indexOf(u) >= enIleri || c.islenen) continue;
-          atlananUniteler.push({ anahtar: u, unite: Number(u.split('.')[2]), uniteAd: UNITE_AD[u] || '', kazanimSayisi: c.toplam });
+        for (const u of uniteler.slice(0, enIleri)) {
+          const uyeler = liste.map((k, i) => ({ k, i })).filter(x => unite(x.k) === u && !muaf[x.i]);
+          const eksik = uyeler.filter(x => !islendi[x.i]).map(x => ({ kod: x.k.kod, metin: x.k.metin }));
+          if (!eksik.length) continue;
+          atlananUniteler.push({ anahtar: u, unite: Number(u.split('.')[2]), uniteAd: UNITE_AD[u] || '', toplam: uyeler.length, islenen: uyeler.length - eksik.length, eksik });
         }
-        atlanan = atlanan.filter(x => !atlananUniteler.some(y => y.unite === x.unite));
       }
       sonuc.push({
         sinifId: a.sinifId, sinif: a.sinif, ders: a.ders, toplam: kapsam.length, islenen, uniteli,
-        suAnkiUnite: suAnki ? Number(suAnki.split('.')[2]) : null, atlanan, atlananUniteler, uniteIci,
+        suAnkiUnite: suAnki ? Number(suAnki.split('.')[2]) : null, atlananUniteler,
       });
     }
-    json(res, 200, { siniflar: sonuc, atlananSayi: sonuc.reduce((t, s) => t + s.atlanan.length + s.atlananUniteler.length, 0) });
+    json(res, 200, { siniflar: sonuc, atlananSayi: sonuc.reduce((t, s) => t + s.atlananUniteler.length, 0) });
     return true;
   }
 

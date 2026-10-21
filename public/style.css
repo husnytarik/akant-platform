@@ -1665,3 +1665,6 @@ main #muf-takip details > summary::before { content: "⤼"; }
 .ks-yazi b { font-size: 11px; color: var(--soluk); letter-spacing: .02em; margin-right: 2px; }
 main .kh-kazanim small.kh-not { display: block; margin-top: 4px; }
 main .kh-satir.unite { border-left: 3px solid var(--vurgu); padding-left: 10px; }
+main .kh-unite { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--ince); }
+main .kh-unite > .kh-satir { padding: 8px 0 0; border-top: 0; }
+main .kh-satir.unite { border-left: 0; padding-left: 0; }

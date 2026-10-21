@@ -66,13 +66,13 @@ async function ogretmenDersleri() {
 }
 
 
-// Müfredat takibi: sonraki ünitede kazanım girilmiş ama hiç işlenmemiş (atlanmış) üniteler ve kazanımlar
+// Müfredat takibi: sonraki üniteye geçilmiş ama kazanımları tamamlanmamış üniteler
 async function mufredatTakip() {
   const r = await fetch('/api/mufredat/takip');
   if (!r.ok) return;
   const { siniflar } = await r.json();
   const kutu = document.getElementById('muf-takip');
-  const bekleyen = siniflar.filter(s => s.atlanan.length || s.atlananUniteler.length);
+  const bekleyen = siniflar.filter(s => s.atlananUniteler.length);
   if (!bekleyen.length) return;
   kutu.classList.remove('gizli');
   const ek = el('details');
@@ -81,47 +81,53 @@ async function mufredatTakip() {
   ek.firstChild.append(baslik);
   const liste = el('div', undefined, 'kh-liste');
   const guncelle = () => {
-    const unite = liste.querySelectorAll('.kh-satir.unite').length, kaz = liste.querySelectorAll('.kh-satir:not(.unite)').length;
-    baslik.textContent = [unite ? `${unite} ünite atlanmış` : '', kaz ? `${kaz} kazanım atlanmış` : ''].filter(Boolean).join(' · ');
-    if (!unite && !kaz) kutu.classList.add('gizli');
+    const say = liste.querySelectorAll('.kh-unite').length;
+    baslik.textContent = `${say} ünite tamamlanmadan geçilmiş`;
+    if (!say) kutu.classList.add('gizli');
+  };
+  const dugme = (ad, tur, hedef, s, bitti) => {
+    const d = el('button', ad, 'kh-tamam');
+    d.type = 'button';
+    d.addEventListener('click', async () => {
+      d.disabled = true;
+      const y = await fetch('/api/mufredat/isaretle', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sinifId: s.sinifId, ders: s.ders, tur, ...hedef }) });
+      if (!y.ok) { d.disabled = false; return; }
+      bitti();
+    });
+    return d;
   };
   for (const s of bekleyen) {
     const kart = el('div', undefined, 'kh-kart');
     const ust = el('div', undefined, 'kh-ust');
-    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${s.islenen}/${s.toplam} kazanım girildi`));
-    const cubuk = el('span', '', 'basari-cubuk');
-    cubuk.style.setProperty('--oran', (s.toplam ? s.islenen / s.toplam * 100 : 0) + '%');
-    kart.append(ust, cubuk);
-    // Bir satırdaki "Anlatıldı" / "Atlanacak" düğmeleri: tek kazanım ya da bütün ünite
-    const satirCiz = (sinif, metin, hedef) => {
-      const satir = el('div', undefined, 'kh-satir' + sinif);
-      const dugmeler = el('div', undefined, 'kh-dugmeler');
-      const isaretle = (tur, ad) => {
-        const d = el('button', ad, 'kh-tamam');
-        d.type = 'button';
-        d.addEventListener('click', async () => {
-          d.disabled = true;
-          const y = await fetch('/api/mufredat/isaretle', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sinifId: s.sinifId, ders: s.ders, tur, ...hedef }) });
-          if (!y.ok) { d.disabled = false; return; }
-          satir.remove(); guncelle();
-          if (!kart.querySelector('.kh-satir')) kart.remove();
-        });
-        return d;
-      };
-      dugmeler.append(isaretle('islendi', 'Anlatıldı'), isaretle('atla', 'Atlanacak'));
-      satir.append(metin, dugmeler);
-      kart.append(satir);
-    };
+    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${s.suAnkiUnite}. üniteye geçilmiş`));
+    kart.append(ust);
     for (const u of s.atlananUniteler) {
-      const metin = el('p', undefined, 'kh-kazanim');
-      metin.append(el('strong', `${u.unite}. ünite${u.uniteAd ? ' · ' + u.uniteAd : ''}`), el('small', `Hiç işlenmemiş (${u.kazanimSayisi} kazanım), sonraki ünitelere geçilmiş`, 'kh-not'));
-      satirCiz(' unite', metin, { unite: u.anahtar });
-    }
-    for (const k of s.atlanan) {
-      const metin = el('p', undefined, 'kh-kazanim');
-      metin.append(el('strong', `${k.kod} · ${k.unite}. ünite${k.uniteAd ? ' (' + k.uniteAd + ')' : ''}`), document.createTextNode(' ' + k.metin));
-      satirCiz('', metin, { kod: k.kod });
+      const blok = el('div', undefined, 'kh-unite');
+      const kapat = () => { blok.remove(); guncelle(); if (!kart.querySelector('.kh-unite')) kart.remove(); };
+      const baslikSatiri = el('p', undefined, 'kh-kazanim');
+      baslikSatiri.append(el('strong', `${u.unite}. ünite${u.uniteAd ? ' · ' + u.uniteAd : ''}`),
+        el('small', u.islenen ? `${u.toplam} kazanımdan ${u.islenen}'i işlenmiş, ${u.eksik.length} kazanım kalmış` : `Hiç işlenmemiş (${u.toplam} kazanım)`, 'kh-not'));
+      const cubuk = el('span', '', 'basari-cubuk');
+      cubuk.style.setProperty('--oran', (u.islenen / u.toplam * 100) + '%');
+      blok.append(baslikSatiri, cubuk);
+      // Kalan kazanımlar tek tek işaretlenebilir; hepsi birden de
+      if (u.islenen) for (const k of u.eksik) {
+        const satir = el('div', undefined, 'kh-satir');
+        const metin = el('p', undefined, 'kh-kazanim');
+        metin.append(el('strong', k.kod), document.createTextNode(' ' + k.metin));
+        const dugmeler = el('div', undefined, 'kh-dugmeler');
+        const bitti = () => { satir.remove(); if (!blok.querySelector('.kh-satir')) kapat(); };
+        dugmeler.append(dugme('Anlatıldı', 'islendi', { kod: k.kod }, s, bitti), dugme('Atlanacak', 'atla', { kod: k.kod }, s, bitti));
+        satir.append(metin, dugmeler);
+        blok.append(satir);
+      }
+      // Tek kazanım kaldıysa kendi düğmeleri yeter
+      if (u.islenen && u.eksik.length === 1) { kart.append(blok); continue; }
+      const toplu = el('div', undefined, 'kh-dugmeler');
+      toplu.append(dugme(u.islenen ? 'Kalanı anlatıldı' : 'Anlatıldı', 'islendi', { unite: u.anahtar }, s, kapat), dugme(u.islenen ? 'Kalanı atlanacak' : 'Atlanacak', 'atla', { unite: u.anahtar }, s, kapat));
+      blok.append(toplu);
+      kart.append(blok);
     }
     liste.append(kart);
   }
