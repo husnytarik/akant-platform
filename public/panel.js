@@ -161,7 +161,7 @@ async function mufredatTakip() {
     for (const k of s.atlanan) {
       const satir = el('div', undefined, 'kh-satir');
       const metin = el('p', undefined, 'kh-kazanim');
-      metin.append(el('strong', `${k.kod} · ${k.unite}. ünite`), document.createTextNode(' ' + k.metin));
+      metin.append(el('strong', `${k.kod} · ${k.unite}. ünite${k.uniteAd ? ' (' + k.uniteAd + ')' : ''}`), document.createTextNode(' ' + k.metin));
       const dugmeler = el('div', undefined, 'kh-dugmeler');
       const isaretle = (tur, ad) => {
         const d = el('button', ad, 'kh-tamam');
