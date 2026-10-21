@@ -39,7 +39,7 @@ async function ogretmenDersleri() {
   }
 
   const k = document.getElementById('bugun-liste');
-  if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders yok (hafta sonu).', 'bos-not'));
+  if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders günü değil.', 'bos-not'));
   if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'bos-not'));
   // Yalnızca en yakın ders: şu an süren ya da sıradaki; hepsi bittiyse sonuncusu
   const simdi = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });

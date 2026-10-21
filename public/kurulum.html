@@ -46,10 +46,7 @@
         <button class="birincil" type="submit">Öğretmeni kaydet</button>
       </form>
       <h2 class="baslik2">Kayıtlı öğretmenler</h2>
-      <div class="tablo-sar">
-        <table><thead><tr><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Verebildiği dersler</th></tr></thead>
-        <tbody id="ogretmen-liste"></tbody></table>
-      </div>
+      <div id="ogretmen-liste" class="kur-liste"></div>
     </section>
 
     <!-- 3. Öğrenciler -->
@@ -65,10 +62,8 @@
         <div><button class="birincil" type="submit">Öğrenciyi kaydet</button></div>
       </form>
       <h2 class="baslik2">Kayıtlı öğrenciler</h2>
-      <div class="tablo-sar">
-        <table><thead><tr><th>Okul no</th><th>Ad soyad</th><th>Şube</th><th>Durum</th><th>Sınıfı</th></tr></thead>
-        <tbody id="ogrenci-liste"></tbody></table>
-      </div>
+      <input id="ogrenci-ara" type="search" class="kur-ara" placeholder="Ad ya da okul numarasıyla ara" aria-label="Öğrenci ara">
+      <div id="ogrenci-liste" class="kur-liste"></div>
     </section>
 
     <!-- 4. Sınıflar -->
@@ -82,23 +77,21 @@
         <div><button class="birincil" type="submit">Sınıf aç</button></div>
       </form>
       <h2 class="baslik2">Sınıflar</h2>
-      <div class="tablo-sar">
-        <table><thead><tr><th>Şube</th><th>Kademe</th><th>Sınıf</th><th>Sınıf öğretmeni</th><th>Öğrenci</th><th></th></tr></thead>
-        <tbody id="sinif-liste"></tbody></table>
-      </div>
+      <div id="sinif-liste" class="kur-liste"></div>
 
       <div id="sinif-detay" class="bolum-kutu">
         <h2 class="baslik2" id="detay-baslik">Sınıf detayı</h2>
-        <p id="detay-bos" class="bos-not">Yukarıdaki tablodan bir sınıfta "Yönet"e basın; sınıf öğretmeni, dersler ve öğrenciler burada düzenlenir.</p>
+        <p id="detay-bos" class="bos-not">Yukarıdaki listeden bir sınıfa dokunun; sınıf öğretmeni, dersler ve öğrenciler burada düzenlenir.</p>
         <div id="detay-icerik" class="gizli">
         <label for="d-sinif-ogretmen">Sınıf öğretmeni</label>
         <select id="d-sinif-ogretmen"></select>
+        <div class="kur-araclar">
+          <a href="/ders-programi" class="kur-baglanti">Ders programını düzenle →</a>
+          <button type="button" id="d-sil" class="kur-sil">Sınıfı sil</button>
+        </div>
 
         <h3 class="baslik3">Sınıfın dersleri ve öğretmenleri</h3>
-        <div class="tablo-sar">
-          <table><thead><tr><th>Ders</th><th>Haftalık saat</th><th>Dersin öğretmeni</th><th>Programda</th><th></th></tr></thead>
-          <tbody id="d-ders-liste"></tbody></table>
-        </div>
+        <div id="d-ders-liste" class="kur-liste"></div>
         <form id="d-ders-form" class="form-satir">
           <div><label for="d-ders">Sınıfa ders ekle</label><select id="d-ders" required></select></div>
           <div><label for="d-saat">Haftalık ders saati</label><input id="d-saat" type="number" min="1" max="40" value="2" required></div>
@@ -106,9 +99,7 @@
         </form>
 
         <h3 class="baslik3">Sınıfın öğrencileri</h3>
-        <div class="tablo-sar">
-          <table><thead><tr><th>Ad soyad</th><th></th></tr></thead><tbody id="d-ogrenci-liste"></tbody></table>
-        </div>
+        <div id="d-ogrenci-liste" class="kur-liste"></div>
         <form id="d-ogrenci-form" class="form-satir">
           <div><label for="d-ogrenci">Sınıfsız öğrenci ekle</label><select id="d-ogrenci" required></select></div>
           <div><button class="birincil" type="submit">Öğrenciyi ekle</button></div>

@@ -1485,3 +1485,61 @@ main .saat-sil { width: 34px; height: 34px; padding: 0; border-radius: 50%; bord
 main .saat-sil:disabled { opacity: .3; cursor: default; }
 main .saat-ekle { width: 100%; padding: 11px; border: 1px dashed var(--ince, #d8d0bd); border-radius: 14px; background: transparent; color: var(--soluk, #8a8577); font: inherit; cursor: pointer; margin-bottom: 14px; }
 main.takvim-sayfa #kaydet { width: 100%; border-radius: 14px; }
+
+/* Ders programı oluşturma (yönetim) */
+main .prg-arac { display: flex; gap: 8px; margin: 12px 0 6px; }
+main .prg-arac button { flex: 1; border-radius: 14px; padding: 11px 8px; }
+main .prg-ipucu { color: var(--soluk, #8a8577); font-size: .82rem; line-height: 1.4; margin: 8px 0; }
+main .prg-fircalar { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; margin: 0 -2px; scrollbar-width: none; }
+main .prg-fircalar .bos-not { margin: 0; }
+main .prg-firca { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; text-align: left; padding: 9px 12px; border-radius: 14px; border: 1px solid var(--ince, #e4ddcd); background: transparent; color: var(--murekkep, #1f2430); font: inherit; cursor: pointer; border-left: 4px solid var(--ders, #475569); max-width: 190px; }
+main .prg-firca strong { grid-column: 1; font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+main .prg-firca small { grid-column: 1; font-size: .72rem; color: var(--soluk, #8a8577); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+main .prg-firca .prg-sayi { grid-column: 2; grid-row: 1 / 3; align-self: center; font-family: var(--serif, Georgia, serif); font-size: 1rem; color: var(--soluk, #8a8577); }
+main .prg-firca.secili { background: var(--ders, #475569); border-color: var(--ders, #475569); color: #fff; }
+main .prg-firca.secili small, main .prg-firca.secili .prg-sayi { color: rgba(255,255,255,.85); }
+main .prg-firca.tam .prg-sayi { color: #2e7d32; }
+main .prg-firca.secili.tam .prg-sayi { color: #fff; }
+main .prg-grid { display: grid; grid-template-columns: 34px repeat(var(--sutun, 5), minmax(0, 1fr)); gap: 4px; align-items: stretch; }
+main .prg-gun { text-align: center; font-size: .72rem; letter-spacing: .04em; color: var(--soluk, #8a8577); padding: 4px 0; }
+main .prg-saat { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+main .prg-saat strong { font-family: var(--serif, Georgia, serif); font-size: 1.05rem; font-weight: 500; }
+main .prg-saat small { font-size: .62rem; color: var(--soluk, #8a8577); }
+main .prg-hucre { min-height: 46px; min-width: 0; padding: 2px; border-radius: 10px; border: 1px dashed var(--ince, #ddd5c2); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; font: inherit; color: var(--murekkep, #1f2430); cursor: pointer; }
+main .prg-hucre.dolu { border: 1px solid var(--ders, #475569); background: color-mix(in srgb, var(--ders, #475569) 14%, transparent); }
+main .prg-hucre.dolu strong { font-size: .82rem; color: var(--ders, #475569); }
+main .prg-hucre.dolu small { font-size: .62rem; color: var(--soluk, #8a8577); }
+main .prg-hucre.salt { cursor: default; }
+main .prg-hucre.salt strong { font-size: .74rem; }
+main .prg-hucre.mesgul { background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(180, 65, 47, .16) 5px 7px); border-color: rgba(180, 65, 47, .4); }
+main .prg-not { display: flex; align-items: center; gap: 6px; font-size: .75rem; color: var(--soluk, #8a8577); margin-top: 10px; }
+main .prg-nokta { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(180, 65, 47, .4); }
+main .prg-nokta.mesgul { background: repeating-linear-gradient(135deg, transparent 0 3px, rgba(180, 65, 47, .3) 3px 4px); }
+
+/* Okul kurulumu: kompakt listeler */
+main .kur-liste { display: flex; flex-direction: column; margin: 6px 0 14px; }
+main .kur-grup { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--soluk, #8a8577); margin: 14px 0 4px; }
+main .kur-satir { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--ince, #ebe5d6); }
+main .kur-sol { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+main .kur-sol strong { font-size: .98rem; font-weight: 600; }
+main .kur-sol small { font-size: .78rem; color: var(--soluk, #8a8577); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+main .kur-sinif { cursor: pointer; }
+main .kur-sinif .kur-sol strong { font-family: var(--serif, Georgia, serif); font-size: 1.15rem; font-weight: 500; }
+main .kur-sinif.secili { background: color-mix(in srgb, var(--ana, #5878a8) 9%, transparent); border-radius: 12px; padding-left: 10px; padding-right: 10px; }
+main .kur-ok { color: var(--soluk, #8a8577); font-size: 1.4rem; line-height: 1; }
+main .kur-satir select { width: auto; max-width: 52%; margin: 0; padding: 8px 10px; font-size: .85rem; border-radius: 12px; }
+main .kur-sag { display: flex; align-items: center; gap: 8px; max-width: 62%; }
+main .kur-sag select { max-width: none; min-width: 0; flex: 1; }
+main .kur-sag .ikincil { white-space: nowrap; }
+main .kur-cikar { width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid var(--ince, #e4ddcd); background: transparent; color: #b4412f; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+main .kur-ara { margin: 0 0 6px; border-radius: 14px; }
+main .kur-kart { border-bottom: 1px solid var(--ince, #ebe5d6); padding: 10px 2px; }
+main .kur-kart summary { cursor: pointer; list-style: none; }
+main .kur-kart summary::-webkit-details-marker { display: none; }
+main .kur-kart[open] .onay-liste { margin: 10px 0; }
+main .kur-araclar { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 4px; }
+main .kur-baglanti { font-size: .88rem; color: var(--ana, #5878a8); text-decoration: none; }
+main .kur-sil { border: 0; background: transparent; color: #b4412f; font: inherit; font-size: .85rem; cursor: pointer; padding: 6px 2px; }
+main .kur-ders { flex-direction: column; align-items: stretch; gap: 8px; }
+main .kur-ders .kur-sag { max-width: none; }
+main .kur-ders .kur-sol small { white-space: normal; }

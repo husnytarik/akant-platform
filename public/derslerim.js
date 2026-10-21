@@ -5,6 +5,8 @@ const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'A
 let tarih = '';
 let bugun = '';
 let veri = null;
+let acikGunler = [1, 2, 3, 4, 5]; // okul takviminden güncellenir
+fetch('/api/okul/ayar').then(r => r.json()).then(v => { acikGunler = v.gunler.filter(g => g.acik).map(g => g.no); }).catch(() => {});
 let ders = null;      // açık ders: { atamaId, sinif, ders, dersSaati? }
 let sekme = 'ogrenciler';
 const DURUM_YAZI = {
@@ -88,7 +90,8 @@ async function haftaYukle() {
   const son = r.veri.gunler[6].tarih;
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
-  const gunler = r.veri.gunler;
+  // Ders günü olmayan ve dersi/etüdü bulunmayan günler gösterilmez
+  const gunler = r.veri.gunler.filter(g => g.acik || g.dersler.length || g.etutler.length);
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
@@ -165,10 +168,10 @@ function zamanCiz() {
   const k = $('zaman');
   k.replaceChildren();
   if (!veri.gunluk.length && !veri.etutler.length) {
-    k.appendChild(el('p', veri.hafta_sonu ? 'Hafta sonu ders yok.' : 'Bu günde dersiniz yok.', 'bos-not'));
+    k.appendChild(el('p', veri.hafta_sonu ? 'Bugün ders günü değil.' : 'Bu günde dersiniz yok.', 'bos-not'));
     if (veri.hafta_sonu) {
-      const git = el('button', 'Pazartesi gününe git', 'ikincil'); git.type = 'button';
-      git.addEventListener('click', () => { do { tarih = gunKaydir(tarih, 1); } while ([0, 6].includes(new Date(tarih + 'T12:00:00').getDay())); gunYukle(); });
+      const git = el('button', 'Sonraki ders gününe git', 'ikincil'); git.type = 'button';
+      git.addEventListener('click', () => { do { tarih = gunKaydir(tarih, 1); } while (!acikGunler.includes(new Date(tarih + 'T12:00:00').getDay())); gunYukle(); });
       k.appendChild(git);
     }
     return;

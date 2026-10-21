@@ -79,7 +79,7 @@ function gunCiz() {
   $('bugun').classList.toggle('bugunde', tarih === bugun);
   const etutler = g ? g.etutler : [];
   if (!g || (!g.dersler.length && !etutler.length)) {
-    k.appendChild(el('p', g && (g.gun === 0 || g.gun === 6) ? 'Hafta sonu ders yok.' : 'Bu günde ders yok.', 'bos-not'));
+    k.appendChild(el('p', g && !g.acik ? 'Bu gün ders günü değil.' : 'Bu günde ders yok.', 'bos-not'));
     return;
   }
   const ogeler = [
@@ -111,10 +111,12 @@ function gunCiz() {
 }
 
 function haftaCiz() {
+  // Ders günü olmayan ve dersi/etüdü bulunmayan günler gösterilmez
+  const gorunen = veri.gunler.filter(g => g.acik || g.dersler.length || g.etutler.length);
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
-  for (const g of veri.gunler) {
+  for (const g of gorunen) {
     const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
     th.append(el('strong', GUN[g.gun].slice(0, 3)), el('span', kisa(g.tarih)));
     bas.appendChild(th);
@@ -128,12 +130,12 @@ function haftaCiz() {
     b.classList.add('secili');
     if (etut) etutDetayCiz(g, d); else detayCiz(g, d);
   };
-  for (const satir of saatSatirlari(veri.zamanlar, veri.gunler)) {
+  for (const satir of saatSatirlari(veri.zamanlar, gorunen)) {
     const tr = document.createElement('tr');
     const z = el('th', undefined, 'saat-hucre');
     z.append(el('strong', satir.etiket), el('span', satir.alt));
     tr.appendChild(z);
-    for (const g of veri.gunler) {
+    for (const g of gorunen) {
       const td = document.createElement('td');
       td.className = (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '');
       const h = hucreIcerik(veri.zamanlar, g, satir);

@@ -1,6 +1,17 @@
 const $ = id => document.getElementById(id);
-const GUNLER = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+const KISA = { 1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 0: 'Paz' };
 let yapi = null;
+let atamalar = [];        // seçili sınıfın öğretmeni atanmış dersleri
+let hucreler = new Map(); // `${gun}-${saat}` -> hücre
+let firca = null;         // seçili ders (atama id); null = seçim yok
+let mesgul = new Map();   // fırçadaki öğretmenin başka sınıflardaki saatleri: `${gun}-${saat}` -> sınıf adı
+
+function el(tag, metin, sinif) {
+  const e = document.createElement(tag);
+  if (metin !== undefined) e.textContent = metin;
+  if (sinif) e.className = sinif;
+  return e;
+}
 
 function mesaj(metin, tur = '') {
   $('mesaj').textContent = metin;
@@ -31,7 +42,7 @@ async function yapiYukle() {
 
   const onceki = $('program-sinif').value;
   doldur($('program-sinif'), yapi.siniflar, s => s.id,
-    s => `${s.sube} · ${s.kademe} · ${s.ad}`, yapi.siniflar.length ? null : 'Önce Okul kurulumu\'ndan sınıf açın');
+    s => `${s.sube} · ${s.ad}`, yapi.siniflar.length ? null : "Önce Okul kurulumu'ndan sınıf açın");
   if (onceki && yapi.siniflar.some(s => String(s.id) === onceki)) $('program-sinif').value = onceki;
 
   // Aynı kişi birden fazla şubede öğretmense tek satırda göster
@@ -42,96 +53,144 @@ async function yapiYukle() {
   if (prev) $('ogretmen-sec').value = prev;
 }
 
-function baslikSatiri(tablo) {
-  const bas = document.createElement('tr');
-  bas.appendChild(document.createElement('th'));
-  for (const g of GUNLER.slice(0, yapi.gunSayisi)) {
-    const th = document.createElement('th');
-    th.textContent = g;
-    bas.appendChild(th);
-  }
-  tablo.appendChild(bas);
-}
+const acikGunler = () => yapi.okul.gunler.filter(g => g.acik);
+const secilenSinif = () => yapi.siniflar.find(s => String(s.id) === $('program-sinif').value)?.ad;
 
-function saatBasligi(saat) {
-  const th = document.createElement('th');
-  th.textContent = `${saat}. ders`;
-  return th;
+// Gün sütunları ve ders saati satırlarından oluşan ızgara; hucreYaz her hücreyi üretir
+function izgaraKur(kap, hucreYaz) {
+  const gunler = acikGunler();
+  kap.replaceChildren();
+  kap.style.setProperty('--sutun', gunler.length);
+  kap.appendChild(el('span', undefined, 'prg-kose'));
+  for (const g of gunler) kap.appendChild(el('span', KISA[g.no], 'prg-gun'));
+  yapi.okul.saatler.forEach((z, i) => {
+    const saat = i + 1;
+    const et = el('span', undefined, 'prg-saat');
+    et.append(el('strong', String(saat)), el('small', z.bas));
+    kap.appendChild(et);
+    for (const g of gunler) kap.appendChild(hucreYaz(g.no, saat));
+  });
 }
 
 // ---- Sınıf programı ----
-async function programYukle() {
-  const sinifId = $('program-sinif').value;
-  const tablo = $('program-tablo');
-  tablo.replaceChildren();
-  $('program-ozet').textContent = '';
-  if (!sinifId) return;
+function fircaCiz() {
+  const k = $('fircalar');
+  k.replaceChildren();
+  if (!atamalar.length) {
+    k.appendChild(el('p', 'Bu sınıfa öğretmeni atanmış ders yok. Okul kurulumu > Sınıflar bölümünden ders ve öğretmen atayın.', 'bos-not'));
+    return;
+  }
+  for (const a of atamalar) {
+    const b = el('button', undefined, 'prg-firca' + (firca === a.id ? ' secili' : '') + (a.kullanilan >= a.haftalikSaat ? ' tam' : ''));
+    b.type = 'button';
+    b.style.setProperty('--ders', a.renk);
+    b.setAttribute('aria-pressed', String(firca === a.id));
+    b.append(el('strong', a.ders), el('small', a.ogretmen), el('span', `${a.kullanilan}/${a.haftalikSaat}`, 'prg-sayi'));
+    b.addEventListener('click', () => fircaSec(firca === a.id ? null : a.id));
+    k.appendChild(b);
+  }
+}
 
+// Fırçadaki öğretmenin başka sınıflardaki saatlerini yükler (çakışan hücreler çizgili görünür)
+async function mesguluYukle() {
+  mesgul = new Map();
+  const a = atamalar.find(x => x.id === firca);
+  if (!a) return;
+  const r = await api('/api/yonetim/ogretmen-programi?userId=' + a.ogretmenUserId);
+  const sinif = secilenSinif();
+  for (const h of r.veri.hucreler) if (h.sinif !== sinif) mesgul.set(`${h.gun}-${h.saat}`, h.sinif);
+}
+
+async function fircaSec(id) {
+  firca = id;
+  await mesguluYukle();
+  fircaCiz();
+  izgaraCiz();
+}
+
+function izgaraCiz() {
+  izgaraKur($('program-grid'), (gun, saat) => {
+    const h = hucreler.get(`${gun}-${saat}`);
+    const b = el('button', undefined, 'prg-hucre' + (h ? ' dolu' : ''));
+    b.type = 'button';
+    const gunAd = yapi.okul.gunler.find(g => g.no === gun).ad;
+    b.setAttribute('aria-label', `${gunAd} ${saat}. ders${h ? ': ' + h.ders : ''}`);
+    if (h) {
+      b.style.setProperty('--ders', h.renk);
+      b.appendChild(el('strong', h.kisa || h.ders.slice(0, 3)));
+    } else if (firca !== null && mesgul.has(`${gun}-${saat}`)) {
+      b.classList.add('mesgul');
+      b.title = `Öğretmen bu saatte ${mesgul.get(`${gun}-${saat}`)} sınıfında`;
+    }
+    b.addEventListener('click', () => hucreTikla(gun, saat, h));
+    return b;
+  });
+}
+
+async function hucreTikla(gun, saat, h) {
+  let atamaId;
+  if (h && (firca === null || h.atamaId === firca)) atamaId = null;   // boşalt
+  else if (firca !== null) atamaId = firca;                           // seçili dersle doldur
+  else return mesaj('Önce yukarıdaki listeden bir ders seçin.');
+  const r = await api('/api/yonetim/program-hucre', { sinifId: Number($('program-sinif').value), gun, saat, atamaId });
+  mesaj(r.ok ? '' : (r.veri.hata || 'Hata'), r.ok ? '' : 'hata');
+  await programYukle(true);
+}
+
+async function programYukle(fircaKalsin) {
+  const sinifId = $('program-sinif').value;
+  if (!fircaKalsin) firca = null;
+  if (!sinifId) { atamalar = []; hucreler = new Map(); fircaCiz(); izgaraCiz(); return; }
   const [a, p] = await Promise.all([
     api('/api/yonetim/atamalar?sinifId=' + sinifId),
     api('/api/yonetim/program?sinifId=' + sinifId),
   ]);
-  const tum = a.veri.atamalar;
-  const atamalar = tum.filter(x => x.ogretmenUyelikId);
-  const hucre = new Map(p.veri.hucreler.map(h => [`${h.gun}-${h.saat}`, h]));
-
-  if (!atamalar.length) {
-    $('program-ozet').textContent = 'Bu sınıfa öğretmeni atanmış ders yok. Okul kurulumu > Sınıflar bölümünden ders ve öğretmen atayın.';
-  }
-
-  baslikSatiri(tablo);
-  for (let saat = 1; saat <= yapi.dersSaati; saat++) {
-    const tr = document.createElement('tr');
-    tr.appendChild(saatBasligi(saat));
-    for (let gun = 1; gun <= yapi.gunSayisi; gun++) {
-      const td = document.createElement('td');
-      const sel = document.createElement('select');
-      sel.setAttribute('aria-label', `${GUNLER[gun - 1]} ${saat}. ders`);
-      doldur(sel, atamalar, x => x.id, x => `${x.ders} - ${x.ogretmen}`, '—');
-      const mevcut = hucre.get(`${gun}-${saat}`);
-      if (mevcut) sel.value = String(mevcut.atamaId);
-      sel.addEventListener('change', async () => {
-        const r = await api('/api/yonetim/program-hucre', {
-          sinifId: Number(sinifId), gun, saat, atamaId: sel.value === '' ? null : Number(sel.value),
-        });
-        if (!r.ok) mesaj(r.veri.hata || 'Hata', 'hata'); else mesaj('Kaydedildi.', 'tamam');
-        programYukle();
-      });
-      td.appendChild(sel);
-      tr.appendChild(td);
-    }
-    tablo.appendChild(tr);
-  }
-
-  if (tum.length) {
-    $('program-ozet').textContent = 'Yerleşen / hedef: ' +
-      tum.map(x => `${x.ders} ${x.kullanilan}/${x.haftalikSaat}`).join(' · ');
-  }
+  atamalar = a.veri.atamalar.filter(x => x.ogretmenUyelikId);
+  if (firca !== null && !atamalar.some(x => x.id === firca)) firca = null;
+  hucreler = new Map(p.veri.hucreler.map(h => [`${h.gun}-${h.saat}`, h]));
+  await mesguluYukle();
+  fircaCiz();
+  izgaraCiz();
 }
 
-$('program-sinif').addEventListener('change', programYukle);
+$('program-sinif').addEventListener('change', () => { mesaj(''); programYukle(false); });
+
+$('oto').addEventListener('click', async () => {
+  const sinifId = Number($('program-sinif').value);
+  if (!sinifId) return;
+  const bastan = hucreler.size > 0 && confirm('Programda dolu hücreler var.\n\nTamam: mevcut programı silip baştan kur\nİptal: yalnızca eksik saatleri tamamla');
+  const r = await api('/api/yonetim/program-otomatik', { sinifId, bastan });
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  const eksik = r.veri.eksik.map(e => `${e.ders} (${e.kalan} saat)`).join(', ');
+  mesaj(`${r.veri.yerlesen} ders saati yerleştirildi.` + (eksik ? ` Yer bulunamayan: ${eksik}.` : ''), eksik ? 'hata' : 'tamam');
+  await programYukle(true);
+});
+
+$('temizle').addEventListener('click', async () => {
+  const sinifId = Number($('program-sinif').value);
+  if (!sinifId || !hucreler.size) return;
+  if (!confirm('Bu sınıfın tüm haftalık programı silinsin mi?')) return;
+  const r = await api('/api/yonetim/program-temizle', { sinifId });
+  mesaj(r.ok ? 'Program temizlendi.' : (r.veri.hata || 'Hata'), r.ok ? 'tamam' : 'hata');
+  await programYukle(true);
+});
 
 // ---- Öğretmen programı (salt okunur) ----
 async function ogretmenProgrami() {
-  const tablo = $('ogretmen-tablo');
-  tablo.replaceChildren();
   const userId = $('ogretmen-sec').value;
-  if (!userId) return;
+  const kap = $('ogretmen-grid');
+  if (!userId) { kap.replaceChildren(); return; }
   const r = await api('/api/yonetim/ogretmen-programi?userId=' + userId);
   const hucre = new Map(r.veri.hucreler.map(h => [`${h.gun}-${h.saat}`, h]));
-
-  baslikSatiri(tablo);
-  for (let saat = 1; saat <= yapi.dersSaati; saat++) {
-    const tr = document.createElement('tr');
-    tr.appendChild(saatBasligi(saat));
-    for (let gun = 1; gun <= yapi.gunSayisi; gun++) {
-      const td = document.createElement('td');
-      const h = hucre.get(`${gun}-${saat}`);
-      td.textContent = h ? `${h.sinif} · ${h.ders}` : '';
-      tr.appendChild(td);
+  izgaraKur(kap, (gun, saat) => {
+    const h = hucre.get(`${gun}-${saat}`);
+    const b = el('div', undefined, 'prg-hucre salt' + (h ? ' dolu' : ''));
+    if (h) {
+      b.style.setProperty('--ders', h.renk);
+      b.append(el('strong', h.sinif), el('small', h.kisa || h.ders.slice(0, 3)));
     }
-    tablo.appendChild(tr);
-  }
+    return b;
+  });
 }
 
 $('ogretmen-sec').addEventListener('change', ogretmenProgrami);
@@ -144,8 +203,8 @@ document.querySelectorAll('.sekmeler button').forEach(b => {
     $('s-ogretmen').classList.toggle('gizli', b.dataset.sekme !== 'ogretmen');
     mesaj('');
     await yapiYukle();
-    if (b.dataset.sekme === 'program') programYukle(); else ogretmenProgrami();
+    if (b.dataset.sekme === 'program') programYukle(false); else ogretmenProgrami();
   });
 });
 
-yapiYukle().then(programYukle);
+yapiYukle().then(() => programYukle(false));

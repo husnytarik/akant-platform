@@ -10,12 +10,11 @@
   <header class="bant alt-bant">
     <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
     <h1>Haftalık ders programı</h1>
-    <a href="/kurulum" class="bant-geri bant-yazi">Okul kurulumu</a>
   </header>
-  <main class="kart panel genis">
+  <main class="kart panel genis prg-sayfa">
 
     <div class="sekmeler" role="group" aria-label="Bölümler">
-      <button type="button" data-sekme="program" aria-pressed="true">Sınıf programı hazırla</button>
+      <button type="button" data-sekme="program" aria-pressed="true">Sınıf programı</button>
       <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmen programı</button>
     </div>
 
@@ -24,16 +23,22 @@
     <section id="s-program">
       <label for="program-sinif">Sınıf</label>
       <select id="program-sinif"></select>
-      <p class="alt">Hücreden ders seçin; öğretmen çakışması ve haftalık saat sınırı otomatik denetlenir.
-        Listede yalnızca öğretmeni atanmış dersler görünür.</p>
-      <div class="tablo-sar"><table class="program" id="program-tablo"></table></div>
-      <p id="program-ozet" class="alt"></p>
+
+      <div class="prg-arac">
+        <button type="button" id="oto" class="birincil">Otomatik doldur</button>
+        <button type="button" id="temizle" class="ikincil">Temizle</button>
+      </div>
+
+      <p class="prg-ipucu">Aşağıdan bir ders seçin, sonra programda dersi koymak istediğiniz saate dokunun. Dolu hücreye aynı dersle dokunmak onu kaldırır.</p>
+      <div id="fircalar" class="prg-fircalar" role="group" aria-label="Dersler"></div>
+      <div id="program-grid" class="prg-grid"></div>
+      <p class="prg-not"><span class="prg-nokta mesgul"></span> Öğretmen o saatte başka sınıfta</p>
     </section>
 
     <section id="s-ogretmen" class="gizli">
       <label for="ogretmen-sec">Öğretmen</label>
       <select id="ogretmen-sec"></select>
-      <div class="tablo-sar"><table class="program" id="ogretmen-tablo"></table></div>
+      <div id="ogretmen-grid" class="prg-grid"></div>
     </section>
   </main>
   <script src="/ders-programi.js"></script>

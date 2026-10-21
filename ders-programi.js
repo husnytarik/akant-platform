@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { dersStilleri, stilEkle } from './stil.js';
 import { DERS_ZAMANLARI, ACIK_GUNLER, gunAcik, ayarlar, ayarDogrula, ayarKaydet } from './okul-ayar.js';
 
 export const KADEMELER = ['Anasınıfı', 'İlkokul', 'Ortaokul', 'Lise'];
@@ -65,7 +66,8 @@ function otomatikYerlestir(sinifId, bastan) {
             // Aynı gün tekrarı pahalı, dolu günler pahalı, geç saatler hafif pahalı;
             // aynı günde ikinci saat ancak bitişikse tercih edilir
             const bitisik = dolu.has(g + ':' + (p - 1)) || dolu.has(g + ':' + (p + 1));
-            const puan = ayni * 100 + (gunYuk.get(g) || 0) * 3 + p + (ayni && !bitisik ? 40 : 0);
+            const bosluk = p > 1 && !dolu.has(g + ':' + (p - 1)) ? 30 : 0; // gün içinde boş ders oluşturmaktan kaçın
+            const puan = ayni * 100 + (gunYuk.get(g) || 0) * 3 + p + bosluk + (ayni && !bitisik ? 40 : 0);
             if (!en || puan < en.puan) en = { g, p, puan };
           }
         }
@@ -111,16 +113,17 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
   if (req.method === 'GET' && yol === '/api/yonetim/atamalar') {
     const sinifId = tamSayi(url.searchParams.get('sinifId'), 1, 1e9);
     if (!sinifId) return hata(400, 'Sınıf seçiniz');
+    const st = dersStilleri();
     json(res, 200, {
       atamalar: db.prepare(`
         SELECT a.id, a.course_id AS dersId, co.name AS ders, a.teacher_membership_id AS ogretmenUyelikId,
-               u.full_name AS ogretmen, a.weekly_hours AS haftalikSaat,
+               u.full_name AS ogretmen, m.user_id AS ogretmenUserId, a.weekly_hours AS haftalikSaat,
                (SELECT COUNT(*) FROM schedule s WHERE s.assignment_id = a.id) AS kullanilan
         FROM assignments a
         JOIN courses co ON co.id = a.course_id
         LEFT JOIN memberships m ON m.id = a.teacher_membership_id
         LEFT JOIN users u ON u.id = m.user_id
-        WHERE a.class_id = ? ORDER BY co.name`).all(sinifId),
+        WHERE a.class_id = ? ORDER BY co.name`).all(sinifId).map(a => stilEkle(a, st)),
     });
     return true;
   }
@@ -128,6 +131,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
   if (req.method === 'GET' && yol === '/api/yonetim/program') {
     const sinifId = tamSayi(url.searchParams.get('sinifId'), 1, 1e9);
     if (!sinifId) return hata(400, 'Sınıf seçiniz');
+    const st = dersStilleri();
     json(res, 200, {
       hucreler: db.prepare(`
         SELECT s.day AS gun, s.period AS saat, s.assignment_id AS atamaId, co.name AS ders, u.full_name AS ogretmen
@@ -136,7 +140,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
         JOIN courses co ON co.id = a.course_id
         JOIN memberships m ON m.id = a.teacher_membership_id
         JOIN users u ON u.id = m.user_id
-        WHERE s.class_id = ?`).all(sinifId),
+        WHERE s.class_id = ?`).all(sinifId).map(h => stilEkle(h, st)),
     });
     return true;
   }
@@ -144,6 +148,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
   if (req.method === 'GET' && yol === '/api/yonetim/ogretmen-programi') {
     const userId = tamSayi(url.searchParams.get('userId'), 1, 1e9);
     if (!userId) return hata(400, 'Öğretmen seçiniz');
+    const st = dersStilleri();
     json(res, 200, {
       hucreler: db.prepare(`
         SELECT s.day AS gun, s.period AS saat, c.name AS sinif, co.name AS ders
@@ -152,7 +157,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
         JOIN memberships m ON m.id = a.teacher_membership_id
         JOIN classes c ON c.id = s.class_id
         JOIN courses co ON co.id = a.course_id
-        WHERE m.user_id = ?`).all(userId),
+        WHERE m.user_id = ?`).all(userId).map(h => stilEkle(h, st)),
     });
     return true;
   }
