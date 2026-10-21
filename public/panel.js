@@ -38,6 +38,8 @@ async function ogretmenDersleri() {
     uyari.appendChild(ek);
   }
 
+  kazanimHatirlatma();
+
   const k = document.getElementById('bugun-liste');
   if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders günü değil.', 'bos-not'));
   if (!liste.gunluk.length) return k.appendChild(el('p', 'Bugün dersiniz yok.', 'bos-not'));
@@ -63,6 +65,71 @@ async function ogretmenDersleri() {
   k.appendChild(kart);
 }
 
+
+// Sınavda sınıfın edinemediği kazanımlar: öğretmen "tekrar ettim" diyene kadar hatırlatır
+const KH_ILK = 5;
+function hatirlatmaKarti(h, kaldir) {
+  const kart = el('div', undefined, 'kh-kart');
+  const ust = el('div', undefined, 'kh-ust');
+  ust.append(el('b', `${h.sinif} · ${h.ders}`), el('span', `${h.sinav} · ${kisaTarih(h.tarih)}`));
+  const i = h.kazanim.indexOf(' – ');
+  const metin = el('p', undefined, 'kh-kazanim');
+  if (i > 0) metin.append(el('strong', h.kazanim.slice(0, i)), document.createTextNode(' ' + h.kazanim.slice(i + 3)));
+  else metin.textContent = h.kazanim;
+  const say = h.ogrenciler.length;
+  const devamsiz = h.ogrenciler.filter(o => o.isleme === 'devamsiz').length;
+  const islenmedi = h.ogrenciler.filter(o => o.isleme === 'islenmedi').length;
+  const not = [`${say} öğrenci edinemedi (soru ${h.sorular.join(', ')})`];
+  if (islenmedi === say) not.push('sınav öncesi işlenmemiş');
+  else if (devamsiz) not.push(`${devamsiz} öğrenci işlendiği derse katılmamış`);
+  const adlar = el('div', undefined, 'kh-adlar');
+  for (const o of h.ogrenciler.slice(0, 6)) adlar.append(el('span', o.ad));
+  if (say > 6) adlar.append(el('span', `+${say - 6}`));
+  const dugme = el('button', 'Tekrar ettim', 'kh-tamam');
+  dugme.type = 'button';
+  dugme.addEventListener('click', async () => {
+    dugme.disabled = true;
+    const r = await fetch('/api/sinav/hatirlatma-kapat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sinavId: h.sinavId, sinifId: h.sinifId, kazanim: h.kazanim }) });
+    if (r.ok) kaldir(); else dugme.disabled = false;
+  });
+  kart.append(ust, metin, el('small', not.join(' · '), 'kh-not'), adlar, dugme);
+  return kart;
+}
+
+async function kazanimHatirlatma() {
+  const r = await fetch('/api/sinav/hatirlatma');
+  if (!r.ok) return;
+  const { hatirlatmalar } = await r.json();
+  const kutu = document.getElementById('kaz-hatirlat');
+  if (!hatirlatmalar.length) return;
+  kutu.classList.remove('gizli');
+  const ek = el('details');
+  const ozet = el('summary');
+  const baslik = el('span');
+  ek.append(ozet);
+  const liste = el('div', undefined, 'kh-liste');
+  let kalan = hatirlatmalar.length, tumu = false;
+  const yaz = () => {
+    baslik.textContent = `${kalan} eksik kazanım hatırlatması`;
+    const gorunen = [...liste.children].filter(c => c.classList.contains('kh-kart'));
+    gorunen.forEach((c, n) => c.classList.toggle('gizli', !tumu && n >= KH_ILK));
+    daha.classList.toggle('gizli', tumu || gorunen.length <= KH_ILK);
+    daha.textContent = `Tümünü göster (${gorunen.length})`;
+    if (!kalan) kutu.classList.add('gizli');
+  };
+  const daha = el('button', '', 'kh-daha');
+  daha.type = 'button';
+  daha.addEventListener('click', () => { tumu = true; yaz(); });
+  ozet.append(baslik);
+  for (const h of hatirlatmalar) {
+    const kart = hatirlatmaKarti(h, () => { kart.remove(); kalan--; yaz(); });
+    liste.append(kart);
+  }
+  ek.append(liste, daha);
+  kutu.append(ek);
+  yaz();
+}
 
 // Modül kareleri için çizgi ikonlar
 const IKON_YOL = {

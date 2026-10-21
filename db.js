@@ -182,6 +182,15 @@ CREATE TABLE IF NOT EXISTS sinav_kazanim (
   tarih         INTEGER NOT NULL,
   PRIMARY KEY (sinav_ders_id, soru_no)
 );
+-- Öğretmenin "bu eksik kazanımı tekrar ettim" diyerek kapattığı hatırlatmalar (hatırlatmalar sınav sonuçlarından hesaplanır)
+CREATE TABLE IF NOT EXISTS kazanim_hatirlatma_kapat (
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  sinav_id              INTEGER NOT NULL,
+  class_id              INTEGER NOT NULL,
+  kazanim               TEXT NOT NULL,
+  tarih                 INTEGER NOT NULL,
+  PRIMARY KEY (teacher_membership_id, sinav_id, class_id, kazanim)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,
