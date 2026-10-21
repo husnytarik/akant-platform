@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Okul takvimi</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1>Okul takvimi</h1>
+  </header>
+  <main class="kart panel genis takvim-sayfa">
+    <p class="takvim-not">Ders günlerini ve zil saatlerini burada belirleyin. Ders programı, yoklama, etüt ve öğretmen/öğrenci ekranları bu ayarı kullanır.</p>
+
+    <h2 class="baslik2">Ders günleri</h2>
+    <div id="gunler" class="gun-cipler" role="group" aria-label="Ders günleri"></div>
+
+    <h2 class="baslik2">Ders saatleri</h2>
+    <div id="saatler" class="saat-liste"></div>
+    <button type="button" id="saat-ekle" class="saat-ekle">+ Ders saati ekle</button>
+
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+    <button type="button" id="kaydet" class="birincil">Kaydet</button>
+  </main>
+  <script src="/okul-takvimi.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

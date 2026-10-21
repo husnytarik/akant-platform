@@ -1,7 +1,6 @@
 import { db } from './db.js';
+import { DERS_ZAMANLARI, ACIK_GUNLER, gunAcik, ayarlar, ayarDogrula, ayarKaydet } from './okul-ayar.js';
 
-export const GUN_SAYISI = 5;
-export const DERS_SAATI = 9;
 export const KADEMELER = ['Anasınıfı', 'İlkokul', 'Ortaokul', 'Lise'];
 
 // Başlangıç ders listesi (yönetim sonradan ekleyebilir).
@@ -30,14 +29,70 @@ function ogretmenHatasi(uyelikId, sinif, dersId) {
 
 // Yalnızca "yonetim" rolüyle çağrılır (yetki server.js'te denetlenir).
 // İşlenen uç olursa true döner.
+// Açgözlü yerleştirme: kalan saati çok olan ders önce; bir dersi günlere yayar, öğretmen çakışmasından kaçınır.
+function otomatikYerlestir(sinifId, bastan) {
+  db.exec('BEGIN');
+  try {
+    if (bastan) db.prepare('DELETE FROM schedule WHERE class_id = ?').run(sinifId);
+    const atamalar = db.prepare(`
+      SELECT a.id, a.weekly_hours AS saat, m.user_id AS ogr,
+             (SELECT COUNT(*) FROM schedule s WHERE s.assignment_id = a.id) AS kullanilan
+      FROM assignments a JOIN memberships m ON m.id = a.teacher_membership_id
+      WHERE a.class_id = ?`).all(sinifId)
+      .map(a => ({ ...a, kalan: a.saat - a.kullanilan })).filter(a => a.kalan > 0);
+    const dolu = new Set(db.prepare('SELECT day, period FROM schedule WHERE class_id = ?').all(sinifId).map(r => r.day + ':' + r.period));
+    const ogrMesgul = db.prepare(`
+      SELECT 1 FROM schedule s JOIN assignments a ON a.id = s.assignment_id JOIN memberships m ON m.id = a.teacher_membership_id
+      WHERE m.user_id = ? AND s.day = ? AND s.period = ?`);
+    const gunYuk = new Map(ACIK_GUNLER.map(g => [g, 0]));
+    for (const r of db.prepare('SELECT day FROM schedule WHERE class_id = ?').all(sinifId)) gunYuk.set(r.day, (gunYuk.get(r.day) || 0) + 1);
+    const dersGun = new Map(); // `${atama}:${gun}` -> o gün bu dersten kaç saat
+    for (const r of db.prepare('SELECT assignment_id AS a, day AS g FROM schedule WHERE class_id = ?').all(sinifId)) {
+      dersGun.set(r.a + ':' + r.g, (dersGun.get(r.a + ':' + r.g) || 0) + 1);
+    }
+    const ekle = db.prepare('INSERT INTO schedule (class_id, day, period, assignment_id) VALUES (?,?,?,?)');
+    let yerlesen = 0;
+    const sirali = [...atamalar].sort((x, y) => y.kalan - x.kalan);
+    // Her turda her dersten bir saat: saatler günlere dengeli yayılır
+    for (let tur = 0; sirali.some(a => a.kalan > 0) && tur < 80; tur++) {
+      for (const a of sirali) {
+        if (a.kalan <= 0) continue;
+        let en = null;
+        for (const g of ACIK_GUNLER) {
+          const ayni = dersGun.get(a.id + ':' + g) || 0;
+          for (let p = 1; p <= DERS_ZAMANLARI.length; p++) {
+            if (dolu.has(g + ':' + p) || ogrMesgul.get(a.ogr, g, p)) continue;
+            // Aynı gün tekrarı pahalı, dolu günler pahalı, geç saatler hafif pahalı;
+            // aynı günde ikinci saat ancak bitişikse tercih edilir
+            const bitisik = dolu.has(g + ':' + (p - 1)) || dolu.has(g + ':' + (p + 1));
+            const puan = ayni * 100 + (gunYuk.get(g) || 0) * 3 + p + (ayni && !bitisik ? 40 : 0);
+            if (!en || puan < en.puan) en = { g, p, puan };
+          }
+        }
+        if (!en) { a.kalan = 0; continue; }
+        ekle.run(sinifId, en.g, en.p, a.id);
+        dolu.add(en.g + ':' + en.p);
+        gunYuk.set(en.g, (gunYuk.get(en.g) || 0) + 1);
+        dersGun.set(a.id + ':' + en.g, (dersGun.get(a.id + ':' + en.g) || 0) + 1);
+        a.kalan--; yerlesen++;
+      }
+    }
+    const eksik = db.prepare(`
+      SELECT co.name AS ders, a.weekly_hours - (SELECT COUNT(*) FROM schedule s WHERE s.assignment_id = a.id) AS kalan
+      FROM assignments a JOIN courses co ON co.id = a.course_id
+      WHERE a.class_id = ? AND a.teacher_membership_id IS NOT NULL`).all(sinifId).filter(e => e.kalan > 0);
+    db.exec('COMMIT');
+    return { yerlesen, eksik };
+  } catch (e) { db.exec('ROLLBACK'); throw e; }
+}
+
 export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }) {
   const yol = url.pathname;
   const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
 
   if (req.method === 'GET' && yol === '/api/yonetim/sinif-yapisi') {
     json(res, 200, {
-      gunSayisi: GUN_SAYISI,
-      dersSaati: DERS_SAATI,
+      okul: ayarlar(),
       kademeler: KADEMELER,
       siniflar: db.prepare(`SELECT c.id, c.branch_id AS subeId, b.name AS sube, c.level AS kademe, c.name AS ad
                             FROM classes c JOIN branches b ON b.id = c.branch_id
@@ -104,7 +159,8 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
 
   if (req.method !== 'POST') return false;
   const yazma = ['/api/yonetim/sinif-ekle', '/api/yonetim/ders-ekle', '/api/yonetim/atama-ekle',
-    '/api/yonetim/atama-ogretmen', '/api/yonetim/atama-sil', '/api/yonetim/program-hucre'];
+    '/api/yonetim/atama-ogretmen', '/api/yonetim/atama-sil', '/api/yonetim/program-hucre', '/api/yonetim/okul-ayar',
+    '/api/yonetim/program-otomatik', '/api/yonetim/program-temizle', '/api/yonetim/sinif-sil'];
   if (!yazma.includes(yol)) return false;
   const b = await govde(req);
 
@@ -124,6 +180,57 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
     return true;
   }
 
+  if (yol === '/api/yonetim/sinif-sil') {
+    const sinifId = tamSayi(b.sinifId, 1, 1e9);
+    const sinif = sinifId && db.prepare('SELECT * FROM classes WHERE id = ?').get(sinifId);
+    if (!sinif) return hata(404, 'Sınıf bulunamadı');
+    const ogr = db.prepare('SELECT COUNT(*) AS n FROM class_students WHERE class_id = ?').get(sinifId).n;
+    if (ogr) return hata(409, `Sınıfta ${ogr} öğrenci var; önce öğrencileri başka sınıfa taşıyın`);
+    const kayit = db.prepare(`SELECT (SELECT COUNT(*) FROM yoklama WHERE class_id = ?) AS y,
+                                     (SELECT COUNT(*) FROM sinav_siniflar WHERE class_id = ?) AS s`).get(sinifId, sinifId);
+    if (kayit.y || kayit.s) return hata(409, 'Sınıfın yoklama ya da sınav kaydı var; silinemez');
+    db.exec('BEGIN');
+    try {
+      db.prepare('DELETE FROM schedule WHERE class_id = ?').run(sinifId);
+      db.prepare('DELETE FROM odevler WHERE assignment_id IN (SELECT id FROM assignments WHERE class_id = ?)').run(sinifId);
+      db.prepare('DELETE FROM assignments WHERE class_id = ?').run(sinifId);
+      db.prepare('DELETE FROM classes WHERE id = ?').run(sinifId);
+      db.exec('COMMIT');
+    } catch (e) { db.exec('ROLLBACK'); throw e; }
+    denetle(o.user_id, 'sinif-sil', { sinifId, ad: sinif.name });
+    json(res, 200, { tamam: true });
+    return true;
+  }
+
+  if (yol === '/api/yonetim/okul-ayar') {
+    const temiz = ayarDogrula(b);
+    if (temiz.hata) return hata(400, temiz.hata);
+    const s = ayarKaydet(temiz);
+    if (s.hata) return hata(409, s.hata);
+    denetle(o.user_id, 'okul-ayar', temiz);
+    json(res, 200, { tamam: true, okul: ayarlar() });
+    return true;
+  }
+
+  if (yol === '/api/yonetim/program-temizle') {
+    const sinifId = tamSayi(b.sinifId, 1, 1e9);
+    if (!sinifId || !db.prepare('SELECT 1 FROM classes WHERE id = ?').get(sinifId)) return hata(404, 'Sınıf bulunamadı');
+    const n = db.prepare('DELETE FROM schedule WHERE class_id = ?').run(sinifId).changes;
+    denetle(o.user_id, 'program-temizle', { sinifId, n: Number(n) });
+    json(res, 200, { tamam: true, silinen: Number(n) });
+    return true;
+  }
+
+  // Sınıfın boş hücrelerini, eksik kalan ders saatlerine göre otomatik doldurur (mevcut yerleşimler korunur).
+  if (yol === '/api/yonetim/program-otomatik') {
+    const sinifId = tamSayi(b.sinifId, 1, 1e9);
+    if (!sinifId || !db.prepare('SELECT 1 FROM classes WHERE id = ?').get(sinifId)) return hata(404, 'Sınıf bulunamadı');
+    const sonuc = otomatikYerlestir(sinifId, !!b.bastan);
+    denetle(o.user_id, 'program-otomatik', { sinifId, yerlesen: sonuc.yerlesen });
+    json(res, 200, { tamam: true, ...sonuc });
+    return true;
+  }
+
   if (yol === '/api/yonetim/ders-ekle') {
     const ad = String(b.ad || '').trim();
     if (ad.length < 2 || ad.length > 60) return hata(400, 'Ders adı 2-60 karakter olmalı');
@@ -139,7 +246,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
     const dersId = tamSayi(b.dersId, 1, 1e9);
     const ogretmenGirildi = b.ogretmenUyelikId !== null && b.ogretmenUyelikId !== undefined && b.ogretmenUyelikId !== '';
     const uyelikId = ogretmenGirildi ? tamSayi(b.ogretmenUyelikId, 1, 1e9) : null;
-    const saat = tamSayi(b.haftalikSaat, 1, DERS_SAATI * GUN_SAYISI);
+    const saat = tamSayi(b.haftalikSaat, 1, DERS_ZAMANLARI.length * ACIK_GUNLER.length);
     if (!sinifId || !dersId || !saat || (ogretmenGirildi && !uyelikId)) return hata(400, 'Eksik veya geçersiz bilgi');
     const sinif = db.prepare('SELECT * FROM classes WHERE id = ?').get(sinifId);
     if (!sinif) return hata(404, 'Sınıf bulunamadı');
@@ -206,9 +313,9 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
 
   // /api/yonetim/program-hucre : atamaId null ise hücre boşaltılır
   const sinifId = tamSayi(b.sinifId, 1, 1e9);
-  const gun = tamSayi(b.gun, 1, GUN_SAYISI);
-  const saat = tamSayi(b.saat, 1, DERS_SAATI);
-  if (!sinifId || !gun || !saat) return hata(400, 'Geçersiz gün veya ders saati');
+  const gun = b.gun !== null && b.gun !== '' && Number.isInteger(Number(b.gun)) && gunAcik(Number(b.gun)) ? Number(b.gun) : null;
+  const saat = tamSayi(b.saat, 1, DERS_ZAMANLARI.length);
+  if (!sinifId || gun === null || !saat) return hata(400, 'Geçersiz gün veya ders saati');
   if (!db.prepare('SELECT 1 FROM classes WHERE id = ?').get(sinifId)) return hata(404, 'Sınıf bulunamadı');
 
   if (b.atamaId === null || b.atamaId === '' || b.atamaId === undefined) {

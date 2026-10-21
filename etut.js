@@ -1,4 +1,7 @@
 import { db } from './db.js';
+import { DERS_ZAMANLARI, GUN_ADLARI, gunAcik } from './okul-ayar.js';
+
+export { DERS_ZAMANLARI };
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -8,19 +11,12 @@ const dk = s => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5));
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const SURELER = [30, 40, 45, 60, 80, 90, 120];
 
-// Ders saatlerinin gün içindeki saatleri (varsayım; okulun gerçek zil saatlerine göre güncellenmeli)
-// Okulun mevcut sistemindeki zil saatleri (3. ve 7. ders ekran görüntüsünde yoktu, aradaki düzene göre varsayıldı)
-export const DERS_ZAMANLARI = [
-  ['08:50', '09:30'], ['10:00', '10:40'], ['10:50', '11:30'], ['11:40', '12:20'], ['13:00', '13:40'],
-  ['13:50', '14:30'], ['14:40', '15:20'], ['15:30', '16:10'], ['16:20', '17:00'],
-];
-const GUN_ADLARI = ['', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
 
 // Etüt aralığıyla çakışan dersleri bulur: davetli öğrencilerin sınıf dersleri ve öğretmenin kendi dersleri.
 function programCakismalari(ogretmenUyelikId, tarih, bas, bit, ogrenciler) {
-  const gun = new Date(tarih + 'T00:00:00Z').getUTCDay(); // 1=Pazartesi ... 5=Cuma
+  const gun = new Date(tarih + 'T00:00:00Z').getUTCDay(); // 0=Pazar, 1=Pazartesi ... 6=Cumartesi
   const bos = { ogrenci: [], ogretmen: [] };
-  if (gun < 1 || gun > 5) return bos;
+  if (!gunAcik(gun)) return bos;
   const cakisan = DERS_ZAMANLARI.map((z, i) => ({ ders: i + 1, bas: dk(z[0]), bit: dk(z[1]), z }))
     .filter(p => p.bas < bit && bas < p.bit);
   if (!cakisan.length) return bos;

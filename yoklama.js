@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { DERS_ZAMANLARI } from './etut.js';
+import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -10,7 +10,7 @@ const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/I
 const simdiSaat = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
 const baslamadi = (tarih, dersSaati) => tarih > bugun() || (tarih === bugun() && simdiSaat() < (DERS_ZAMANLARI[dersSaati - 1]?.[0] || '00:00'));
 const tarihGecerli = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !Number.isNaN(Date.parse(t));
-const gunNo = t => new Date(t + 'T00:00:00Z').getUTCDay(); // 1=Pazartesi ... 5=Cuma
+const gunNo = t => new Date(t + 'T00:00:00Z').getUTCDay(); // 0=Pazar, 1=Pazartesi ... 6=Cumartesi
 const DURUMLAR = ['geldi', 'gelmedi', 'gec', 'izinli'];
 
 function islem(fn) {
@@ -21,7 +21,7 @@ function islem(fn) {
 // Öğretmenin o gün, o sınıfta, o ders saatinde gerçekten dersi var mı?
 function dersBul(ogretmenUyelikId, sinifId, tarih, dersSaati) {
   const gun = gunNo(tarih);
-  if (gun < 1 || gun > 5) return null;
+  if (!gunAcik(gun)) return null;
   return db.prepare(`
     SELECT a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders, s.period AS dersSaati
     FROM schedule s JOIN assignments a ON a.id = s.assignment_id
@@ -75,7 +75,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
     if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
     const gun = gunNo(tarih);
-    if (gun < 1 || gun > 5) return json(res, 200, { dersler: [], hafta_sonu: true }), true;
+    if (!gunAcik(gun)) return json(res, 200, { dersler: [], hafta_sonu: true }), true;
     const satirlar = db.prepare(`
       SELECT s.period AS dersSaati, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
              y.id AS yoklamaId, y.completed_at AS tamamlandi, y.cancelled AS iptal,

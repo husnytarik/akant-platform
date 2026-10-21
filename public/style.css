@@ -1470,3 +1470,18 @@ main .mad-kaz .basari-cubuk::after { background: var(--ana, #0b2545); }
 
 main .mad-sik { gap: 4px; flex-wrap: nowrap; }
 main .mad-sik-oge { padding: 2px 7px; gap: 4px; font-size: .76rem; }
+
+/* Okul takvimi */
+main .takvim-not { color: var(--soluk, #8a8577); font-size: .9rem; line-height: 1.45; margin: 0 0 6px; }
+main .gun-cipler { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 18px; }
+main .gun-cip { width: 100%; aspect-ratio: 1; border-radius: 50%; min-width: 0; padding: 0; border: 1px solid var(--ince, #e4ddcd); background: transparent; color: var(--soluk, #8a8577); font: inherit; font-size: .85rem; cursor: pointer; }
+main .gun-cip.acik { background: var(--murekkep, #1f2430); border-color: var(--murekkep, #1f2430); color: #fff; }
+main .saat-liste { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+main .saat-satir { display: grid; grid-template-columns: 28px 1fr 14px 1fr 38px; align-items: center; gap: 6px; }
+main .saat-no { font-family: var(--serif, Georgia, serif); font-size: 1.15rem; color: var(--soluk, #8a8577); text-align: right; }
+main .saat-satir input[type=time] { width: 100%; min-width: 0; margin: 0; padding: 9px 8px; border-radius: 12px; font: inherit; }
+main .saat-tire { text-align: center; color: var(--soluk, #8a8577); }
+main .saat-sil { width: 34px; height: 34px; padding: 0; border-radius: 50%; border: 1px solid var(--ince, #e4ddcd); background: transparent; color: #b4412f; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+main .saat-sil:disabled { opacity: .3; cursor: default; }
+main .saat-ekle { width: 100%; padding: 11px; border: 1px dashed var(--ince, #d8d0bd); border-radius: 14px; background: transparent; color: var(--soluk, #8a8577); font: inherit; cursor: pointer; margin-bottom: 14px; }
+main.takvim-sayfa #kaydet { width: 100%; border-radius: 14px; }

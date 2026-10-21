@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { db, tcGecerliMi, seed, okulNoDoldur } from './db.js';
 import { dersProgramiApi } from './ders-programi.js';
 import { kurulumApi } from './kurulum.js';
+import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
@@ -34,6 +35,7 @@ const MAKS_DENEME = 5;
 const MODULLER = [
   { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yol: '/kullanicilar' },
   { id: 'okul-kurulum', ad: 'Okul kurulumu', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
+  { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
   { id: 'duyuru', ad: 'Duyuru ve kampanyalar', aciklama: 'Okul adına duyuru ve bildirim yayınlama', roller: ['yonetim'] },
   { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'] },
@@ -170,6 +172,12 @@ async function api(req, res, url) {
     const coklu = profilListesi(o.user_id).length > 1;
     const foto = db.prepare('SELECT foto FROM users WHERE id = ?').get(o.user_id)?.foto || null;
     return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto });
+  }
+
+  // Okul takvimi (ders günleri ve saatleri): her rol okuyabilir, yalnızca yönetim değiştirir
+  if (req.method === 'GET' && url.pathname === '/api/okul/ayar') {
+    if (!oturum(req)) return json(res, 401, { hata: 'Oturum yok' });
+    return json(res, 200, okulAyarlari());
   }
 
   if (req.method === 'GET' && url.pathname === '/api/moduller') {
@@ -411,6 +419,7 @@ function statik(req, res, url) {
   if (ad === '/kullanicilar') ad = '/kullanicilar.html';
   if (ad === '/ders-programi') ad = '/ders-programi.html';
   if (ad === '/kurulum') ad = '/kurulum.html';
+  if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
   if (ad === '/yoklama') { res.writeHead(302, { Location: '/derslerim' + url.search }); res.end(); return; }
   if (ad === '/devamsizlik') ad = '/devamsizlik.html';

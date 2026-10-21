@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { DERS_ZAMANLARI } from './etut.js';
+import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
 import { dersStilleri, stilEkle } from './stil.js';
 
 const tamSayi = (v, min, max) => {
@@ -109,7 +109,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       const g = i % 7;
       const t = kaydir(pazartesi, i - 1);
       gunler.push({
-        tarih: t, gun: g,
+        tarih: t, gun: g, acik: gunAcik(g),
         dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => stilEkle({
           dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ogretmen, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
           iptal: !!r.iptal, islendi: !!r.tamamlandi && !r.iptal, konu: r.tamamlandi && !r.iptal ? r.konu : null, devam: r.tamamlandi && !r.iptal ? r.devam : null,
@@ -136,7 +136,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const tarih = url.searchParams.get('tarih') || bugun();
     if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
     const gun = gunNo(tarih);
-    const gunluk = gun >= 1 && gun <= 5 ? db.prepare(`
+    const gunluk = gunAcik(gun) ? db.prepare(`
       SELECT s.period AS dersSaati, a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
              y.id AS yoklamaId, y.completed_at AS tamamlandi, y.cancelled AS iptal,
              (SELECT COUNT(*) FROM yoklama_kayit k WHERE k.yoklama_id = y.id AND k.status = 'gelmedi') AS gelmedi
@@ -151,7 +151,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       FROM assignments a JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
       WHERE a.teacher_membership_id = ? ORDER BY c.level, c.name, co.name`).all(o.membership_id);
     json(res, 200, {
-      tarih, bugun: bugun(), hafta_sonu: gun < 1 || gun > 5,
+      tarih, bugun: bugun(), hafta_sonu: !gunAcik(gun),
       gunluk: gunluk.map(r => stilEkle({
         dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', alindi: !!r.yoklamaId, gelmedi: r.gelmedi,
@@ -191,7 +191,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       const g = i % 7; // 1=Pzt .. 6=Cmt, 0=Paz
       const t = kaydir(pazartesi, i - 1);
       gunler.push({
-        tarih: t, gun: g,
+        tarih: t, gun: g, acik: gunAcik(g),
         etutler: etutSatir.all(t, o.membership_id).map(e => stilEkle(e, st)),
         dersler: satir.all(t, g, o.membership_id).map(r => stilEkle({
           dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
@@ -217,7 +217,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     for (let n = 0; n <= 14; n++) {
       const t = kaydir(bugun(), -n);
       const gun = gunNo(t);
-      if (gun < 1 || gun > 5) continue;
+      if (!gunAcik(gun)) continue;
       for (const r of satir.all(t, gun, o.membership_id)) {
         if (dersDurumu(t, r.dersSaati, !!r.tamamlandi) !== 'gecikti') continue;
         liste.push({ tarih: t, dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
