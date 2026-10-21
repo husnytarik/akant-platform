@@ -81,7 +81,7 @@ function hatirlatmaKarti(h, kaldir) {
   const devamsiz = h.ogrenciler.filter(o => o.isleme === 'devamsiz').length;
   const islenmedi = h.ogrenciler.filter(o => o.isleme === 'islenmedi').length;
   const not = [`${say} öğrenci edinemedi (soru ${h.sorular.join(', ')})`];
-  if (islenmedi === say) not.push('sınav öncesi işlenmemiş');
+  if (islenmedi === say) not.push(h.sonradan ? 'sınav tarihine kadar girilmemiş, sonradan işlenmiş' : 'hiçbir derste girilmemiş');
   else if (devamsiz) not.push(`${devamsiz} öğrenci işlendiği derse katılmamış`);
   const adlar = el('div', undefined, 'kh-adlar');
   for (const o of h.ogrenciler.slice(0, 6)) adlar.append(el('span', o.ad));
@@ -161,7 +161,8 @@ async function mufredatTakip() {
     for (const k of s.atlanan) {
       const satir = el('div', undefined, 'kh-satir');
       const metin = el('p', undefined, 'kh-kazanim');
-      metin.append(el('strong', `${k.kod} · ${k.unite}. ünite${k.uniteAd ? ' (' + k.uniteAd + ')' : ''}`), document.createTextNode(' ' + k.metin));
+      metin.append(el('strong', k.unite ? `${k.kod} · ${k.unite}. ünite${k.uniteAd ? ' (' + k.uniteAd + ')' : ''}` : k.kod), document.createTextNode(' ' + k.metin));
+      if (k.sinavda) metin.append(el('small', `${k.sinavda.sinav} sınavında soruldu, derslerde hiç girilmemiş`, 'kh-not'));
       const dugmeler = el('div', undefined, 'kh-dugmeler');
       const isaretle = (tur, ad) => {
         const d = el('button', ad, 'kh-tamam');

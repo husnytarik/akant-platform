@@ -1663,3 +1663,4 @@ main #muf-takip details > summary::before { content: "⤼"; }
 .ks-satir.secili { border-color: var(--vurgu); }
 .ks-satir input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--vurgu); }
 .ks-yazi b { font-size: 11px; color: var(--soluk); letter-spacing: .02em; margin-right: 2px; }
+main .kh-kazanim small.kh-not { display: block; margin-top: 4px; }

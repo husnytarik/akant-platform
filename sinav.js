@@ -289,6 +289,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     // Tek tük öğrenciyi değil, sınıfta bir eğilim olan (en az 3 öğrenci) kazanımları hatırlat
     const sonuc = [...grup.values()].filter(h => h.ogrenciler.length >= 3 && !kapali.has(h.sinavId + ':' + h.sinifId + ':' + h.kazanim));
     sonuc.sort((a, b) => b.ogrenciler.length - a.ogrenciler.length || b.tarih.localeCompare(a.tarih));
+    // Sınav tarihinde girilmemiş kazanım sonradan işlenmiş mi, yoksa hâlâ hiçbir derste girilmemiş mi?
+    const simdiki = islenenKazanimlar(sinifIdleri, '9999-12-31');
+    for (const h of sonuc) h.sonradan = islemeDurumu(simdiki, h.sinifId, h.ders, 0, h.kazanim).durum !== 'islenmedi';
     json(res, 200, { sayi: sonuc.length, hatirlatmalar: sonuc.slice(0, 60) });
     return true;
   }

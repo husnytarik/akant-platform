@@ -109,6 +109,20 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
           else if (u === enIleri && i < enSon) uniteIci.push(x);
         });
       }
+      // Sınavda sorulmuş ama hiç girilmemiş kazanımlar da (hangi ünitede olursa olsun) atlanan sayılır
+      const sorulan = new Map();
+      for (const r of db.prepare(`SELECT sk.kazanim, s.name AS sinav, s.date AS tarih FROM sinav_kazanim sk JOIN sinav_dersler d ON d.id = sk.sinav_ders_id
+        JOIN sinavlar s ON s.id = d.sinav_id JOIN sinav_siniflar ss ON ss.sinav_id = s.id WHERE ss.class_id = ? AND d.ders = ? ORDER BY s.date`).all(a.sinifId, a.ders)) {
+        const i = r.kazanim.indexOf(' – ');
+        const kod = i > 0 ? r.kazanim.slice(0, i) : r.kazanim;
+        if (!sorulan.has(kod)) sorulan.set(kod, { sinav: r.sinav, tarih: r.tarih });
+      }
+      liste.forEach((k, i) => {
+        if (islendi[i] || muaf[i] || !sorulan.has(k.kod)) return;
+        const var_ = atlanan.find(x => x.kod === k.kod);
+        if (var_) { var_.sinavda = sorulan.get(k.kod); return; }
+        atlanan.push({ kod: k.kod, metin: k.metin, unite: uniteli ? Number(unite(k).split('.')[2]) : null, uniteAd: uniteli ? UNITE_AD[unite(k)] || '' : '', sinavda: sorulan.get(k.kod) });
+      });
       sonuc.push({
         sinifId: a.sinifId, sinif: a.sinif, ders: a.ders, toplam: kapsam.length, islenen, uniteli,
         suAnkiUnite: suAnki ? Number(suAnki.split('.')[2]) : null, atlanan, uniteIci,
