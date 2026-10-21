@@ -66,74 +66,36 @@ async function ogretmenDersleri() {
 }
 
 
-// Müfredat takibi: sonraki üniteye geçilmiş ama kazanımları tamamlanmamış üniteler
+// Müfredat takibi: sonraki üniteye geçilmiş ama derslerde hiç girilmemiş kazanımlar (işaretlenmez; ders, konu ya da ödevde girilince listeden düşer)
 async function mufredatTakip() {
   const r = await fetch('/api/mufredat/takip');
   if (!r.ok) return;
   const { siniflar } = await r.json();
   const kutu = document.getElementById('muf-takip');
-  const bekleyen = siniflar.filter(s => s.atlananUniteler.length);
-  if (!bekleyen.length) return;
+  const kartlar = siniflar.map(s => ({ s, eksik: s.atlananUniteler.flatMap(u => u.eksik) })).filter(x => x.eksik.length);
+  if (!kartlar.length) return;
   kutu.classList.remove('gizli');
   const ek = el('details');
-  const baslik = el('span');
-  ek.append(el('summary', undefined, undefined));
-  ek.firstChild.append(baslik);
+  const ozet = el('summary');
+  ozet.append(el('span', `${kartlar.reduce((t, x) => t + x.eksik.length, 0)} kazanım atlanmış`));
+  ek.append(ozet);
   const liste = el('div', undefined, 'kh-liste');
-  const guncelle = () => {
-    const say = liste.querySelectorAll('.kh-unite').length;
-    baslik.textContent = `${say} ünite tamamlanmadan geçilmiş`;
-    if (!say) kutu.classList.add('gizli');
-  };
-  const dugme = (ad, tur, hedef, s, bitti) => {
-    const d = el('button', ad, 'kh-tamam');
-    d.type = 'button';
-    d.addEventListener('click', async () => {
-      d.disabled = true;
-      const y = await fetch('/api/mufredat/isaretle', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sinifId: s.sinifId, ders: s.ders, tur, ...hedef }) });
-      if (!y.ok) { d.disabled = false; return; }
-      bitti();
-    });
-    return d;
-  };
-  for (const s of bekleyen) {
+  for (const { s, eksik } of kartlar) {
     const kart = el('div', undefined, 'kh-kart');
     const ust = el('div', undefined, 'kh-ust');
-    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${s.suAnkiUnite}. üniteye geçilmiş`));
+    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${eksik.length} kazanım`));
     kart.append(ust);
-    for (const u of s.atlananUniteler) {
-      const blok = el('div', undefined, 'kh-unite');
-      const kapat = () => { blok.remove(); guncelle(); if (!kart.querySelector('.kh-unite')) kart.remove(); };
-      const baslikSatiri = el('p', undefined, 'kh-kazanim');
-      baslikSatiri.append(el('strong', `${u.unite}. ünite${u.uniteAd ? ' · ' + u.uniteAd : ''}`),
-        el('small', u.islenen ? `${u.toplam} kazanımdan ${u.islenen}'i işlenmiş, ${u.eksik.length} kazanım kalmış` : `Hiç işlenmemiş (${u.toplam} kazanım)`, 'kh-not'));
-      const cubuk = el('span', '', 'basari-cubuk');
-      cubuk.style.setProperty('--oran', (u.islenen / u.toplam * 100) + '%');
-      blok.append(baslikSatiri, cubuk);
-      // Kalan kazanımlar tek tek işaretlenebilir; hepsi birden de
-      if (u.islenen) for (const k of u.eksik) {
-        const satir = el('div', undefined, 'kh-satir');
-        const metin = el('p', undefined, 'kh-kazanim');
-        metin.append(el('strong', k.kod), document.createTextNode(' ' + k.metin));
-        const dugmeler = el('div', undefined, 'kh-dugmeler');
-        const bitti = () => { satir.remove(); if (!blok.querySelector('.kh-satir')) kapat(); };
-        dugmeler.append(dugme('Anlatıldı', 'islendi', { kod: k.kod }, s, bitti), dugme('Atlanacak', 'atla', { kod: k.kod }, s, bitti));
-        satir.append(metin, dugmeler);
-        blok.append(satir);
-      }
-      // Tek kazanım kaldıysa kendi düğmeleri yeter
-      if (u.islenen && u.eksik.length === 1) { kart.append(blok); continue; }
-      const toplu = el('div', undefined, 'kh-dugmeler');
-      toplu.append(dugme(u.islenen ? 'Kalanı anlatıldı' : 'Anlatıldı', 'islendi', { unite: u.anahtar }, s, kapat), dugme(u.islenen ? 'Kalanı atlanacak' : 'Atlanacak', 'atla', { unite: u.anahtar }, s, kapat));
-      blok.append(toplu);
-      kart.append(blok);
+    for (const k of eksik) {
+      const satir = el('div', undefined, 'kh-satir');
+      const metin = el('p', undefined, 'kh-kazanim');
+      metin.append(el('strong', k.kod), document.createTextNode(' ' + k.metin));
+      satir.append(metin);
+      kart.append(satir);
     }
     liste.append(kart);
   }
   ek.append(liste);
   kutu.append(ek);
-  guncelle();
 }
 
 // Modül kareleri için çizgi ikonlar
