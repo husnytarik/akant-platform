@@ -55,12 +55,17 @@ async function listeYukle() {
   for (const s of r.veri.sinavlar) {
     const kart = el('button', '', 'sinav-kart');
     kart.type = 'button';
+    const rozetler = el('span', undefined, 'sl-rozetler');
+    const rozet = (yazi, tur = '') => rozetler.append(el('span', yazi, 'sl-rozet ' + tur));
+    if (s.sahip) {
+      rozet(s.yayin ? 'Yayında' : 'Yayınlanmadı', s.yayin ? 'acik' : '');
+      rozet(`${s.okunan} cevap`);
+    } else rozet(`Paylaşılan · ${s.sahipAd}`);
+    rozet(`Kazanım ${s.kazanimli}/${s.soru}`, s.kazanimli === s.soru ? 'tam' : 'eksik');
     kart.append(
       el('strong', s.ad),
       el('span', `${tarihYaz(s.tarih)} · ${s.siniflar.join(', ')} · ${s.dersler.join(', ')}`, 'alt'),
-      el('span', s.sahip
-        ? `${s.okunan} öğrenci cevabı girildi · ${KAT_YAZI(s.yanlisKat)} · ${s.yayin ? 'Yayında' : 'Yayınlanmadı'} · ${s.kazanimli}/${s.soru} soruya kazanım girildi`
-        : `Paylaşılan sınav · Sahibi: ${s.sahipAd} · ${s.kazanimli}/${s.soru} soruya kazanım girildi`, 'alt'),
+      rozetler,
     );
     if (acik && acik.sinav.id === s.id) kart.classList.add('secili');
     kart.addEventListener('click', () => detayAc(s.id));

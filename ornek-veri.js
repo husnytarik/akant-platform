@@ -53,7 +53,7 @@ function veliBagla() {
     db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(vm.id, o.mid);
     eklenen++;
   }
-  // Demo veli <-> demo öğrenci (aynı şube), demo öğrenci bir sınıfa yerleşir
+  // Demo veli <-> demo öğrenci (aynı şube); demo öğrenci 6-C'ye yerleşir (sınav verisi bu sınıfta)
   const dm = (tc, rol) => db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
                                       WHERE u.tc_no = ? AND m.role = ? AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get(tc, rol);
   const dOgr = dm('10000000382', 'ogrenci');
@@ -62,7 +62,7 @@ function veliBagla() {
     .get(dOgr?.branch_id);
   if (dOgr && dVeli) {
     db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(dVeli.id, dOgr.id);
-    const sinif = db.prepare("SELECT id FROM classes WHERE name = '4-A' AND branch_id = ?").get(dOgr.branch_id);
+    const sinif = db.prepare("SELECT id FROM classes WHERE name = '6-C' AND branch_id = ?").get(dOgr.branch_id);
     if (sinif) db.prepare('INSERT OR IGNORE INTO class_students (class_id, student_membership_id) VALUES (?,?)').run(sinif.id, dOgr.id);
   }
   return eklenen;

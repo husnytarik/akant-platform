@@ -6,6 +6,61 @@ function el(tag, metin, sinif) {
 }
 
 const tarihYaz = t => t.split('-').reverse().join('.');
+const DURUM_RENK = { Edinildi: '#1a7f37', Kısmen: '#b45309', Eksik: '#c62828' };
+const ISLEME = { islenmedi: 'Henüz işlenmedi', devamsiz: 'Derse katılmadı', katildi: 'İşlendi', bilinmiyor: 'İşlendi' };
+const puanRenk = p => (p < 40 ? '#d64545' : p < 70 ? '#e0a100' : '#2e9e5b');
+
+// Eksik kazanımlar: ders başına katlanır bölüm, içinde kazanım kartları
+function kazanimBolumu(d) {
+  const eksik = d.kazanimlar.filter(k => k.durum !== 'Edinildi');
+  const kutu = el('details', undefined, 'nt-kaz');
+  kutu.append(el('summary', `${d.ders} · ${d.kazanimlar.length - eksik.length} edinildi, ${eksik.length} eksik`));
+  if (!eksik.length) kutu.append(el('p', 'Bu dersteki tüm kazanımlar edinildi.', 'mad-ince'));
+  for (const k of eksik) {
+    const kart = el('div', undefined, 'mad-kaz');
+    const ust = el('div', undefined, 'mad-kaz-ust');
+    const dur = el('b', k.durum); dur.style.setProperty('--c', DURUM_RENK[k.durum] || '#8a867d');
+    ust.append(el('span', k.kazanim), dur);
+    const cubuk = el('span', '', 'basari-cubuk'); cubuk.style.setProperty('--oran', (k.toplam ? (k.dogru / k.toplam) * 100 : 0) + '%');
+    const alt = el('div', undefined, 'mad-kaz-alt');
+    alt.append(el('span', `Soru ${k.sorular.join(', ')} · ${k.dogru}/${k.toplam} doğru`, 'mad-ince'));
+    const durum = k.isleme?.durum;
+    if (ISLEME[durum]) alt.append(el('span', ISLEME[durum], 'mad-durum' + (durum === 'islenmedi' || durum === 'devamsiz' ? ' eksik' : '')));
+    kart.append(ust, cubuk, alt);
+    kutu.append(kart);
+  }
+  return kutu;
+}
+
+function sinavKarti(s, acik) {
+  const kart = el('details', undefined, 'nt-sinav');
+  kart.open = acik;
+  const ozet = el('summary');
+  const ad = el('div', undefined, 'nt-ad');
+  ad.append(el('strong', s.ad), el('small', `${tarihYaz(s.tarih)} · ${s.giren} öğrenci içinde ${s.sira}. sıra`));
+  ozet.append(ad, el('span', String(s.ortalama), 'nt-puan'));
+  kart.append(ozet);
+
+  const yatay = el('div', undefined, 'yatay');
+  for (const d of s.dersler) {
+    const satir = el('div', undefined, 'yatay-satir'); const cubuk = el('span', undefined, 'yatay-cubuk'); const i = el('i');
+    i.style.setProperty('--w', Math.max(0, Math.min(100, Number(d.puan))) + '%'); cubuk.append(i);
+    satir.append(el('span', d.ders, 'yatay-ad'), cubuk, el('b', String(Math.round(Number(d.puan)))));
+    yatay.append(satir);
+  }
+  kart.append(yatay);
+
+  const izgara = el('div', undefined, 'sn-dersler');
+  for (const d of s.dersler) {
+    const h = el('span', undefined, 'sn-ders');
+    h.append(el('small', d.ders), el('b', String(d.puan)), el('small', `net ${d.net} · ${d.dogru}/${d.yanlis}/${d.bos}`));
+    izgara.append(h);
+  }
+  kart.append(izgara, el('p', `Hücrelerde puan, altında net ve doğru/yanlış/boş yazar. ${s.yanlisKat ? `${s.yanlisKat} yanlış 1 doğruyu götürür.` : 'Yanlışlar doğruyu götürmez.'}`, 'mad-ince'));
+
+  for (const d of s.dersler) if (d.kazanimlar && d.kazanimlar.length) kart.append(kazanimBolumu(d));
+  return kart;
+}
 
 (async () => {
   const r = await fetch('/api/sinav/notlarim');
@@ -17,47 +72,12 @@ const tarihYaz = t => t.split('-').reverse().join('.');
   for (const o of ogrenciler) {
     liste.appendChild(el('h2', o.ad, 'baslik2'));
     if (!o.sinavlar.length) liste.appendChild(el('p', 'Henüz yayınlanmış sınav sonucu yok. Öğretmen yayınladığında burada görünür.', 'bos-not'));
-    for (const s of o.sinavlar) {
-      const kart = el('div', undefined, 'not-kart');
-      const ust = el('div', undefined, 'not-ust');
-      ust.append(el('strong', s.ad), el('span', tarihYaz(s.tarih), 'alt'));
-      kart.appendChild(ust);
-      kart.appendChild(el('p', `Ortalama puan: ${s.ortalama} · Sınav sırası: ${s.sira} / ${s.giren}`));
-      const yatay = el('div', undefined, 'yatay');
-      for (const d of s.dersler) {
-        const s2 = el('div', undefined, 'yatay-satir'); const cubuk = el('span', undefined, 'yatay-cubuk'); const i = el('i');
-        i.style.setProperty('--w', Math.max(0, Math.min(100, Number(d.puan))) + '%'); cubuk.append(i);
-        s2.append(el('span', d.ders, 'yatay-ad'), cubuk, el('b', String(Math.round(Number(d.puan))))); yatay.append(s2);
-      }
-      kart.appendChild(yatay);
-      const tablo = el('table', undefined, 'sinav-tablo');
-      const bas = el('tr');
-      for (const t of ['Ders', 'Doğru', 'Yanlış', 'Boş', 'Net', 'Puan']) bas.append(el('th', t));
-      tablo.append(bas);
-      for (const d of s.dersler) {
-        const tr = el('tr');
-        for (const v of [d.ders, d.dogru, d.yanlis, d.bos, d.net, d.puan]) tr.append(el('td', String(v)));
-        tablo.append(tr);
-      }
-      kart.appendChild(tablo);
-      for (const d of s.dersler) {
-        if (!d.kazanimlar || !d.kazanimlar.length) continue;
-        const eksik = d.kazanimlar.filter(k => k.durum !== 'Edinildi');
-        kart.appendChild(el('h4', `${d.ders}: ${d.kazanimlar.length - eksik.length} kazanım edinildi, ${eksik.length} kazanımda eksik var`, 'baslik3'));
-        if (!eksik.length) continue;
-        const kt = el('table', undefined, 'sinav-tablo');
-        const kb = el('tr'); for (const t of ['Eksik kazanım', 'Sorular', 'Durum', 'Ders']) kb.append(el('th', t));
-        kt.append(kb);
-        for (const k of eksik) {
-          const tr = el('tr');
-          tr.append(el('td', k.kazanim), el('td', k.sorular.join(', ')), el('td', k.durum, 'durum ' + (k.durum === 'Kısmen' ? 'durum-kismen' : 'durum-eksik')),
-            el('td', ({ islenmedi: 'Henüz işlenmedi', devamsiz: 'Derse katılmadı', katildi: 'İşlendi', bilinmiyor: 'İşlendi' })[k.isleme?.durum] || ''));
-          kt.append(tr);
-        }
-        kart.appendChild(kt);
-      }
-      kart.appendChild(el('p', s.yanlisKat ? `${s.yanlisKat} yanlış 1 doğruyu götürür.` : 'Yanlışlar doğruyu götürmez.', 'alt'));
-      liste.appendChild(kart);
+    if (o.sinavlar.length > 1) {
+      const kutu = el('div', undefined, 'nt-gelisim');
+      kutu.append(el('h3', 'Ortalama puan', 'mini-baslik'),
+        sutunGrafik([...o.sinavlar].reverse().map(s => ({ etiket: s.ad.replace(/ Sınavı$/, ''), deger: Math.round(s.ortalama), renk: puanRenk(s.ortalama) })), 90));
+      liste.appendChild(kutu);
     }
+    o.sinavlar.forEach((s, i) => liste.appendChild(sinavKarti(s, i === 0)));
   }
 })();
