@@ -1,5 +1,5 @@
-// Seçili dersin "Dersi bitir" sekmesi: yoklama, işlenen konu + kazanım, ödev, iptal.
-// derslerim.js içinden çağrılır (el, api, mesaj, kazanimAlani, ders, tarih, bugun oradan gelir).
+// Seçili dersin "Dersi bitir" sekmesi: yoklama, işlenen kazanımlar (ünite -> kazanım seçimi), ödev, iptal.
+// derslerim.js içinden çağrılır (el, api, mesaj, kazanimSecici, ders, tarih, bugun oradan gelir).
 const BITIR_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['gec', 'Geç'], ['izinli', 'İzinli']];
 
 async function bitirCiz(k, bitince) {
@@ -54,28 +54,33 @@ async function bitirCiz(k, bitince) {
   yok.append(yokUst, ozet, toplu, liste);
   if (!ogrenciler.length) yok.append(el('p', 'Bu sınıfta aktif öğrenci yok.', 'alt'));
 
-  // İşlenen konu + kazanım
-  const konu = el('input'); konu.id = 'b-konu'; konu.maxLength = 120; konu.placeholder = 'Örn. Doğal sayılarla işlemler'; konu.value = r.veri.konu || '';
+  // İşlenen konu: ünite ve kazanım listeden seçilir (konu yazılmaz); açıklama isteğe bağlı
+  const kazSec = kazanimSecici({ secili: r.veri.kazanimKodlari || [] });
+  const ac = el('input'); ac.id = 'b-aciklama'; ac.maxLength = 500; ac.placeholder = 'Derste neler yapıldı, not düşmek isterseniz'; ac.value = r.veri.aciklama || '';
+  const lac = el('label', 'Açıklama (isteğe bağlı)'); lac.htmlFor = 'b-aciklama';
+  // MEB kazanım listesi olmayan derslerde (ör. seçmeli) konu serbest yazılır
+  const konu = el('input'); konu.id = 'b-konu'; konu.maxLength = 120; konu.placeholder = 'Örn. Atölye çalışması'; konu.value = r.veri.konu || '';
   const lk = el('label', 'Konu'); lk.htmlFor = 'b-konu';
-  const kaz = el('input'); kaz.id = 'b-kazanim'; kaz.maxLength = 300; kaz.autocomplete = 'off'; kaz.placeholder = 'Kod veya kelimeyle arayın'; kaz.value = r.veri.kazanim || '';
-  const lkz = el('label', 'Kazanım (isteğe bağlı)'); lkz.htmlFor = 'b-kazanim';
+  const konuSerbest = el('div', undefined, 'gizli'); konuSerbest.append(lk, konu);
+  kazSec.hazir.then(h => konuSerbest.classList.toggle('gizli', h.var));
   const konuKutu = el('div', undefined, 'adim');
   const konuUst = el('div', undefined, 'adim-ust'); konuUst.append(el('h3', 'İşlenen konu'));
-  konuKutu.append(konuUst, lk, konu, lkz, kaz, kazanimAlani(kaz));
+  konuKutu.append(konuUst, kazSec, konuSerbest, lac, ac);
 
   // Ödev
   const ob = el('input'); ob.id = 'b-odev'; ob.maxLength = 120; ob.placeholder = 'Örn. Sayfa 40-41 alıştırmaları'; ob.value = r.veri.odev?.baslik || '';
   const oa = el('input'); oa.id = 'b-odev-ac'; oa.maxLength = 500; oa.value = r.veri.odev?.aciklama || '';
-  const ok = el('input'); ok.id = 'b-odev-kaz'; ok.maxLength = 300; ok.autocomplete = 'off'; ok.placeholder = 'Kod veya kelimeyle arayın'; ok.value = r.veri.odev?.kazanim || '';
+  const okSec = kazanimSecici({ tek: true, secili: r.veri.odev?.kazanimKod ? [r.veri.odev.kazanimKod] : [] });
   const ot = el('input'); ot.id = 'b-odev-tarih'; ot.type = 'date';
   ot.value = r.veri.odev?.sonTarih || new Date(Date.now() + 7 * 864e5).toLocaleDateString('sv-SE');
   const l1 = el('label', 'Ödev'); l1.htmlFor = 'b-odev';
   const l2 = el('label', 'Açıklama'); l2.htmlFor = 'b-odev-ac';
-  const lok = el('label', 'Ödevin kazanımı (isteğe bağlı)'); lok.htmlFor = 'b-odev-kaz';
+  const lok = el('label', 'Ödevin kazanımı (isteğe bağlı)');
   const l3 = el('label', 'Son teslim tarihi'); l3.htmlFor = 'b-odev-tarih';
   const odevKutu = el('div', undefined, 'adim');
   const odevUst = el('div', undefined, 'adim-ust'); odevUst.append(el('h3', 'Ödev'), el('span', 'isteğe bağlı', 'alt'));
-  odevKutu.append(odevUst, l1, ob, l2, oa, lok, ok, kazanimAlani(ok), l3, ot);
+  okSec.hazir.then(h => lok.classList.toggle('gizli', !h.var));
+  odevKutu.append(odevUst, l1, ob, l2, oa, lok, okSec, l3, ot);
 
   // Düğmeler
   const iptal = el('button', 'Dersi iptal et', 'ikincil tehlike'); iptal.type = 'button';
@@ -90,7 +95,7 @@ async function bitirCiz(k, bitince) {
   const hataGoster = metin => {
     hataTemizle();
     const m = metin.toLowerCase();
-    const hedef = m.includes('konu') ? konu : m.includes('ödev başlığı') ? ob : m.includes('ödev') ? ot : null;
+    const hedef = m.includes('kazanım') ? kazSec : m.includes('konu') ? konu : m.includes('açıklama') ? ac : m.includes('ödev başlığı') ? ob : m.includes('ödev') ? ot : null;
     const p = el('p', metin, 'alan-hata'); p.setAttribute('role', 'alert');
     if (hedef) { hedef.classList.add('hatali'); hedef.after(p); hedef.scrollIntoView({ behavior: 'smooth', block: 'center' }); hedef.focus({ preventScroll: true }); }
     else { cubuk.before(p); p.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -101,8 +106,8 @@ async function bitirCiz(k, bitince) {
     const s = await api('/api/yoklama/kaydet', {
       tarih, sinifId: ders.sinifId, dersSaati: ders.dersSaati,
       kayitlar: ogrenciler.map(o => ({ ogrenciId: o.ogrenciId, durum: durum.get(o.ogrenciId) })),
-      konu: konu.value, kazanim: kaz.value,
-      odev: { baslik: ob.value, aciklama: oa.value, kazanim: ok.value, sonTarih: ot.value },
+      konu: konu.value, kazanimlar: kazSec.kodlar(), aciklama: ac.value,
+      odev: { baslik: ob.value, aciklama: oa.value, kazanimKod: okSec.kodlar()[0] || '', sonTarih: ot.value },
     });
     if (!s.ok) return hataGoster(s.veri.hata || 'Hata');
     hataTemizle();

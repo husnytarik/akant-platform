@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
+import { kazanimCoz } from './mufredat.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -109,10 +110,12 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     const mevcut = new Map(y ? db.prepare('SELECT student_membership_id AS id, status FROM yoklama_kayit WHERE yoklama_id = ?')
       .all(y.id).map(r => [r.id, r.status]) : []);
     const od = y ? db.prepare('SELECT title AS baslik, note AS aciklama, kazanim, due_date AS sonTarih FROM odevler WHERE yoklama_id = ?').get(y.id) : null;
+    const kodOku = t => String(t || '').split('\n').map(s => s.split(' – ')[0].trim()).filter(Boolean);
+    const aciklama = y ? db.prepare('SELECT note FROM konular WHERE yoklama_id = ?').get(y.id)?.note || '' : '';
     json(res, 200, {
-      odev: od || null,
+      odev: od ? { ...od, kazanimKod: kodOku(od.kazanim)[0] || '' } : null,
       ders: ders.ders, sinif: ders.sinif, alindi: !!y, tamam: !!y?.completed_at, iptal: !!y?.cancelled,
-      konu: y?.topic || '', kazanim: y?.kazanim || '',
+      konu: y?.topic || '', kazanim: y?.kazanim || '', kazanimKodlari: kodOku(y?.kazanim), aciklama,
       ogrenciler: sinifOgrencileri(sinifId).map(s => ({ ...s, durum: mevcut.get(s.ogrenciId) || 'geldi' })),
     });
     return true;
@@ -127,12 +130,25 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (baslamadi(tarih, dersSaati)) return hata(400, 'Bu ders henüz başlamadı');
     const ders = dersBul(o.membership_id, sinifId, tarih, dersSaati);
     if (!ders) return hata(404, 'Bu tarihte bu ders size ait değil');
-    const konu = String(b.konu || '').trim();
-    const kazanim = String(b.kazanim || '').trim().slice(0, 300);
-    if (konu.length < 2 || konu.length > 120) return hata(400, 'İşlenen konu 2-120 karakter olmalı');
+    // Müfredatta kazanımı olan derste konu yazılmaz: ünite listesinden kazanım seçilir, konu başlığı seçimden üretilir
+    const sec = kazanimCoz(ders.ders, ders.sinif, b.kazanimlar);
+    if (sec.hata) return hata(400, sec.hata);
+    let konu, kazanim;
+    if (sec.var) {
+      if (!sec.girdiler.length) return hata(400, 'İşlenen konu için en az bir kazanım seçin');
+      konu = sec.konu;
+      kazanim = sec.girdiler.join('\n');
+    } else {
+      konu = String(b.konu || '').trim();
+      kazanim = '';
+      if (konu.length < 2 || konu.length > 120) return hata(400, 'İşlenen konu 2-120 karakter olmalı');
+    }
+    const aciklama = String(b.aciklama || '').trim().slice(0, 500);
     const odevBaslik = String(b.odev?.baslik || '').trim();
     const odevAciklama = String(b.odev?.aciklama || '').trim().slice(0, 500);
-    const odevKazanim = String(b.odev?.kazanim || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    const odevSec = b.odev?.kazanimKod ? kazanimCoz(ders.ders, ders.sinif, [b.odev.kazanimKod]) : { girdiler: [] };
+    if (odevSec.hata) return hata(400, odevSec.hata);
+    const odevKazanim = odevSec.girdiler[0] || '';
     const odevTarih = String(b.odev?.sonTarih || '');
     if (odevBaslik) {
       if (odevBaslik.length < 2 || odevBaslik.length > 120) return hata(400, 'Ödev başlığı 2-120 karakter olmalı');
@@ -161,8 +177,8 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
       }
       // Konu, Derslerim > Konular listesinde de görünsün
       db.prepare('DELETE FROM konular WHERE yoklama_id = ?').run(id);
-      db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id) VALUES (?,?,?,?,?,?)')
-        .run(ders.atamaId, tarih, konu, kazanim ? 'Kazanım: ' + kazanim : null, simdi, id);
+      db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id, kazanim) VALUES (?,?,?,?,?,?,?)')
+        .run(ders.atamaId, tarih, konu, aciklama || null, simdi, id, kazanim || null);
       // Ödev: öğrenci/veli "Ödevler" sayfasında görünür; boş bırakılırsa bu dersin ödevi kaldırılır
       db.prepare('DELETE FROM odevler WHERE yoklama_id = ?').run(id);
       if (odevBaslik) {

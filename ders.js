@@ -1,6 +1,7 @@
 import { db } from './db.js';
 import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
 import { dersStilleri, stilEkle } from './stil.js';
+import { kazanimCoz } from './mufredat.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -271,11 +272,25 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const b = await govde(req);
     const a = atamaGetir(b.atamaId);
     if (!a) return hata(404, 'Ders bulunamadı');
-    const baslik = String(b.baslik || '').trim();
+    let baslik = String(b.baslik || '').trim();
     const aciklama = String(b.aciklama || '').trim().slice(0, 500);
     const tarih = String(b.tarih || '');
-    const kazanim = String(b.kazanim || '').replace(/\s+/g, ' ').trim().slice(0, 300);
-    if (baslik.length < 2 || baslik.length > 120) return hata(400, 'Başlık 2-120 karakter olmalı');
+    let kazanim = '';
+    if (yol === '/api/ders/konu-ekle') {
+      // Konu yazılmaz: ünitedeki kazanımlar listeden seçilir, başlık seçimden türetilir (MEB listesi olmayan derslerde serbest başlık)
+      const sec = kazanimCoz(a.ders, a.sinif, b.kazanimlar);
+      if (sec.hata) return hata(400, sec.hata);
+      if (sec.var) {
+        if (!sec.kodlar.length) return hata(400, 'En az bir kazanım seçin');
+        baslik = sec.konu;
+        kazanim = sec.girdiler.join('\n');
+      } else if (baslik.length < 2 || baslik.length > 120) return hata(400, 'Başlık 2-120 karakter olmalı');
+    } else {
+      if (baslik.length < 2 || baslik.length > 120) return hata(400, 'Başlık 2-120 karakter olmalı');
+      const sec = b.kazanimKod ? kazanimCoz(a.ders, a.sinif, [b.kazanimKod]) : { girdiler: [] };
+      if (sec.hata) return hata(400, sec.hata);
+      kazanim = sec.girdiler[0] || '';
+    }
     if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
     const simdi = Date.now();
     if (yol === '/api/ders/konu-ekle') {

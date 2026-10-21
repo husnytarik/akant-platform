@@ -1651,3 +1651,15 @@ main #muf-takip details > summary::before { content: "⤼"; }
 .kh-satir { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid #f0e8d6; }
 .kh-dugmeler { display: flex; gap: 6px; }
 .kh-kart .basari-cubuk { margin: 2px 0 4px; }
+
+/* Ünite / kazanım seçici */
+.ks { display: grid; gap: 8px; margin: 6px 0 12px; }
+.ks select { width: 100%; }
+.ks-ozet { display: flex; flex-wrap: wrap; gap: 6px; }
+.ks-cip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ince); background: var(--kagit); color: var(--murekkep); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ks-cip i { font-style: normal; color: var(--soluk); font-size: 14px; line-height: 1; }
+.ks-liste { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
+.ks-satir { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--ince); border-radius: 12px; background: var(--kagit); cursor: pointer; font-size: 13px; line-height: 1.45; }
+.ks-satir.secili { border-color: var(--vurgu); }
+.ks-satir input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--vurgu); }
+.ks-yazi b { font-size: 11px; color: var(--soluk); letter-spacing: .02em; margin-right: 2px; }

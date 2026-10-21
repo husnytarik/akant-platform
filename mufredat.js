@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { db } from './db.js';
 import { dersKazanimlari } from './kazanim.js';
 
@@ -6,8 +7,43 @@ const tamSayi = (v, min, max) => {
   return Number.isInteger(n) && n >= min && n <= max ? n : null;
 };
 const kucuk = s => String(s || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
-// Ünite numarası kodun içinde olan programlar (FB.6.1.2, MAT.6.3.1...): sıralı ilerleme bu derslerde izlenir
-const UNITELI = /^([A-Z]+\.\d+\.\d+)\.\d+$/;
+// Ünite = kodun son bölümü atılmış hâli (FB.6.2.1 -> FB.6.2). "program.sınıf.ünite" biçiminde olan programlar sıralı izlenir (FB, MAT, SB, İngilizce...)
+const uniteAnahtar = kod => kod.slice(0, kod.lastIndexOf('.'));
+const UNITELI = /^[^.]+\.\d+\.\d+$/;
+// İsteğe bağlı ünite adları: { "FB.6.1": "Güneş Sistemi ve Tutulmalar" } (uniteler.json; yoksa "1. Ünite" yazılır)
+let UNITE_AD = {};
+try { UNITE_AD = JSON.parse(readFileSync(new URL('./uniteler.json', import.meta.url), 'utf8')); } catch { /* dosya yok */ }
+
+// Bir sınıf düzeyinde dersin kazanımları, ünitelere ayrılmış hâlde (öğretmen kazanımı yazmaz, listeden seçer)
+export function dersGruplari(dersAd, sinifAd) {
+  const liste = dersKazanimlari(dersAd, parseInt(sinifAd, 10));
+  const gruplar = new Map();
+  for (const k of liste) {
+    const anahtar = uniteAnahtar(k.kod);
+    if (!gruplar.has(anahtar)) {
+      const no = anahtar.match(/^[^.]+\.\d+\.(\d+)$/)?.[1];
+      gruplar.set(anahtar, { anahtar, no: no ? Number(no) : null, ad: UNITE_AD[anahtar] || '', baslik: no ? `${no}. Ünite` : anahtar, kazanimlar: [] });
+    }
+    gruplar.get(anahtar).kazanimlar.push({ kod: k.kod, metin: k.metin });
+  }
+  return { var: liste.length > 0, uniteli: liste.length > 0 && liste.every(k => UNITELI.test(uniteAnahtar(k.kod))), gruplar: [...gruplar.values()] };
+}
+
+// Seçilen kodları doğrular; kayıtta saklanacak "KOD – metin" satırlarını ve otomatik konu başlığını üretir. Geçersiz kod varsa hata döner.
+export function kazanimCoz(dersAd, sinifAd, kodlar) {
+  const liste = dersKazanimlari(dersAd, parseInt(sinifAd, 10));
+  const istenen = [...new Set((Array.isArray(kodlar) ? kodlar : []).map(String))];
+  if (istenen.length > 15) return { hata: 'Bir derste en çok 15 kazanım seçilebilir' };
+  const secilen = [];
+  for (const kod of istenen) {
+    const k = liste.find(x => x.kod === kod);
+    if (!k) return { hata: 'Seçilen kazanım bu ders ve sınıf düzeyinde yok' };
+    secilen.push(k);
+  }
+  const ilk = secilen[0]?.metin.replace(/-\s+/g, '') || '';
+  const konu = !ilk ? '' : (ilk.length > 90 ? ilk.slice(0, 87).replace(/\s+\S*$/, '') + '…' : ilk) + (secilen.length > 1 ? ` (+${secilen.length - 1} kazanım)` : '');
+  return { var: liste.length > 0, girdiler: secilen.map(k => `${k.kod} – ${k.metin}`), kodlar: secilen.map(k => k.kod), konu };
+}
 
 // Müfredat takibi: öğretmenin ders verdiği sınıf+ders için MEB kazanım listesi ile derste, konuda ve ödevde girilen kazanımlar karşılaştırılır.
 // Sonraki bir ünitede kazanım girilmiş ama önceki bir ünitenin kazanımı hiç girilmemişse "atlanan" sayılır.
@@ -19,6 +55,15 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
   const atamalar = () => db.prepare(`SELECT DISTINCT a.class_id AS sinifId, c.name AS sinif, a.course_id AS dersId, co.name AS ders
     FROM assignments a JOIN classes c ON c.id = a.class_id JOIN courses co ON co.id = a.course_id
     WHERE a.teacher_membership_id = ? ORDER BY c.name, co.name`).all(o.membership_id);
+
+  // Öğretmenin bir sınıfta verdiği dersin ünite ve kazanım listesi (ders bitirirken seçmek için)
+  if (req.method === 'GET' && url.pathname === '/api/mufredat/kazanimlar') {
+    const sinifId = tamSayi(url.searchParams.get('sinifId'), 1, 1e9), ders = url.searchParams.get('ders') || '';
+    const a = atamalar().find(x => x.sinifId === sinifId && x.ders === ders);
+    if (!a) return hata(404, 'Ders bulunamadı');
+    json(res, 200, dersGruplari(a.ders, a.sinif));
+    return true;
+  }
 
   if (req.method === 'GET' && url.pathname === '/api/mufredat/takip') {
     const sonuc = [];
@@ -39,8 +84,8 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
       const isaret = new Map(db.prepare('SELECT kod, tur FROM mufredat_isaret WHERE teacher_membership_id = ? AND class_id = ? AND ders = ?')
         .all(o.membership_id, a.sinifId, a.ders).map(r => [r.kod, r.tur]));
 
-      const uniteli = liste.every(k => UNITELI.test(k.kod));
-      const unite = k => (uniteli ? k.kod.match(UNITELI)[1] : null);
+      const uniteli = liste.every(k => UNITELI.test(uniteAnahtar(k.kod)));
+      const unite = k => (uniteli ? uniteAnahtar(k.kod) : null);
       const uniteler = [...new Set(liste.map(unite))];
       const islendi = liste.map(k => {
         if (isaret.get(k.kod) === 'islendi') return true;
@@ -59,7 +104,7 @@ export async function mufredatApi({ req, res, url, o, json, govde }) {
         liste.forEach((k, i) => {
           if (islendi[i] || muaf[i]) return;
           const u = uniteler.indexOf(unite(k));
-          const x = { kod: k.kod, metin: k.metin, unite: Number(unite(k).split('.')[2]) };
+          const x = { kod: k.kod, metin: k.metin, unite: Number(unite(k).split('.')[2]), uniteAd: UNITE_AD[unite(k)] || '' };
           if (u < enIleri) atlanan.push(x);
           else if (u === enIleri && i < enSon) uniteIci.push(x);
         });

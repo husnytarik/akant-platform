@@ -313,6 +313,9 @@ async function ogrencilerCiz() {
   if (gunluk && r.veri.yoklamaAlindi) k.appendChild(el('p', '✓ geldi (yeşil) · G geç (sarı) · ✗ gelmedi (kırmızı) · İ izinli (gri)', 'alt'));
 }
 
+// Çok kazanımlı kayıtlar satır satır saklanır; listede tek satıra indirilir
+const kazanimYaz = k => (k ? (k.includes('\n') ? 'Kazanımlar: ' : 'Kazanım: ') + k.split('\n').map(x => x.split(' – ')[0]).join(', ') : '');
+
 function listeKart(baslik, alt, aciklama, sil) {
   const kart = el('div', undefined, 'not-kart');
   const ust = el('div', undefined, 'not-ust');
@@ -326,39 +329,15 @@ function listeKart(baslik, alt, aciklama, sil) {
   return kart;
 }
 
-// Kazanım seçici: MEB programından ders ve sınıf düzeyine göre arar; elle de yazılabilir
-function kazanimAlani(girdi) {
-  const kutu = el('div', undefined, 'kazanim-liste gizli');
-  let zaman = null, sayac = 0;
-  const ara = async () => {
-    const benim = ++sayac, q = girdi.value.trim();
-    const p = new URLSearchParams({ q, sinif: parseInt(ders.sinif, 10) || '', ders: ders.ders });
-    const r = await api('/api/kazanim?' + p);
-    if (benim !== sayac) return;
-    kutu.replaceChildren();
-    if (!r.ok) return kutu.classList.add('gizli');
-    for (const x of r.veri.kazanimlar) {
-      const b = el('button', '', 'kazanim-oge'); b.type = 'button';
-      b.append(el('strong', x.kod || 'Kod yok'), document.createTextNode(' ' + x.metin));
-      b.addEventListener('click', () => { girdi.value = ((x.kod ? x.kod + ' – ' : '') + x.metin).slice(0, 300); kutu.classList.add('gizli'); });
-      kutu.append(b);
-    }
-    if (!r.veri.kazanimlar.length) kutu.append(el('p', 'Sonuç yok; kazanımı elle yazabilirsiniz.', 'alt'));
-    kutu.classList.remove('gizli');
-  };
-  girdi.addEventListener('input', () => { clearTimeout(zaman); zaman = setTimeout(ara, 250); });
-  girdi.addEventListener('focus', ara);
-  girdi.addEventListener('keydown', e => { if (e.key === 'Escape') kutu.classList.add('gizli'); });
-  return kutu;
-}
-
-function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, kazanimli, kazanimEtiket, planli }) {
+// konuModu: başlık yazılmaz, ünite/kazanım seçilir (MEB listesi olmayan derslerde başlık yine yazılır). Ödevde başlık yazılır, kazanım tek seçimdir.
+function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, kazanimEtiket, planli, konuModu }) {
   const f = el('form', undefined, 'ekle-form');
   const satir = el('div', undefined, 'form-satir');
   const sol = document.createElement('div');
   const l1 = el('label', 'Başlık'); l1.htmlFor = 'f-baslik';
   const baslik = el('input'); baslik.id = 'f-baslik'; baslik.maxLength = 120; baslik.required = true;
   sol.append(l1, baslik);
+  const kazSec = kazanimSecici({ tek: !konuModu });
   const sag = document.createElement('div');
   const l2 = el('label', tarihEtiket); l2.htmlFor = 'f-tarih';
   const t = el('input'); t.id = 'f-tarih'; t.type = 'date'; t.required = true; t.value = tarihDeger;
@@ -370,11 +349,15 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, 
   const ac = el('input'); ac.id = 'f-aciklama'; ac.maxLength = 500;
   const b = el('button', buton, 'birincil'); b.type = 'submit';
   f.append(satir, l3, ac);
-  let kaz = null;
-  if (kazanimli) {
-    const l4 = el('label', kazanimEtiket || 'Kazanım (isteğe bağlı; sınavda bu kazanımı ölçen sorular için "dersi aldı mı" kontrolünde kullanılır)'); l4.htmlFor = 'f-kazanim';
-    kaz = el('input'); kaz.id = 'f-kazanim'; kaz.maxLength = 300; kaz.autocomplete = 'off'; kaz.placeholder = 'Kod veya kelimeyle arayın';
-    f.append(l4, kaz, kazanimAlani(kaz));
+  const l4 = el('label', kazanimEtiket || 'Kazanım');
+  if (konuModu) {
+    // Kazanım seçimi başlığın yerini alır; liste yoksa başlık alanı geri gelir
+    sol.classList.add('gizli'); baslik.required = false;
+    f.prepend(l4, kazSec);
+    kazSec.hazir.then(h => { if (!h.var) { sol.classList.remove('gizli'); baslik.required = true; l4.classList.add('gizli'); } });
+  } else {
+    f.append(l4, kazSec);
+    kazSec.hazir.then(h => l4.classList.toggle('gizli', !h.var));
   }
   let yayin = null;
   if (planli) {
@@ -387,7 +370,7 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, 
   f.append(b);
   f.addEventListener('submit', async e => {
     e.preventDefault();
-    const r = await gonder({ atamaId: ders.atamaId, baslik: baslik.value, tarih: t.value, aciklama: ac.value, kazanim: kaz ? kaz.value : '', gorunur: yayin ? yayin.value : '' });
+    const r = await gonder({ atamaId: ders.atamaId, baslik: baslik.value, tarih: t.value, aciklama: ac.value, kazanimlar: konuModu ? kazSec.kodlar() : [], kazanimKod: konuModu ? '' : kazSec.kodlar()[0] || '', gorunur: yayin ? yayin.value : '' });
     if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
     mesaj('Kaydedildi.', 'tamam');
     sekmeAc(sekme);
@@ -400,14 +383,14 @@ async function konularCiz() {
   k.replaceChildren();
   k.appendChild(ekleForm({
     tarihEtiket: 'İşlendiği tarih', tarihDeger: tarih > bugun ? bugun : tarih, tarihMax: bugun,
-    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g), kazanimli: true,
+    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g), konuModu: true, kazanimEtiket: 'Ünite ve kazanımlar',
   }));
   const r = await api('/api/ders/konular?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   k.appendChild(el('h3', 'İşlenen konular', 'baslik3'));
   if (!r.veri.konular.length) k.appendChild(el('p', 'Henüz konu girilmemiş.', 'alt'));
   for (const x of r.veri.konular) {
-    k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), [x.aciklama, x.kazanim && !(x.aciklama || '').includes(x.kazanim) ? 'Kazanım: ' + x.kazanim : ''].filter(Boolean).join(' · '), async () => {
+    k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), [x.aciklama, kazanimYaz(x.kazanim)].filter(Boolean).join(' · '), async () => {
       const s = await api('/api/ders/konu-sil', { id: x.id });
       if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
       sekmeAc(sekme);
@@ -420,14 +403,14 @@ async function odevlerCiz() {
   k.replaceChildren();
   k.appendChild(ekleForm({
     tarihEtiket: 'Son teslim tarihi', tarihDeger: gunKaydir(bugun, 7), tarihMin: bugun,
-    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g), planli: true, kazanimli: true, kazanimEtiket: 'Ödevin kazanımı (isteğe bağlı)',
+    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g), planli: true, kazanimEtiket: 'Ödevin kazanımı (isteğe bağlı)',
   }));
   const r = await api('/api/ders/odevler?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   k.appendChild(el('h3', 'Verilen ödevler', 'baslik3'));
   if (!r.veri.odevler.length) k.appendChild(el('p', 'Henüz ödev verilmemiş.', 'alt'));
   for (const x of r.veri.odevler) {
-    k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), [x.gorunur && x.gorunur > bugun ? 'Planlı: ' + kisaTarih(x.gorunur) + ' tarihinde öğrencilere görünür' : '', x.aciklama, x.kazanim ? 'Kazanım: ' + x.kazanim : ''].filter(Boolean).join(' · '), async () => {
+    k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), [x.gorunur && x.gorunur > bugun ? 'Planlı: ' + kisaTarih(x.gorunur) + ' tarihinde öğrencilere görünür' : '', x.aciklama, kazanimYaz(x.kazanim)].filter(Boolean).join(' · '), async () => {
       const s = await api('/api/ders/odev-sil', { id: x.id });
       if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
       sekmeAc(sekme);
