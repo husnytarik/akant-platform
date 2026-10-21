@@ -39,6 +39,7 @@ async function ogretmenDersleri() {
   }
 
   kazanimHatirlatma();
+  mufredatTakip();
 
   const k = document.getElementById('bugun-liste');
   if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders günü değil.', 'bos-not'));
@@ -129,6 +130,61 @@ async function kazanimHatirlatma() {
   ek.append(liste, daha);
   kutu.append(ek);
   yaz();
+}
+
+// Müfredat takibi: sonraki ünitede kazanım girilmiş ama hiç girilmemiş (atlanmış) kazanımlar
+async function mufredatTakip() {
+  const r = await fetch('/api/mufredat/takip');
+  if (!r.ok) return;
+  const { siniflar } = await r.json();
+  const kutu = document.getElementById('muf-takip');
+  const bekleyen = siniflar.filter(s => s.atlanan.length);
+  if (!bekleyen.length) return;
+  kutu.classList.remove('gizli');
+  const ek = el('details');
+  const baslik = el('span');
+  ek.append(el('summary', undefined, undefined));
+  ek.firstChild.append(baslik);
+  const liste = el('div', undefined, 'kh-liste');
+  const guncelle = () => {
+    const say = [...liste.querySelectorAll('.kh-satir')].length;
+    baslik.textContent = `${say} kazanım hiç girilmeden geçilmiş`;
+    if (!say) kutu.classList.add('gizli');
+  };
+  for (const s of bekleyen) {
+    const kart = el('div', undefined, 'kh-kart');
+    const ust = el('div', undefined, 'kh-ust');
+    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${s.islenen}/${s.toplam} kazanım girildi`));
+    const cubuk = el('span', '', 'basari-cubuk');
+    cubuk.style.setProperty('--oran', (s.toplam ? s.islenen / s.toplam * 100 : 0) + '%');
+    kart.append(ust, cubuk);
+    for (const k of s.atlanan) {
+      const satir = el('div', undefined, 'kh-satir');
+      const metin = el('p', undefined, 'kh-kazanim');
+      metin.append(el('strong', `${k.kod} · ${k.unite}. ünite`), document.createTextNode(' ' + k.metin));
+      const dugmeler = el('div', undefined, 'kh-dugmeler');
+      const isaretle = (tur, ad) => {
+        const d = el('button', ad, 'kh-tamam');
+        d.type = 'button';
+        d.addEventListener('click', async () => {
+          d.disabled = true;
+          const y = await fetch('/api/mufredat/isaretle', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sinifId: s.sinifId, ders: s.ders, kod: k.kod, tur }) });
+          if (!y.ok) { d.disabled = false; return; }
+          satir.remove(); guncelle();
+          if (!kart.querySelector('.kh-satir')) kart.remove();
+        });
+        return d;
+      };
+      dugmeler.append(isaretle('islendi', 'Anlatıldı'), isaretle('atla', 'Atlanacak'));
+      satir.append(metin, dugmeler);
+      kart.append(satir);
+    }
+    liste.append(kart);
+  }
+  ek.append(liste);
+  kutu.append(ek);
+  guncelle();
 }
 
 // Modül kareleri için çizgi ikonlar

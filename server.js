@@ -12,6 +12,7 @@ import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
 import { sinavApi } from './sinav.js';
+import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
@@ -303,6 +304,12 @@ async function api(req, res, url) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     if (await sinavApi({ req, res, url, o, json, govde: r => govde(r, 1_000_000), denetle })) return;
+  }
+
+  if (url.pathname.startsWith('/api/mufredat/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await mufredatApi({ req, res, url, o, json, govde: r => govde(r, 100_000) })) return;
   }
 
   if (url.pathname.startsWith('/api/ogrencilerim')) {

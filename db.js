@@ -191,6 +191,16 @@ CREATE TABLE IF NOT EXISTS kazanim_hatirlatma_kapat (
   tarih                 INTEGER NOT NULL,
   PRIMARY KEY (teacher_membership_id, sinav_id, class_id, kazanim)
 );
+-- Müfredat takibi: öğretmenin bir kazanım için "anlatıldı" ya da "atlanacak" işareti (girişler dersten, konudan ve ödevden okunur)
+CREATE TABLE IF NOT EXISTS mufredat_isaret (
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  class_id              INTEGER NOT NULL,
+  ders                  TEXT NOT NULL,
+  kod                   TEXT NOT NULL,
+  tur                   TEXT NOT NULL CHECK (tur IN ('islendi','atla')),
+  tarih                 INTEGER NOT NULL,
+  PRIMARY KEY (teacher_membership_id, class_id, ders, kod)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

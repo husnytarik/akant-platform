@@ -36,6 +36,7 @@ function calistir() {
   const sonrakiKonu = atamaId => {
     const k = kazSirasi.get(atamaId);
     if (!k.liste.length) return { konu: sec(KONULAR), kazanim: null };
+    if (k.i % 9 === 4) k.i++; // her dokuzuncu kazanım derste hiç girilmez (müfredat takibi örneği)
     const x = k.liste[k.i++ % k.liste.length];
     const metin = x.metin.replace(/-\s+/g, '');
     return { konu: metin.length > 110 ? metin.slice(0, 107).replace(/\s+\S*$/, '') + '…' : metin, kazanim: ((x.kod ? x.kod + ' – ' : '') + metin).slice(0, 300) };

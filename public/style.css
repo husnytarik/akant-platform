@@ -1645,3 +1645,9 @@ main .kh details[open] > summary { border-bottom: 1px solid #f0e3c4; margin-bott
 .kh-daha { margin: 8px 0 12px; }
 .kh-tamam:disabled { opacity: .5; }
 main .kh details > summary > span { flex: 1; text-align: left; }
+
+/* Müfredat takibi (atlanan kazanımlar) */
+main #muf-takip details > summary::before { content: "⤼"; }
+.kh-satir { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid #f0e8d6; }
+.kh-dugmeler { display: flex; gap: 6px; }
+.kh-kart .basari-cubuk { margin: 2px 0 4px; }
