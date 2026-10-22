@@ -13,7 +13,45 @@ yukle();
 
 const chip = (m, sinif) => el('span', m, 'kl-chip' + (sinif ? ' ' + sinif : ''));
 const DEVAM = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
-const DEVAM_AD = Object.fromEntries(DEVAM);
+const YOK_RENK = { geldi: '#2e9e5b', gelmedi: '#d64545', izinli: '#8a867d' };
+
+// "Dersi bitir" yoklaması: oransal çubuk, toplu işaretleme, iki sütun hap, pasta menü.
+// durum: Map(uyelikId -> geldi|gelmedi|izinli); duzenle false ise yalnızca gösterilir.
+function yoklamaKutusu(uyeler, durum, duzenle) {
+  const kap = el('div');
+  const ozet = el('div', undefined, 'yok-ozet');
+  const liste = el('div', undefined, 'yoklama-liste hapli');
+  const toplu = el('button', undefined, 'yok-toplu');
+  toplu.type = 'button';
+  toplu.append(el('span', '✓', 'yok-toplu-ikon'), document.createTextNode('Hepsini geldi yap'));
+  const ozetYaz = () => {
+    const say = { geldi: 0, gelmedi: 0, izinli: 0 };
+    for (const u of uyeler) if (say[durum.get(u.uyelikId)] !== undefined) say[durum.get(u.uyelikId)]++;
+    const dilimler = DEVAM.map(([d, e]) => ({ deger: say[d], renk: YOK_RENK[d], etiket: e.toLocaleLowerCase('tr') }));
+    ozet.replaceChildren(yiginCubuk(dilimler), gosterge(dilimler.filter(d => d.deger > 0 || d.etiket === 'geldi')));
+    toplu.classList.toggle('gizli', !duzenle || !uyeler.length || say.geldi === uyeler.length);
+  };
+  const hapCiz = () => {
+    liste.replaceChildren();
+    for (const u of uyeler) {
+      const d = durum.get(u.uyelikId);
+      const hap = el(duzenle ? 'button' : 'div', undefined, 'yok-hap d-' + (d || 'izinli'));
+      const ikon = el('span', PASTA_IKON[d] || '–', 'yok-ikon');
+      hap.append(el('span', u.ad, 'yok-ad'), ikon);
+      if (duzenle) {
+        hap.type = 'button';
+        hap.addEventListener('click', () => pastaAc(u.ad, hap, DEVAM, d, yeni => { durum.set(u.uyelikId, yeni); hapCiz(); }));
+      }
+      liste.append(hap);
+    }
+    ozetYaz();
+  };
+  toplu.addEventListener('click', () => { for (const u of uyeler) durum.set(u.uyelikId, 'geldi'); hapCiz(); });
+  kap.append(ozet, toplu, liste);
+  if (!uyeler.length) kap.append(el('p', 'Kulüpte öğrenci yok.', 'kl-not'));
+  hapCiz();
+  return kap;
+}
 
 function ciz() {
   ekranAc(kok);
@@ -26,7 +64,7 @@ function kart(k) {
   const baslik = el('div', undefined, 'kl-baslik');
   const b = el('div');
   b.append(el('h3', k.ad), el('p', k.tema || ' ', 'kl-not'));
-  baslik.append(b, chip(`${k.uyeSayisi} öğrenci`));
+  baslik.append(b);
   c.append(baslik, el('p', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'));
   const ortak = k.ogretmenler.filter(o => o.ad).map(o => o.ad);
   if (ortak.length > 1) c.append(el('p', 'Danışmanlar: ' + ortak.join(', '), 'kl-kisi'));
@@ -84,19 +122,10 @@ async function calismaDetay(k, id) {
   genel.append(gUst, bilgi('Kulüp', k.ad), bilgi('Tarih', tarihYaz(w.tarih)), bilgi('Tür', TUR[w.tur]));
   genel.append(bilgi('Açıklama', w.aciklama || 'Açıklama girilmemiş'));
 
-  const say = { geldi: 0, gelmedi: 0, izinli: 0 };
-  for (const u of k.uyeler) { const d = katilim[u.uyelikId]; if (d) say[d]++; }
   const yok = el('div', undefined, 'adim');
   const yUst = el('div', undefined, 'adim-ust');
-  yUst.append(el('h3', 'Yoklama'), el('span', `${say.geldi} geldi · ${say.gelmedi} gelmedi · ${say.izinli} izinli`, 'alt'));
-  yok.append(yUst);
-  if (!k.uyeler.length) yok.append(el('p', 'Kulüpte öğrenci yok.', 'kl-not'));
-  for (const u of k.uyeler) {
-    const s = el('div', undefined, 'kl-yok');
-    const d = katilim[u.uyelikId];
-    s.append(el('span', u.ad), d ? chip(DEVAM_AD[d], d === 'gelmedi' ? 'vurgu' : d === 'geldi' ? 'tamam' : '') : chip('Girilmemiş'));
-    yok.append(s);
-  }
+  yUst.append(el('h3', 'Yoklama'));
+  yok.append(yUst, yoklamaKutusu(k.uyeler, new Map(k.uyeler.map(u => [u.uyelikId, katilim[u.uyelikId]])), false));
   kok.append(ust, genel, yok);
 }
 
@@ -120,32 +149,11 @@ function calismaForm(k, mevcut) {
   gUst.append(el('h3', 'Çalışma'), el('span', k.ad, 'alt'));
   genel.append(gUst, iki, alan('Başlık', baslik), alan('Açıklama', aciklama));
 
-  const durum = {};
+  const durum = new Map(k.uyeler.map(u => [u.uyelikId, mevcut?.katilim[u.uyelikId] || 'geldi']));
   const yok = el('div', undefined, 'adim');
   const yUst = el('div', undefined, 'adim-ust');
   yUst.append(el('h3', 'Yoklama'));
-  yok.append(yUst);
-  const yoklama = el('div', undefined, 'kl-yoklama');
-  if (!k.uyeler.length) yoklama.append(el('p', 'Kulüpte öğrenci yok.', 'kl-not'));
-  for (const u of k.uyeler) {
-    durum[u.uyelikId] = mevcut?.katilim[u.uyelikId] || 'geldi';
-    const s = el('div', undefined, 'kl-yok');
-    s.append(el('span', u.ad));
-    const grup = el('div', undefined, 'kl-3');
-    const dugmeler = DEVAM.map(([d, e]) => {
-      const x = el('button', e);
-      x.type = 'button';
-      x.dataset.durum = d;
-      x.addEventListener('click', () => { durum[u.uyelikId] = d; isaretle(); });
-      grup.append(x);
-      return x;
-    });
-    const isaretle = () => dugmeler.forEach(x => x.setAttribute('aria-pressed', String(x.dataset.durum === durum[u.uyelikId])));
-    isaretle();
-    s.append(grup);
-    yoklama.append(s);
-  }
-  yok.append(yoklama);
+  yok.append(yUst, yoklamaKutusu(k.uyeler, durum, true));
   kok.append(genel, yok);
 
   if (mevcut) {
@@ -177,7 +185,7 @@ function calismaForm(k, mevcut) {
   kaydet.addEventListener('click', async () => {
     kaydet.disabled = true;
     const r = await api('/api/kulup/calisma-kaydet', {
-      id: mevcut?.calisma.id, kulupId: k.id, tarih: tarih.value, tur: tur.value, baslik: baslik.value, aciklama: aciklama.value, katilim: durum,
+      id: mevcut?.calisma.id, kulupId: k.id, tarih: tarih.value, tur: tur.value, baslik: baslik.value, aciklama: aciklama.value, katilim: Object.fromEntries(durum),
     });
     kaydet.disabled = false;
     if (!r.ok) { mesaj(r.veri.hata || 'Kaydedilemedi', 'hata'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
