@@ -1,5 +1,5 @@
-// Öğretmen: danışmanı olduğum kulüpler ve üyeler. Kulüp dersi normal ders gibi haftalık programda ve "Derslerim"de açılır;
-// burada yalnızca özet ve işlenmiş derslerin geçmişi vardır.
+// Öğretmen: danışmanı olduğum kulüpler, üyeler ve dersler. Bir derse dokununca "Derslerim"deki Dersi bitir ekranı burada açılır
+// (bitmiş ders salt okunur, Düzenle ile değişir); kulüp dersi ayrıca haftalık programda ve Derslerim'de de görünür.
 const kok = $('icerik');
 let veri = null;
 
@@ -17,7 +17,23 @@ function sonrakiTarih(bugun, gun) {
   while (d.getUTCDay() !== gun) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
 }
-const dersLink = (k, tarih) => `/derslerim?tarih=${tarih}&kulupId=${k.id}&dersSaati=${k.dersSaati}`;
+const gunYaz = t => new Date(t + 'T00:00:00Z').toLocaleDateString('tr-TR', { timeZone: 'UTC', day: 'numeric', month: 'long', weekday: 'long' });
+
+// Ders ekranı: Dersi bitir ile aynı form; kaydedince aynı ders (bitmişse salt okunur) yeniden açılır
+function dersAc(k, tarih) {
+  ekranAc(kok);
+  const c = el('article', undefined, 'kl-kart');
+  const baslik = el('div', undefined, 'kl-baslik');
+  const b = el('div');
+  b.append(el('h3', k.ad), el('p', `${gunYaz(tarih)} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'));
+  baslik.append(b);
+  const icerik = el('div');
+  c.append(geriDugme('Kulüplerim', yukle), baslik, icerik);
+  kok.append(c);
+  const ciz = () => kulupBitirCiz(icerik, ciz, k.id, tarih);
+  ciz();
+}
+const acDugme = (a, k, tarih) => a.addEventListener('click', e => { e.preventDefault(); dersAc(k, tarih); });
 
 function ciz() {
   ekranAc(kok);
@@ -37,7 +53,7 @@ function kart(k) {
 
   const sonraki = sonrakiTarih(veri.bugun, k.gun);
   const ac = el('a', `Sıradaki ders · ${tarihYaz(sonraki)}`, 'birincil kucuk kl-git-dugme');
-  ac.href = dersLink(k, sonraki);
+  ac.href = '#'; acDugme(ac, k, sonraki);
   c.append(el('p', 'Kulüp dersi haftalık programınızda diğer dersler gibi görünür; konuyu önceden yazabilir, yoklamayı ders saatinde alabilirsiniz.', 'kl-not'), ac);
 
   const uyeler = el('details', undefined, 'kl-detay');
@@ -53,7 +69,7 @@ function kart(k) {
   if (!k.calismalar.length) c.append(el('p', 'Henüz işlenmiş ders yok.', 'kl-not'));
   for (const w of k.calismalar) {
     const s = el('a', undefined, 'kl-calisma');
-    s.href = dersLink(k, w.tarih);
+    s.href = '#'; acDugme(s, k, w.tarih);
     const sol = el('div');
     sol.append(el('b', w.baslik), el('small', `${tarihYaz(w.tarih)} · ${TUR[w.tur]}`));
     s.append(sol, el('span', `${w.geldi}/${w.geldi + w.gelmedi + w.izinli}`, 'kl-sayi'), el('span', '›', 'kl-git'));

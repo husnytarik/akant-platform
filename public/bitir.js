@@ -157,8 +157,9 @@ async function bitirCiz(k, bitince) {
 const KULUP_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
 const KULUP_TUR = [['diger', 'Genel'], ['deney', 'Deney'], ['proje', 'Proje'], ['sunum', 'Sunum'], ['gezi', 'Gezi']];
 
-async function kulupBitirCiz(k, bitince) {
-  const r = await api('/api/kulup/oturum?' + new URLSearchParams({ kulupId: ders.kulupId, tarih }));
+// Derslerim'de seçili dersten, Kulüplerim'de ise doğrudan kulüp ve tarihten çağrılır.
+async function kulupBitirCiz(k, bitince, kulupId = ders.kulupId, gun = tarih) {
+  const r = await api('/api/kulup/oturum?' + new URLSearchParams({ kulupId, tarih: gun }));
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   const { uyeler, calisma: c, katilim, basladi, kulup } = r.veri;
   const durum = new Map(uyeler.map(u => [u.uyelikId, katilim[u.uyelikId] || 'geldi']));
@@ -239,7 +240,7 @@ async function kulupBitirCiz(k, bitince) {
 
   kaydet.addEventListener('click', async () => {
     const s = await api('/api/kulup/oturum-kaydet', {
-      kulupId: ders.kulupId, tarih, tur: tur.value, baslik: konu.value, aciklama: ac.value,
+      kulupId, tarih: gun, tur: tur.value, baslik: konu.value, aciklama: ac.value,
       bitir: basladi, katilim: Object.fromEntries(durum),
     });
     if (!s.ok) return hataGoster(s.veri.hata || 'Hata');
@@ -248,7 +249,7 @@ async function kulupBitirCiz(k, bitince) {
   });
   iptal.addEventListener('click', async () => {
     if (!c?.iptal && !confirm('Bu ders iptal edilsin mi? Girilen yoklama silinir.')) return;
-    const s = await api('/api/kulup/oturum-iptal', { kulupId: ders.kulupId, tarih, geriAl: !!c?.iptal });
+    const s = await api('/api/kulup/oturum-iptal', { kulupId, tarih: gun, geriAl: !!c?.iptal });
     if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
     mesaj(c?.iptal ? 'İptal kaldırıldı.' : 'Ders iptal edildi.', 'tamam');
     bitince();
