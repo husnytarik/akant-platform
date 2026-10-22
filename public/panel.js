@@ -13,7 +13,7 @@ function durumRozeti(d) {
   return el('span', 'Bekliyor', 'durum-etiket');
 }
 
-const dersLink = (tarih, d) => `/derslerim?tarih=${tarih}&sinifId=${d.sinifId}&dersSaati=${d.dersSaati}`;
+const dersLink = (tarih, d) => `/derslerim?tarih=${tarih}&${d.kulupId ? 'kulupId=' + d.kulupId : 'sinifId=' + d.sinifId}&dersSaati=${d.dersSaati}`;
 
 // Öğretmen ana sayfası: bugünkü dersler (tıklayınca "Dersi bitir") ve tamamlanmamış geçmiş dersler
 async function ogretmenDersleri() {
@@ -30,7 +30,7 @@ async function ogretmenDersleri() {
     ek.appendChild(el('summary', `${geciken.sayi} tamamlanmamış ders`));
     const ul = el('div', undefined, 'uyari-liste');
     for (const d of geciken.dersler) {
-      const a = el('a', `${kisaTarih(d.tarih)} · ${d.dersSaati}. ders · ${d.sinif}`);
+      const a = el('a', `${kisaTarih(d.tarih)} · ${d.dersSaati}. ders · ${d.kulupId ? 'Kulüp · ' : ''}${d.sinif}`);
       a.href = dersLink(d.tarih, d);
       ul.appendChild(a);
     }
@@ -57,7 +57,7 @@ async function ogretmenDersleri() {
   const zaman = el('div', undefined, 'siradaki-saat');
   zaman.append(el('strong', d.aralik.split('–')[0]), el('span', `${d.dersSaati}. ders`));
   const orta = el('div', undefined, 'siradaki-orta');
-  orta.append(el('strong', d.sinif), el('span', d.ders));
+  orta.append(el('strong', d.sinif), el('span', d.kulupId ? 'Kulüp dersi' : d.ders));
   govde.append(zaman, orta);
   const isaret = { tamam: ['✓', 'Tamamlandı'], gecikti: ['!', 'Tamamlanmadı'], iptal: ['İptal', 'İptal edildi'] }[d.durum];
   if (isaret) { const i = el('span', isaret[0], 'durum-isaret ' + d.durum); i.title = isaret[1]; i.setAttribute('aria-label', isaret[1]); govde.appendChild(i); }

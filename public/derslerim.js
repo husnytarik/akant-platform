@@ -122,7 +122,7 @@ async function haftaYukle() {
         const b = el('button', undefined, 'hucre ' + d.durum);
         b.type = 'button';
         b.style.setProperty('--ders', d.renk);
-        b.append(el('strong', d.sinif + ({ tamam: ' ✓', gecikti: ' !', iptal: ' ⊘' }[d.durum] || '')));
+        b.append(el('strong', (d.kulupId ? 'Kulüp' : d.sinif) + ({ tamam: ' ✓', gecikti: ' !', iptal: ' ⊘' }[d.durum] || '')));
         b.addEventListener('click', () => secim(b, g, d, false));
         td.appendChild(b);
       }
@@ -184,12 +184,12 @@ function zamanCiz() {
     const d = o.d;
     const satir = el('button', undefined, 'ders-satir' + (o.tur === 'etut' ? ' etut-satir' : ''));
     satir.type = 'button';
-    if (o.tur === 'ders' && ders && ders.atamaId === d.atamaId) satir.classList.add('secili');
+    if (o.tur === 'ders' && ders && ders.atamaId === d.atamaId && ders.kulupId === (d.kulupId || null) && ders.dersSaati === d.dersSaati) satir.classList.add('secili');
     const zaman = el('div', undefined, 'ders-zaman');
     if (o.tur === 'ders') zaman.append(el('strong', o.bas), el('span', `${d.dersSaati}. ders`));
     else zaman.append(el('strong', 'Etüt'), el('span', o.bas));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', o.tur === 'ders' ? d.sinif : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
+    orta.append(el('strong', o.tur === 'ders' ? (d.kulupId ? `Kulüp · ${d.sinif}` : d.sinif) : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`));
     if (o.tur === 'etut') orta.append(el('span', `${d.kisi} öğrenci${d.yer ? ' · ' + d.yer : ''}`));
     satir.style.setProperty('--ders', d.renk || '#475569');
     satir.append(zaman, orta);
@@ -236,15 +236,19 @@ function dersBos() {
 }
 
 function dersAc(d, programdan) {
-  ders = { atamaId: d.atamaId, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
-  $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), ` ${d.sinif} · ${d.ders}`);
+  ders = { atamaId: d.atamaId, kulupId: d.kulupId || null, sinifId: d.sinifId, sinif: d.sinif, ders: d.ders, dersSaati: programdan ? d.dersSaati : null };
+  $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), d.kulupId ? ` Kulüp · ${d.sinif}` : ` ${d.sinif} · ${d.ders}`);
   $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
   $('p-kapat').classList.remove('gizli');
   $('sekmeler').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();
-  const bitirVar = ders.dersSaati !== null && dersBasladi(tarih, d.aralik);
+  // Kulüp dersinde konu ve ödev yok; ders ileri tarihte de açılır (konu önceden yazılır, yoklama ders saatinde alınır)
+  for (const b of $('sekmeler').children) if (b.dataset.sekme === 'konular' || b.dataset.sekme === 'odevler') b.classList.toggle('gizli', !!d.kulupId);
+  const bitirVar = ders.dersSaati !== null && (!!d.kulupId || dersBasladi(tarih, d.aralik));
   $('sekmeler').querySelector('[data-sekme="bitir"]').classList.toggle('gizli', !bitirVar);
+  const bitirDugme = $('sekmeler').querySelector('[data-sekme="bitir"]');
+  bitirDugme.textContent = d.kulupId && !dersBasladi(tarih, d.aralik) ? 'Ders planı' : 'Dersi bitir';
   if (bitirVar) sekme = 'bitir';
   else if (sekme === 'bitir') sekme = 'ogrenciler';
   sekmeAc(sekme);
@@ -254,17 +258,25 @@ function dersAc(d, programdan) {
 function sekmeAc(ad) {
   sekme = ad;
   for (const b of $('sekmeler').children) b.setAttribute('aria-pressed', String(b.dataset.sekme === ad));
-  const yukle = { bitir: () => bitirCiz($('icerik'), bitirildi), ogrenciler: ogrencilerCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
+  const yukle = { bitir: () => (ders.kulupId ? kulupBitirCiz : bitirCiz)($('icerik'), bitirildi), ogrenciler: ogrencilerCiz, konular: konularCiz, odevler: odevlerCiz }[ad];
   yukle();
 }
 
 // Ders bitirildi/iptal edildi: listeyi tazele, aynı dersi açık tut
 async function bitirildi() {
-  const acik = { atamaId: ders.atamaId, dersSaati: ders.dersSaati };
+  const acik = { atamaId: ders.atamaId, kulupId: ders.kulupId, dersSaati: ders.dersSaati };
   await gunYukle();
   if (gorunum === 'hafta') return sekmeAc(sekme);
-  const d = veri?.gunluk.find(x => x.atamaId === acik.atamaId && x.dersSaati === acik.dersSaati);
+  const d = veri?.gunluk.find(x => x.atamaId === acik.atamaId && (x.kulupId || null) === acik.kulupId && x.dersSaati === acik.dersSaati);
   if (d) dersAc(d, true);
+}
+
+// Kulüp dersinde öğrenciler kulüp üyeleridir; yoklama yalnızca işlenmiş derste görünür
+async function kulupOgrenciler() {
+  const r = await api('/api/kulup/oturum?' + new URLSearchParams({ kulupId: ders.kulupId, tarih }));
+  if (!r.ok) return r;
+  const v = r.veri, tamam = !!v.calisma?.tamam;
+  return { ok: true, veri: { yoklamaAlindi: tamam, ogrenciler: v.uyeler.map(u => ({ ogrenciId: u.uyelikId, ad: u.ad, durum: tamam ? v.katilim[u.uyelikId] || null : null })) } };
 }
 
 async function ogrencilerCiz() {
@@ -272,7 +284,7 @@ async function ogrencilerCiz() {
   k.replaceChildren();
   const q = new URLSearchParams({ atamaId: ders.atamaId });
   if (ders.dersSaati) { q.set('tarih', tarih); q.set('dersSaati', ders.dersSaati); }
-  const r = await api('/api/ders/ogrenciler?' + q);
+  const r = ders.kulupId ? await kulupOgrenciler() : await api('/api/ders/ogrenciler?' + q);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   const ogr = r.veri.ogrenciler;
   const gunluk = !!ders.dersSaati;
@@ -430,7 +442,7 @@ async function gorunumSec(ad, acilacak) {
   $('gun-seridi').classList.toggle('gizli', ad === 'siniflar');
   await gunYukle();
   if (acilacak && veri) {
-    const d = veri.gunluk.find(x => (acilacak.atamaId ? x.atamaId === acilacak.atamaId : x.sinifId === acilacak.sinifId) && x.dersSaati === acilacak.dersSaati);
+    const d = veri.gunluk.find(x => (acilacak.kulupId ? x.kulupId === acilacak.kulupId : acilacak.atamaId ? x.atamaId === acilacak.atamaId : x.sinifId === acilacak.sinifId) && x.dersSaati === acilacak.dersSaati);
     if (d) dersAc(d, true);
   }
 }
@@ -454,8 +466,8 @@ $('sekmeler').addEventListener('click', e => {
   tarih = new Date().toLocaleDateString('sv-SE');
   const q = new URLSearchParams(location.search);
   const t = q.get('tarih');
-  if (/^\d{4}-\d{2}-\d{2}$/.test(t || '') && t <= tarih) tarih = t;
-  const sinifId = Number(q.get('sinifId')), dersSaati = Number(q.get('dersSaati'));
-  if (sinifId && dersSaati) await gorunumSec('gun', { sinifId, dersSaati });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t || '') && (t <= tarih || q.get('kulupId'))) tarih = t;
+  const sinifId = Number(q.get('sinifId')), kulupId = Number(q.get('kulupId')), dersSaati = Number(q.get('dersSaati'));
+  if ((sinifId || kulupId) && dersSaati) await gorunumSec('gun', { sinifId, kulupId, dersSaati });
   else await gunYukle();
 })();

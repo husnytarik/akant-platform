@@ -2,6 +2,8 @@ import { db } from './db.js';
 import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
 import { dersStilleri, stilEkle } from './stil.js';
 import { kazanimCoz } from './mufredat.js';
+import { ogretmenKulupDersleri } from './kulup.js';
+import { KULUP_DERSI } from './ders-programi.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -26,6 +28,14 @@ function dersDurumu(tarih, dersSaati, tamamlandi, iptal = false) {
   if (tarih < t) return 'gecikti';
   const bitis = DERS_ZAMANLARI[dersSaati - 1]?.[1];
   return bitis && simdiSaat() > bitis ? 'gecikti' : 'bekliyor';
+}
+
+// Öğrencinin kulüp dersi satırı: o haftanın çalışması işlendiyse konu ve devam görünür (plan gizli kalır)
+function kulupSatiri(kulup, calisma, devam, t, ogrenciId) {
+  const c = kulup && calisma.get(kulup.id, t);
+  if (!c) return { iptal: false, islendi: false, konu: null, devam: null };
+  const tamam = !!c.tamamlandi && !c.iptal;
+  return { iptal: !!c.iptal, islendi: tamam, konu: tamam ? c.baslik : null, devam: tamam ? devam.get(c.id, ogrenciId)?.durum || null : null };
 }
 
 // Ders merkezi: öğretmen kendi sınıf+ders atamaları için öğrenci, konu ve ödev işlemlerini yapar.
@@ -108,6 +118,8 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const kulup = db.prepare('SELECT k.id, k.ad FROM kulup_uyeler ku JOIN kulupler k ON k.id = ku.kulup_id WHERE ku.student_membership_id = ?').get(cocuk.id);
     const kulupHocalari = kulup && db.prepare(`SELECT GROUP_CONCAT(u.full_name, ', ') AS ad FROM kulup_ogretmen ko JOIN memberships m ON m.id = ko.teacher_membership_id
       JOIN users u ON u.id = m.user_id WHERE ko.kulup_id = ?`).get(kulup.id).ad;
+    const kulupCalisma = db.prepare('SELECT c.id, c.baslik, c.tamamlandi, c.iptal FROM kulup_calismalar c WHERE c.kulup_id = ? AND c.tarih = ?');
+    const kulupDevam = db.prepare('SELECT durum FROM kulup_katilim WHERE calisma_id = ? AND student_membership_id = ?');
     const gunler = [];
     for (let i = 1; i <= 7; i++) {
       const g = i % 7;
@@ -117,7 +129,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
         dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => stilEkle({
           dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ders === 'Kulüp' ? kulupHocalari || null : r.ogretmen,
           kulup: r.ders === 'Kulüp' ? (kulup ? kulup.ad : '') : undefined, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
-          iptal: !!r.iptal, islendi: !!r.tamamlandi && !r.iptal, konu: r.tamamlandi && !r.iptal ? r.konu : null, devam: r.tamamlandi && !r.iptal ? r.devam : null,
+          ...(r.ders === KULUP_DERSI ? kulupSatiri(kulup, kulupCalisma, kulupDevam, t, cocuk.id) : { iptal: !!r.iptal, islendi: !!r.tamamlandi && !r.iptal, konu: r.tamamlandi && !r.iptal ? r.konu : null, devam: r.tamamlandi && !r.iptal ? r.devam : null }),
           odevler: odev.all(r.atamaId, t < bugun() ? bugun() : t),
         }, st)) : [],
         etutler: etutOgr.all(cocuk.id, t).map(e => stilEkle(e, st)),
@@ -157,11 +169,11 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       WHERE a.teacher_membership_id = ? ORDER BY c.level, c.name, co.name`).all(o.membership_id);
     json(res, 200, {
       tarih, bugun: bugun(), hafta_sonu: !gunAcik(gun),
-      gunluk: gunluk.map(r => stilEkle({
+      gunluk: [...gunluk.map(r => stilEkle({
         dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
         aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', alindi: !!r.yoklamaId, gelmedi: r.gelmedi,
         durum: dersDurumu(tarih, r.dersSaati, !!r.tamamlandi, !!r.iptal),
-      }, st)),
+      }, st)), ...ogretmenKulupDersleri(o.membership_id, tarih).map(d => stilEkle(d, st))].sort((x, y) => x.dersSaati - y.dersSaati),
       atamalar: atamalar.map(a => stilEkle(a, st)),
       etutler: db.prepare(`
         SELECT e.id, e.topic AS konu, e.start_time AS saat, e.duration_min AS sure, e.place AS yer, co.name AS ders,
@@ -198,11 +210,11 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       gunler.push({
         tarih: t, gun: g, acik: gunAcik(g),
         etutler: etutSatir.all(t, o.membership_id).map(e => stilEkle(e, st)),
-        dersler: satir.all(t, g, o.membership_id).map(r => stilEkle({
+        dersler: [...satir.all(t, g, o.membership_id).map(r => stilEkle({
           dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
           aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '', gelmedi: r.gelmedi,
           durum: dersDurumu(t, r.dersSaati, !!r.tamamlandi, !!r.iptal),
-        }, st)),
+        }, st)), ...ogretmenKulupDersleri(o.membership_id, t).map(d => stilEkle(d, st))].sort((x, y) => x.dersSaati - y.dersSaati),
       });
     }
     json(res, 200, { bugun: bugun(), pazartesi, gunler, zamanlar: DERS_ZAMANLARI.map(z => z.join('–')) });
@@ -227,6 +239,9 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
         if (dersDurumu(t, r.dersSaati, !!r.tamamlandi) !== 'gecikti') continue;
         liste.push({ tarih: t, dersSaati: r.dersSaati, atamaId: r.atamaId, sinifId: r.sinifId, sinif: r.sinif, ders: r.ders,
           aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '' });
+      }
+      for (const d of ogretmenKulupDersleri(o.membership_id, t)) {
+        if (d.durum === 'gecikti' && t >= d.baslangic) liste.push({ tarih: t, dersSaati: d.dersSaati, kulupId: d.kulupId, sinif: d.sinif, ders: d.ders, aralik: d.aralik });
       }
     }
     json(res, 200, { sayi: liste.length, dersler: liste });

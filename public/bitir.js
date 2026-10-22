@@ -125,3 +125,108 @@ async function bitirCiz(k, bitince) {
   k.append(yok, konuKutu, odevKutu, cubuk);
   hapCiz();
 }
+
+// Kulüp dersi: günü ve saati kulüpte sabit. Konu önceden (ileri tarih için de) yazılabilir; yoklama ders başladıktan sonra alınır.
+const KULUP_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
+const KULUP_TUR = [['diger', 'Genel'], ['deney', 'Deney'], ['proje', 'Proje'], ['sunum', 'Sunum'], ['gezi', 'Gezi']];
+
+async function kulupBitirCiz(k, bitince) {
+  const r = await api('/api/kulup/oturum?' + new URLSearchParams({ kulupId: ders.kulupId, tarih }));
+  if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+  const { uyeler, calisma: c, katilim, basladi, kulup } = r.veri;
+  const durum = new Map(uyeler.map(u => [u.uyelikId, katilim[u.uyelikId] || 'geldi']));
+  k.replaceChildren();
+
+  const rozetMetin = c?.iptal ? 'İptal edilmiş' : c?.tamam ? 'Düzenleniyor' : basladi ? 'Yeni kayıt' : 'Planlanıyor';
+  const rozet = el('span', rozetMetin, 'rozet ' + (c?.iptal ? 'iptal' : c?.tamam ? 'tamam' : 'bekliyor'));
+
+  // Yoklama: ders saati başlamadan alınamaz
+  const yok = el('div', undefined, 'adim');
+  const yokUst = el('div', undefined, 'adim-ust');
+  yokUst.append(el('h3', 'Yoklama'), rozet);
+  yok.append(yokUst);
+  const ozet = el('div', undefined, 'yok-ozet');
+  const liste = el('div', undefined, 'yoklama-liste hapli');
+  const toplu = el('button', undefined, 'yok-toplu'); toplu.type = 'button';
+  toplu.append(el('span', '✓', 'yok-toplu-ikon'), document.createTextNode('Hepsini geldi yap'));
+  const RENK = { geldi: '#2e9e5b', gelmedi: '#d64545', izinli: '#8a867d' };
+  const ozetYaz = () => {
+    const say = { geldi: 0, gelmedi: 0, izinli: 0 };
+    for (const u of uyeler) say[durum.get(u.uyelikId)]++;
+    const dilimler = KULUP_SECENEK.map(([d, e]) => ({ deger: say[d], renk: RENK[d], etiket: e.toLocaleLowerCase('tr') }));
+    ozet.replaceChildren(yiginCubuk(dilimler), gosterge(dilimler.filter(d => d.deger > 0 || d.etiket === 'geldi')));
+    toplu.classList.toggle('gizli', !uyeler.length || say.geldi === uyeler.length);
+  };
+  const hapCiz = () => {
+    liste.replaceChildren();
+    for (const u of uyeler) {
+      const hap = el('button', undefined, 'yok-hap d-' + durum.get(u.uyelikId));
+      hap.type = 'button';
+      const ikon = el('span', PASTA_IKON[durum.get(u.uyelikId)], 'yok-ikon');
+      hap.append(el('span', u.ad, 'yok-ad'), ikon);
+      hap.addEventListener('click', () => pastaAc(u.ad, hap, KULUP_SECENEK, durum.get(u.uyelikId), d => {
+        durum.set(u.uyelikId, d);
+        hap.className = 'yok-hap d-' + d;
+        ikon.textContent = PASTA_IKON[d];
+        ozetYaz();
+      }));
+      liste.appendChild(hap);
+    }
+    ozetYaz();
+  };
+  toplu.addEventListener('click', () => { for (const u of uyeler) durum.set(u.uyelikId, 'geldi'); hapCiz(); });
+  if (basladi) {
+    yok.append(ozet, toplu, liste);
+    if (!uyeler.length) yok.append(el('p', 'Kulüpte öğrenci yok.', 'alt'));
+  } else {
+    yok.append(el('p', `Yoklama ders saati başladıktan sonra alınır (${kulup.aralik.split('–')[0]}). Şimdilik konuyu önceden yazabilirsiniz.`, 'alt'));
+  }
+
+  // Bu haftaki çalışma: konu önceden yazılabilir
+  const tur = el('select');
+  for (const [d, e] of KULUP_TUR) tur.append(Object.assign(el('option', e), { value: d }));
+  tur.value = c?.tur || 'diger'; tur.id = 'kb-tur';
+  const konu = el('input'); konu.id = 'kb-konu'; konu.maxLength = 100; konu.placeholder = 'Örn. Basit elektrik devresi'; konu.value = c?.baslik || '';
+  const ac = el('input'); ac.id = 'kb-aciklama'; ac.maxLength = 1000; ac.placeholder = 'Plan, malzeme ya da derste neler yapıldı (isteğe bağlı)'; ac.value = c?.aciklama || '';
+  const lt = el('label', 'Tür'); lt.htmlFor = 'kb-tur';
+  const lk = el('label', 'Konu'); lk.htmlFor = 'kb-konu';
+  const la = el('label', 'Açıklama (isteğe bağlı)'); la.htmlFor = 'kb-aciklama';
+  const konuKutu = el('div', undefined, 'adim');
+  const konuUst = el('div', undefined, 'adim-ust'); konuUst.append(el('h3', 'İşlenen konu'));
+  konuKutu.append(konuUst, lt, tur, lk, konu, la, ac);
+
+  const iptal = el('button', c?.iptal ? 'İptali kaldır' : 'Dersi iptal et', c?.iptal ? 'ikincil' : 'ikincil tehlike'); iptal.type = 'button';
+  const kaydet = el('button', basladi ? (c?.tamam ? 'Değişiklikleri kaydet' : 'Dersi bitir') : 'Planı kaydet', 'birincil'); kaydet.type = 'button';
+  const cubuk = el('div', undefined, 'kaydet-cubuk');
+  cubuk.append(iptal, kaydet);
+
+  const hataGoster = metin => {
+    for (const x of k.querySelectorAll('.alan-hata')) x.remove();
+    const p = el('p', metin, 'alan-hata'); p.setAttribute('role', 'alert');
+    konu.classList.add('hatali');
+    konu.after(p);
+    konu.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    konu.focus({ preventScroll: true });
+  };
+  konu.addEventListener('input', () => { konu.classList.remove('hatali'); for (const x of k.querySelectorAll('.alan-hata')) x.remove(); });
+
+  kaydet.addEventListener('click', async () => {
+    const s = await api('/api/kulup/oturum-kaydet', {
+      kulupId: ders.kulupId, tarih, tur: tur.value, baslik: konu.value, aciklama: ac.value,
+      bitir: basladi, katilim: Object.fromEntries(durum),
+    });
+    if (!s.ok) return hataGoster(s.veri.hata || 'Hata');
+    mesaj(basladi ? `Ders tamamlandı: ${s.veri.gelmedi} gelmedi, ${s.veri.izinli} izinli.` : 'Plan kaydedildi.', 'tamam');
+    bitince();
+  });
+  iptal.addEventListener('click', async () => {
+    if (!c?.iptal && !confirm('Bu ders iptal edilsin mi? Girilen yoklama silinir.')) return;
+    const s = await api('/api/kulup/oturum-iptal', { kulupId: ders.kulupId, tarih, geriAl: !!c?.iptal });
+    if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
+    mesaj(c?.iptal ? 'İptal kaldırıldı.' : 'Ders iptal edildi.', 'tamam');
+    bitince();
+  });
+
+  k.append(yok, konuKutu, cubuk);
+  if (basladi) hapCiz();
+}

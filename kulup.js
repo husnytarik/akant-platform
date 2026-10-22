@@ -13,7 +13,39 @@ const tamSayi = (v, min, max) => {
 const metin = (v, enCok) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, enCok);
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const tarihGecerli = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !Number.isNaN(Date.parse(t));
+const gunNo = t => new Date(t + 'T00:00:00Z').getUTCDay();
+const simdiSaat = () => new Date().toLocaleTimeString('sv-SE', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
 const aralik = saat => DERS_ZAMANLARI[saat - 1]?.join('–') || '';
+
+// Ders saati başladı mı (yoklama ancak başladıktan sonra alınır)
+function basladi(tarih, saat) {
+  const t = bugun();
+  if (tarih !== t) return tarih < t;
+  return (DERS_ZAMANLARI[saat - 1]?.[0] || '00:00') <= simdiSaat();
+}
+function kulupDurumu(tarih, saat, c) {
+  if (c?.iptal) return 'iptal';
+  if (c?.tamamlandi) return 'tamam';
+  const t = bugun();
+  if (tarih !== t) return tarih > t ? 'bekliyor' : 'gecikti';
+  const bitis = DERS_ZAMANLARI[saat - 1]?.[1];
+  return bitis && simdiSaat() > bitis ? 'gecikti' : 'bekliyor';
+}
+
+// Öğretmenin o günkü kulüp dersleri: ders programındaki satırlarla aynı biçimde (ders.js ve panel kullanır)
+export function ogretmenKulupDersleri(ogretmenId, tarih) {
+  if (!gunAcik(gunNo(tarih))) return [];
+  return db.prepare(`SELECT k.* FROM kulupler k JOIN kulup_ogretmen ko ON ko.kulup_id = k.id
+    WHERE ko.teacher_membership_id = ? AND k.aktif = 1 AND k.gun = ? ORDER BY k.ders_saati`).all(ogretmenId, gunNo(tarih)).map(k => {
+    const c = db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? AND tarih = ?').get(k.id, tarih);
+    return {
+      dersSaati: k.ders_saati, atamaId: null, kulupId: k.id, sinifId: null, sinif: k.ad, ders: KULUP_DERSI, aralik: aralik(k.ders_saati),
+      alindi: !!c?.tamamlandi, durum: kulupDurumu(tarih, k.ders_saati, c), konu: c?.baslik || '',
+      gelmedi: c ? db.prepare("SELECT COUNT(*) AS n FROM kulup_katilim WHERE calisma_id = ? AND durum = 'gelmedi'").get(c.id).n : 0,
+      baslangic: new Date(k.created_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }),
+    };
+  });
+}
 
 // Sınıf düzeyi: "6-C" -> "6" (kulüp saati ve kulübün açık olduğu düzeyler bununla tutulur)
 const duzey = ad => String(ad).match(/^\d+/)?.[0] || String(ad);
@@ -327,7 +359,7 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
       const ozet = kulupOzeti(uye);
       ozet.calismalar = db.prepare(`SELECT c.id, c.tarih, c.tur, c.baslik, c.aciklama, kk.durum AS devam
         FROM kulup_calismalar c LEFT JOIN kulup_katilim kk ON kk.calisma_id = c.id AND kk.student_membership_id = ?
-        WHERE c.kulup_id = ? ORDER BY c.tarih DESC, c.id DESC LIMIT 30`).all(cocukId, uye.id);
+        WHERE c.kulup_id = ? AND c.tamamlandi IS NOT NULL AND c.iptal = 0 ORDER BY c.tarih DESC, c.id DESC LIMIT 30`).all(cocukId, uye.id);
       sonuc.uye = ozet;
     }
     // Yalnızca öğrencinin sınıfında kulüp saati olan, düzeyine açık, aktif kulüpler
@@ -381,59 +413,86 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
       bugun: bugun(),
       kulupler: kulupler.map(k => ({
         ...kulupOzeti(k), uyeler: uyeleri(k.id),
-        calismalar: db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? ORDER BY tarih DESC, id DESC LIMIT 30').all(k.id).map(calismaOzeti),
+        calismalar: db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? AND tamamlandi IS NOT NULL AND iptal = 0 ORDER BY tarih DESC, id DESC LIMIT 30').all(k.id).map(calismaOzeti),
       })),
     });
     return true;
   }
 
-  if (req.method === 'GET' && yol === '/api/kulup/calisma') {
-    const c = db.prepare('SELECT * FROM kulup_calismalar WHERE id = ?').get(tamSayi(url.searchParams.get('id'), 1, 1e9));
-    if (!c || !kendiKulubu(c.kulup_id)) return hata(404, 'Çalışma bulunamadı');
+  // Kulüp dersi: günü ve saati kulübe bağlıdır, tarih seçilir; konu önceden yazılabilir, yoklama ders başlayınca alınır
+  const oturumKulubu = (kulupId, tarih) => {
+    const k = kendiKulubu(kulupId);
+    if (!k) return { hata: [404, 'Kulüp bulunamadı'] };
+    if (!tarihGecerli(tarih) || gunNo(tarih) !== k.gun) return { hata: [400, 'Bu tarihte kulüp dersi yok'] };
+    return { k };
+  };
+  const oturumSatiri = (kulupId, tarih) => db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? AND tarih = ?').get(kulupId, tarih);
+
+  if (req.method === 'GET' && yol === '/api/kulup/oturum') {
+    const tarih = String(url.searchParams.get('tarih') || '');
+    const { k, hata: h } = oturumKulubu(url.searchParams.get('kulupId'), tarih);
+    if (h) return hata(h[0], h[1]);
+    const c = oturumSatiri(k.id, tarih);
     json(res, 200, {
-      calisma: { id: c.id, kulupId: c.kulup_id, tarih: c.tarih, tur: c.tur, baslik: c.baslik, aciklama: c.aciklama },
-      katilim: Object.fromEntries(db.prepare('SELECT student_membership_id AS id, durum FROM kulup_katilim WHERE calisma_id = ?').all(c.id).map(r => [r.id, r.durum])),
+      kulup: { id: k.id, ad: k.ad, dersSaati: k.ders_saati, aralik: aralik(k.ders_saati) }, tarih, basladi: basladi(tarih, k.ders_saati),
+      uyeler: uyeleri(k.id),
+      calisma: c ? { id: c.id, tur: c.tur, baslik: c.baslik, aciklama: c.aciklama, tamam: !!c.tamamlandi && !c.iptal, iptal: !!c.iptal } : null,
+      katilim: c ? Object.fromEntries(db.prepare('SELECT student_membership_id AS id, durum FROM kulup_katilim WHERE calisma_id = ?').all(c.id).map(r => [r.id, r.durum])) : {},
     });
     return true;
   }
 
-  if (req.method === 'POST' && (yol === '/api/kulup/calisma-kaydet' || yol === '/api/kulup/calisma-sil')) {
+  if (req.method === 'POST' && yol === '/api/kulup/oturum-kaydet') {
     const b = await govde(req);
-    if (yol === '/api/kulup/calisma-sil') {
-      const c = db.prepare('SELECT * FROM kulup_calismalar WHERE id = ?').get(tamSayi(b.id, 1, 1e9));
-      if (!c || !kendiKulubu(c.kulup_id)) return hata(404, 'Çalışma bulunamadı');
-      db.prepare('DELETE FROM kulup_katilim WHERE calisma_id = ?').run(c.id);
-      db.prepare('DELETE FROM kulup_calismalar WHERE id = ?').run(c.id);
-      denetle(o.user_id, 'kulup.calisma-sil', { calismaId: c.id });
-      json(res, 200, { tamam: true });
-      return true;
-    }
-    const mevcut = b.id ? db.prepare('SELECT * FROM kulup_calismalar WHERE id = ?').get(tamSayi(b.id, 1, 1e9)) : null;
-    if (b.id && !mevcut) return hata(404, 'Çalışma bulunamadı');
-    const k = kendiKulubu(mevcut ? mevcut.kulup_id : b.kulupId);
-    if (!k) return hata(403, 'Bu kulüp için yetkiniz yok');
     const tarih = String(b.tarih || '');
+    const { k, hata: h } = oturumKulubu(b.kulupId, tarih);
+    if (h) return hata(h[0], h[1]);
+    const tur = TURLER.includes(b.tur) ? b.tur : 'diger';
     const baslik = metin(b.baslik, 100), aciklama = String(b.aciklama ?? '').replace(/[ \t]+/g, ' ').trim().slice(0, 1000);
-    if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
-    if (tarih > bugun()) return hata(400, 'Gelecek tarihli çalışma girilemez');
-    if (!TURLER.includes(b.tur)) return hata(400, 'Çalışma türü geçersiz');
-    if (baslik.length < 2) return hata(400, 'Başlık en az 2 karakter olmalı');
-    const uyeler = uyeleri(k.id);
-    const katilim = b.katilim && typeof b.katilim === 'object' ? b.katilim : {};
-    let calismaId = mevcut?.id;
+    const mevcut = oturumSatiri(k.id, tarih);
+    const bitir = !!b.bitir;
+    if (bitir) {
+      if (!basladi(tarih, k.ders_saati)) return hata(400, 'Ders başlamadan yoklama alınamaz');
+      if (baslik.length < 2) return hata(400, 'Konu en az 2 karakter olmalı');
+    } else if (mevcut?.tamamlandi && baslik.length < 2) return hata(400, 'Konu en az 2 karakter olmalı');
+    let id = mevcut?.id;
     if (mevcut) {
-      db.prepare('UPDATE kulup_calismalar SET tarih = ?, tur = ?, baslik = ?, aciklama = ? WHERE id = ?').run(tarih, b.tur, baslik, aciklama, mevcut.id);
+      db.prepare('UPDATE kulup_calismalar SET tur = ?, baslik = ?, aciklama = ?, teacher_membership_id = ? WHERE id = ?').run(tur, baslik, aciklama, o.membership_id, id);
     } else {
-      calismaId = Number(db.prepare('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)')
-        .run(k.id, tarih, b.tur, baslik, aciklama, o.membership_id, Date.now()).lastInsertRowid);
+      id = Number(db.prepare('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)')
+        .run(k.id, tarih, tur, baslik, aciklama, o.membership_id, Date.now()).lastInsertRowid);
     }
-    db.prepare('DELETE FROM kulup_katilim WHERE calisma_id = ?').run(calismaId);
-    for (const u of uyeler) {
-      const d = KATILIM.includes(katilim[u.uyelikId]) ? katilim[u.uyelikId] : 'geldi';
-      db.prepare('INSERT INTO kulup_katilim (calisma_id, student_membership_id, durum) VALUES (?,?,?)').run(calismaId, u.uyelikId, d);
+    if (bitir) {
+      const katilim = b.katilim && typeof b.katilim === 'object' ? b.katilim : {};
+      db.prepare('DELETE FROM kulup_katilim WHERE calisma_id = ?').run(id);
+      for (const u of uyeleri(k.id)) {
+        db.prepare('INSERT INTO kulup_katilim (calisma_id, student_membership_id, durum) VALUES (?,?,?)').run(id, u.uyelikId, KATILIM.includes(katilim[u.uyelikId]) ? katilim[u.uyelikId] : 'geldi');
+      }
+      db.prepare('UPDATE kulup_calismalar SET tamamlandi = ?, iptal = 0 WHERE id = ?').run(Date.now(), id);
     }
-    denetle(o.user_id, mevcut ? 'kulup.calisma-guncelle' : 'kulup.calisma', { kulupId: k.id, calismaId });
-    json(res, mevcut ? 200 : 201, { tamam: true, id: calismaId });
+    const say = db.prepare("SELECT COALESCE(SUM(durum = 'gelmedi'), 0) AS gelmedi, COALESCE(SUM(durum = 'izinli'), 0) AS izinli FROM kulup_katilim WHERE calisma_id = ?").get(id);
+    denetle(o.user_id, bitir ? 'kulup.ders-bitir' : 'kulup.ders-plan', { kulupId: k.id, tarih });
+    json(res, 200, { tamam: true, gelmedi: Number(say.gelmedi), izinli: Number(say.izinli) });
+    return true;
+  }
+
+  // Dersi iptal et (yoklama silinir) ya da iptali geri al
+  if (req.method === 'POST' && yol === '/api/kulup/oturum-iptal') {
+    const b = await govde(req);
+    const tarih = String(b.tarih || '');
+    const { k, hata: h } = oturumKulubu(b.kulupId, tarih);
+    if (h) return hata(h[0], h[1]);
+    const mevcut = oturumSatiri(k.id, tarih);
+    if (b.geriAl) {
+      if (mevcut) db.prepare('UPDATE kulup_calismalar SET iptal = 0 WHERE id = ?').run(mevcut.id);
+    } else if (mevcut) {
+      db.prepare('DELETE FROM kulup_katilim WHERE calisma_id = ?').run(mevcut.id);
+      db.prepare('UPDATE kulup_calismalar SET iptal = 1, tamamlandi = NULL WHERE id = ?').run(mevcut.id);
+    } else {
+      db.prepare("INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at, iptal) VALUES (?,?,'diger','','',?,?,1)").run(k.id, tarih, o.membership_id, Date.now());
+    }
+    denetle(o.user_id, b.geriAl ? 'kulup.ders-iptal-geri' : 'kulup.ders-iptal', { kulupId: k.id, tarih });
+    json(res, 200, { tamam: true });
     return true;
   }
   return false;

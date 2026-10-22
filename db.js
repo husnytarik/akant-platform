@@ -260,7 +260,10 @@ CREATE TABLE IF NOT EXISTS kulup_calismalar (
   baslik                TEXT NOT NULL,
   aciklama              TEXT NOT NULL DEFAULT '',
   teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
-  created_at            INTEGER NOT NULL
+  created_at            INTEGER NOT NULL,
+  tamamlandi            INTEGER,
+  iptal                 INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (kulup_id, tarih)
 );
 CREATE TABLE IF NOT EXISTS kulup_katilim (
   calisma_id            INTEGER NOT NULL REFERENCES kulup_calismalar(id),
@@ -285,6 +288,13 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 // --- Şema geçişleri (eski veritabanlarını yeni şemaya taşır) ---
 const sutunlar = t => db.prepare(`PRAGMA table_info(${t})`).all();
+if (!sutunlar('kulup_calismalar').some(c => c.name === 'tamamlandi')) {
+  // Kulüp dersi: tarihi ve saati sabit, önceden planlanabilir; tamamlandi NULL = henüz işlenmedi
+  db.exec('ALTER TABLE kulup_calismalar ADD COLUMN tamamlandi INTEGER');
+  db.exec('ALTER TABLE kulup_calismalar ADD COLUMN iptal INTEGER NOT NULL DEFAULT 0');
+  db.exec('UPDATE kulup_calismalar SET tamamlandi = created_at');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS kulup_calisma_gun ON kulup_calismalar (kulup_id, tarih)');
+}
 if (!sutunlar('classes').some(c => c.name === 'homeroom_membership_id')) {
   db.exec('ALTER TABLE classes ADD COLUMN homeroom_membership_id INTEGER REFERENCES memberships(id)');
 }

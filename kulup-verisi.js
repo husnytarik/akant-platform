@@ -15,7 +15,8 @@ const KULUPLER = [
   { ad: 'Robotik ve Kodlama', tema: 'Bilim ve teknoloji', aciklama: 'Her hafta bir devre ya da robot projesi tasarlıyor, kodluyor ve deniyoruz.', hoca: 'Merve Türk', duzeyler: ['5', '6'], kontenjan: 14,
     calismalar: [['deney', 'Basit elektrik devresi', 'Pil, ampul ve anahtarla devre kurduk.'], ['proje', 'Engelden kaçan robot', 'Sensör bağlantısını yaptık, kodu yazmaya başladık.'], ['proje', 'Engelden kaçan robot: test', 'Robotları pistte denedik.']] },
   { ad: 'Bilim ve Deney', tema: 'Fen', aciklama: 'Evde bulunan malzemelerle haftalık deneyler yapıp sonuçları tartışıyoruz.', hoca: 'Ceren Husny', duzeyler: ['4', '5', '6'], kontenjan: 16,
-    calismalar: [['deney', 'Yanardağ deneyi', 'Karbonat ve sirke ile yanardağ yaptık.'], ['deney', 'Yoğunluk kuleleri', 'Farklı sıvılarla yoğunluk kulesi kurduk.'], ['sunum', 'Bilim fuarı hazırlığı', 'Standlar için proje seçimi yapıldı.']] },
+    calismalar: [['deney', 'Yanardağ deneyi', 'Karbonat ve sirke ile yanardağ yaptık.'], ['deney', 'Yoğunluk kuleleri', 'Farklı sıvılarla yoğunluk kulesi kurduk.'], ['sunum', 'Bilim fuarı hazırlığı', 'Standlar için proje seçimi yapıldı.']],
+    plan: ['deney', 'Asit ve baz göstergeleri', 'Mor lahana suyuyla gösterge hazırlanacak; malzemeler: lahana, limon, karbonat.'] },
   { ad: 'Satranç ve Zeka Oyunları', tema: 'Strateji', aciklama: 'Açılış stratejileri, bulmacalar ve okul içi turnuvalar.', hoca: 'Ahmet Tekin', duzeyler: ['4', '5', '6'], kontenjan: 12,
     calismalar: [['diger', 'Açılış ilkeleri', 'Merkezi ele geçirme ve taş gelişimi.'], ['diger', 'Mini turnuva', 'Kendi aramızda turnuva oynadık.']] },
   { ad: 'Müzik ve Koro', tema: 'Sanat', aciklama: 'Koro çalışması ve yıl sonu konseri için repertuvar hazırlığı.', hoca: 'Efe Öztürk', duzeyler: ['4', '5'], kontenjan: 20,
@@ -70,11 +71,18 @@ function calistir() {
     }
     k.calismalar.forEach(([tur, baslik, aciklama], i) => {
       const tarih = sonCarsambalar[i] || sonCarsambalar[0];
-      const cid = Number(db.prepare('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)')
-        .run(id, tarih, tur, baslik, aciklama, hoca, simdi).lastInsertRowid);
+      const cid = Number(db.prepare('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at, tamamlandi) VALUES (?,?,?,?,?,?,?,?)')
+        .run(id, tarih, tur, baslik, aciklama, hoca, simdi, simdi).lastInsertRowid);
       uyeler.forEach((o, j) => db.prepare('INSERT INTO kulup_katilim (calisma_id, student_membership_id, durum) VALUES (?,?,?)')
         .run(cid, o.id, (j + i) % 7 === 3 ? 'gelmedi' : (j + i) % 11 === 5 ? 'izinli' : 'geldi'));
     });
+    // Önümüzdeki hafta için önceden yazılmış plan (yoklama ders saatinde alınır)
+    if (k.plan) {
+      let t = bugun;
+      while (new Date(t + 'T00:00:00Z').getUTCDay() !== GUN || t <= bugun) t = kaydir(t, 1);
+      db.prepare('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)')
+        .run(id, t, k.plan[0], k.plan[1], k.plan[2], hoca, simdi);
+    }
   }
 
   // Yerleşmemiş birkaç öğrenci tercih listesi göndermiş (yönetim "Talepler" ekranı dolu görünsün)
