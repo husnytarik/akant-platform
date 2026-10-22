@@ -14,6 +14,7 @@ import { kazanimApi } from './kazanim.js';
 import { sinavApi } from './sinav.js';
 import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
+import { profilApi } from './profil.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
@@ -279,6 +280,12 @@ async function api(req, res, url) {
     return json(res, 200, { tamam: true });
   }
 
+  if (url.pathname === '/api/profil/bilgi' || url.pathname === '/api/profil/kaydet') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await profilApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
   if (url.pathname.startsWith('/api/etut/')) {
@@ -434,6 +441,7 @@ function statik(req, res, url) {
   if (ad === '/program') ad = '/program.html';
   if (ad === '/odevler') ad = '/odevler.html';
   if (ad === '/ogrencilerim') ad = '/ogrencilerim.html';
+  if (ad === '/profil') ad = '/profil.html';
   if (ad === '/sinav') ad = '/sinav.html';
   if (ad === '/notlarim') ad = '/notlarim.html';
   const tam = path.normalize(path.join(publicDir, ad));

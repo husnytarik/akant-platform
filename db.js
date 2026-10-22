@@ -201,6 +201,19 @@ CREATE TABLE IF NOT EXISTS mufredat_isaret (
   tarih                 INTEGER NOT NULL,
   PRIMARY KEY (teacher_membership_id, class_id, ders, kod)
 );
+-- Kişinin kendi girdiği iletişim bilgileri (giriş telefonu ve kimlik users tablosunda kalır, yalnızca yönetim değiştirir)
+CREATE TABLE IF NOT EXISTS profil_bilgi (
+  user_id        INTEGER PRIMARY KEY REFERENCES users(id),
+  email          TEXT NOT NULL DEFAULT '',
+  telefon2       TEXT NOT NULL DEFAULT '',
+  il             TEXT NOT NULL DEFAULT '',
+  ilce           TEXT NOT NULL DEFAULT '',
+  adres          TEXT NOT NULL DEFAULT '',
+  yakin_ad       TEXT NOT NULL DEFAULT '',
+  yakin_yakinlik TEXT NOT NULL DEFAULT '',
+  yakin_telefon  TEXT NOT NULL DEFAULT '',
+  guncelleme     INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,
