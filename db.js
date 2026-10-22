@@ -214,6 +214,60 @@ CREATE TABLE IF NOT EXISTS profil_bilgi (
   yakin_telefon  TEXT NOT NULL DEFAULT '',
   guncelleme     INTEGER NOT NULL
 );
+-- Öğrenci kulüpleri: okulun açtığı, müfredatı olmayan etkinlik grupları; haftalık ders programında "Kulüp" saati vardır
+CREATE TABLE IF NOT EXISTS kulupler (
+  id         INTEGER PRIMARY KEY,
+  branch_id  INTEGER NOT NULL REFERENCES branches(id),
+  ad         TEXT NOT NULL,
+  tema       TEXT NOT NULL DEFAULT '',
+  aciklama   TEXT NOT NULL DEFAULT '',
+  kontenjan  INTEGER NOT NULL,
+  gun        INTEGER NOT NULL,
+  ders_saati INTEGER NOT NULL,
+  seviyeler  TEXT NOT NULL DEFAULT '',
+  aktif      INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  UNIQUE (branch_id, ad)
+);
+CREATE TABLE IF NOT EXISTS kulup_ogretmen (
+  kulup_id              INTEGER NOT NULL REFERENCES kulupler(id),
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  PRIMARY KEY (kulup_id, teacher_membership_id)
+);
+-- Bir öğrenci aynı anda tek kulüpte (kulüp saati sınıfça ortak olduğu için)
+CREATE TABLE IF NOT EXISTS kulup_uyeler (
+  kulup_id              INTEGER NOT NULL REFERENCES kulupler(id),
+  student_membership_id INTEGER NOT NULL UNIQUE REFERENCES memberships(id),
+  tarih                 INTEGER NOT NULL,
+  PRIMARY KEY (kulup_id, student_membership_id)
+);
+-- Öğrenci/veli "girmek istiyorum" der (en çok 3 tercih); yerleştirmeyi okul yapar
+CREATE TABLE IF NOT EXISTS kulup_talepleri (
+  id                    INTEGER PRIMARY KEY,
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  kulup_id              INTEGER NOT NULL REFERENCES kulupler(id),
+  sira                  INTEGER NOT NULL CHECK (sira BETWEEN 1 AND 3),
+  durum                 TEXT NOT NULL DEFAULT 'bekliyor' CHECK (durum IN ('bekliyor','kabul','red')),
+  tarih                 INTEGER NOT NULL,
+  UNIQUE (student_membership_id, kulup_id),
+  UNIQUE (student_membership_id, sira)
+);
+CREATE TABLE IF NOT EXISTS kulup_calismalar (
+  id                    INTEGER PRIMARY KEY,
+  kulup_id              INTEGER NOT NULL REFERENCES kulupler(id),
+  tarih                 TEXT NOT NULL,
+  tur                   TEXT NOT NULL CHECK (tur IN ('deney','proje','sunum','gezi','diger')),
+  baslik                TEXT NOT NULL,
+  aciklama              TEXT NOT NULL DEFAULT '',
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  created_at            INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS kulup_katilim (
+  calisma_id            INTEGER NOT NULL REFERENCES kulup_calismalar(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  durum                 TEXT NOT NULL CHECK (durum IN ('geldi','gelmedi','izinli')),
+  PRIMARY KEY (calisma_id, student_membership_id)
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

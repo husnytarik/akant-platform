@@ -11,6 +11,9 @@ if (db.prepare('SELECT COUNT(*) AS n FROM courses').get().n === 0) {
     'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Beden Eğitimi', 'Görsel Sanatlar', 'Müzik',
     'Din Kültürü', 'Bilişim']) ekle.run(d);
 }
+// Öğrenci kulüpleri programda bu adla yer alır; öğretmeni yoktur (kulüp danışmanları kulüp kaydındadır)
+export const KULUP_DERSI = 'Kulüp';
+db.prepare('INSERT OR IGNORE INTO courses (name) VALUES (?)').run(KULUP_DERSI);
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -34,7 +37,8 @@ function ogretmenHatasi(uyelikId, sinif, dersId) {
 function otomatikYerlestir(sinifId, bastan) {
   db.exec('BEGIN');
   try {
-    if (bastan) db.prepare('DELETE FROM schedule WHERE class_id = ?').run(sinifId);
+    // Kulüp saatleri okulca belirlenir; sınıf programı sıfırlanırken korunur
+    if (bastan) db.prepare("DELETE FROM schedule WHERE class_id = ? AND assignment_id NOT IN (SELECT a.id FROM assignments a JOIN courses c ON c.id = a.course_id WHERE c.name = 'Kulüp')").run(sinifId);
     const atamalar = db.prepare(`
       SELECT a.id, a.weekly_hours AS saat, m.user_id AS ogr,
              (SELECT COUNT(*) FROM schedule s WHERE s.assignment_id = a.id) AS kullanilan
@@ -138,8 +142,8 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
         FROM schedule s
         JOIN assignments a ON a.id = s.assignment_id
         JOIN courses co ON co.id = a.course_id
-        JOIN memberships m ON m.id = a.teacher_membership_id
-        JOIN users u ON u.id = m.user_id
+        LEFT JOIN memberships m ON m.id = a.teacher_membership_id
+        LEFT JOIN users u ON u.id = m.user_id
         WHERE s.class_id = ?`).all(sinifId).map(h => stilEkle(h, st)),
     });
     return true;
@@ -220,7 +224,7 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
   if (yol === '/api/yonetim/program-temizle') {
     const sinifId = tamSayi(b.sinifId, 1, 1e9);
     if (!sinifId || !db.prepare('SELECT 1 FROM classes WHERE id = ?').get(sinifId)) return hata(404, 'Sınıf bulunamadı');
-    const n = db.prepare('DELETE FROM schedule WHERE class_id = ?').run(sinifId).changes;
+    const n = db.prepare("DELETE FROM schedule WHERE class_id = ? AND assignment_id NOT IN (SELECT a.id FROM assignments a JOIN courses c ON c.id = a.course_id WHERE c.name = 'Kulüp')").run(sinifId).changes;
     denetle(o.user_id, 'program-temizle', { sinifId, n: Number(n) });
     json(res, 200, { tamam: true, silinen: Number(n) });
     return true;
@@ -335,7 +339,8 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
                                        FROM assignments a LEFT JOIN memberships m ON m.id = a.teacher_membership_id
                                        WHERE a.id = ?`).get(atamaId);
   if (!atama || atama.class_id !== sinifId) return hata(400, 'Bu ders/öğretmen ataması bu sınıfa ait değil');
-  if (!atama.teacher_membership_id) return hata(409, 'Önce bu ders için öğretmen atayın');
+  const kulupMu = db.prepare('SELECT 1 FROM courses WHERE id = ? AND name = ?').get(atama.course_id, KULUP_DERSI);
+  if (!atama.teacher_membership_id && !kulupMu) return hata(409, 'Önce bu ders için öğretmen atayın');
 
   const kullanilan = db.prepare(`SELECT COUNT(*) AS n FROM schedule
                                  WHERE assignment_id = ? AND NOT (class_id = ? AND day = ? AND period = ?)`)

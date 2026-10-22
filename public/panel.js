@@ -120,6 +120,7 @@ const IKON_YOL = {
   'devamsizlik-ogrenci': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
   teslim: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
 };
+IKON_YOL['kulup-yonetimi'] = IKON_YOL['kulup-ogretmen'] = IKON_YOL['kulup-ogrenci'] = 'M12 3l2.4 5.2 5.6.7-4.1 3.9 1.1 5.6L12 15.6 7 18.4l1.1-5.6L4 8.9l5.6-.7z';
 IKON_YOL['etut-ogrenci'] = IKON_YOL['etut-veli'] = IKON_YOL.etut;
 
 function modulIkon(id) {

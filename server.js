@@ -15,6 +15,7 @@ import { sinavApi } from './sinav.js';
 import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
 import { profilApi } from './profil.js';
+import { kulupApi } from './kulup.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
@@ -41,6 +42,9 @@ const MODULLER = [
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
   { id: 'duyuru', ad: 'Duyuru ve kampanyalar', aciklama: 'Okul adına duyuru ve bildirim yayınlama', roller: ['yonetim'] },
   { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'] },
+  { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yol: '/kulupler' },
+  { id: 'kulup-ogretmen', ad: 'Kulüplerim', aciklama: 'Danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar', roller: ['ogretmen'], yol: '/kulupler' },
+  { id: 'kulup-ogrenci', ad: 'Kulüp', aciklama: 'Kulüp tercihleri ve kulübüm', roller: ['ogrenci', 'veli'], yol: '/kulupler' },
   { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
   { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
@@ -286,6 +290,12 @@ async function api(req, res, url) {
     if (await profilApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname.startsWith('/api/kulup/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await kulupApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
   if (url.pathname.startsWith('/api/etut/')) {
@@ -435,6 +445,7 @@ function statik(req, res, url) {
   if (ad === '/kurulum') ad = '/kurulum.html';
   if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
+  if (ad === '/kulupler') ad = '/kulupler.html';
   if (ad === '/yoklama') { res.writeHead(302, { Location: '/derslerim' + url.search }); res.end(); return; }
   if (ad === '/devamsizlik') ad = '/devamsizlik.html';
   if (ad === '/derslerim') ad = '/derslerim.html';

@@ -37,10 +37,15 @@ function detayCiz(g, d) {
   k.replaceChildren();
   k.classList.remove('gizli');
   const ust = el('div', undefined, 'detay-ust');
-  ust.append(dersChip(d.kisa, d.renk), el('strong', d.ders));
+  ust.append(dersChip(d.kisa, d.renk), el('strong', d.kulup !== undefined ? 'Kulüp' + (d.kulup ? ' · ' + d.kulup : '') : d.ders));
   k.appendChild(ust);
   k.appendChild(el('p', `${tarihYaz(g.tarih)} · ${d.dersSaati}. ders · ${d.aralik}${d.ogretmen ? ' · ' + d.ogretmen : ''}`, 'alt'));
-  if (d.iptal) {
+  if (d.kulup !== undefined) {
+    k.appendChild(el('p', d.kulup ? 'Haftalık kulüp çalışması.' : 'Henüz bir kulübe yerleştirilmedi.', 'alt'));
+    const a = el('a', 'Kulüp sayfası');
+    a.href = '/kulupler';
+    k.appendChild(a);
+  } else if (d.iptal) {
     k.appendChild(el('p', 'Bu ders iptal edildi.'));
   } else if (d.islendi) {
     k.appendChild(el('p', `İşlenen konu: ${d.konu || '—'}`));
@@ -94,7 +99,7 @@ function gunCiz() {
     if (o.tur === 'ders') zaman.append(el('strong', `${d.dersSaati}.`), el('span', o.bas));
     else zaman.append(el('strong', 'Etüt'), el('span', o.bas));
     const orta = el('div', undefined, 'ders-orta');
-    orta.append(el('strong', o.tur === 'ders' ? d.ders : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`), el('span', d.ogretmen || ''));
+    orta.append(el('strong', o.tur === 'ders' ? (d.kulup ? `Kulüp · ${d.kulup}` : d.ders) : `${d.ders || 'Genel'}${d.konu ? ' · ' + d.konu : ''}`), el('span', d.ogretmen || ''));
     satir.style.setProperty('--ders', d.renk || '#475569');
     satir.append(zaman, orta);
     // Ders durumu (işlendi/iptal) ile öğrencinin devamı (geldi/gelmedi/geç/izinli) ayrı rozetlerdir

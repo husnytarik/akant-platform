@@ -71,7 +71,7 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       FROM class_students cs JOIN assignments a ON a.class_id = cs.class_id JOIN courses co ON co.id = a.course_id
       LEFT JOIN yoklama y ON y.assignment_id = a.id AND y.cancelled = 0 AND y.completed_at IS NOT NULL
       LEFT JOIN yoklama_kayit k ON k.yoklama_id = y.id AND k.student_membership_id = cs.student_membership_id
-      WHERE cs.student_membership_id = ? GROUP BY a.id ORDER BY co.name`).all(id);
+      WHERE cs.student_membership_id = ? AND co.name != 'Kulüp' GROUP BY a.id ORDER BY co.name`).all(id);
     json(res, 200, { dersler: dersler.map(d => stilEkle({ ...d, haftalik: Number(d.haftalik), islenen: Number(d.islenen), gelmedi: Number(d.gelmedi) }, st)) });
     return true;
   }
@@ -105,6 +105,9 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       FROM etut_katilimcilar k JOIN etutler e ON e.id = k.etut_id LEFT JOIN courses co ON co.id = e.course_id
       LEFT JOIN memberships tm ON tm.id = e.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
       WHERE k.student_membership_id = ? AND e.date = ? AND e.status = 'planli' ORDER BY e.start_time`);
+    const kulup = db.prepare('SELECT k.id, k.ad FROM kulup_uyeler ku JOIN kulupler k ON k.id = ku.kulup_id WHERE ku.student_membership_id = ?').get(cocuk.id);
+    const kulupHocalari = kulup && db.prepare(`SELECT GROUP_CONCAT(u.full_name, ', ') AS ad FROM kulup_ogretmen ko JOIN memberships m ON m.id = ko.teacher_membership_id
+      JOIN users u ON u.id = m.user_id WHERE ko.kulup_id = ?`).get(kulup.id).ad;
     const gunler = [];
     for (let i = 1; i <= 7; i++) {
       const g = i % 7;
@@ -112,7 +115,8 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
       gunler.push({
         tarih: t, gun: g, acik: gunAcik(g),
         dersler: sinif ? satir.all(cocuk.id, t, sinif.id, g).map(r => stilEkle({
-          dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ogretmen, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
+          dersSaati: r.dersSaati, ders: r.ders, ogretmen: r.ders === 'Kulüp' ? kulupHocalari || null : r.ogretmen,
+          kulup: r.ders === 'Kulüp' ? (kulup ? kulup.ad : '') : undefined, aralik: DERS_ZAMANLARI[r.dersSaati - 1]?.join('–') || '',
           iptal: !!r.iptal, islendi: !!r.tamamlandi && !r.iptal, konu: r.tamamlandi && !r.iptal ? r.konu : null, devam: r.tamamlandi && !r.iptal ? r.devam : null,
           odevler: odev.all(r.atamaId, t < bugun() ? bugun() : t),
         }, st)) : [],
