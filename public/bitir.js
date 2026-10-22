@@ -2,6 +2,33 @@
 // derslerim.js içinden çağrılır (el, api, mesaj, kazanimSecici, ders, tarih, bugun oradan gelir).
 const BITIR_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['gec', 'Geç'], ['izinli', 'İzinli']];
 
+// Bitmiş ders önce salt okunur açılır; değişiklik için "Düzenle"ye basılır (yanlışlıkla dokunma kaydı bozmasın).
+// cubuk: [iptal, kaydet] çubuğu; bitmediyse doğrudan form olarak açılır.
+function saltOkunurKur(k, bolumler, cubuk, iptal, rozet, bitmis, yenile) {
+  const kap = el('fieldset', undefined, 'salt-kap');
+  kap.append(...bolumler);
+  if (!bitmis) return k.append(kap, cubuk);
+  kap.disabled = true;
+  rozet.textContent = 'Tamamlandı';
+  const duzenle = el('button', 'Düzenle', 'birincil'); duzenle.type = 'button';
+  const salt = el('div', undefined, 'kaydet-cubuk');
+  salt.append(duzenle);
+  const vazgec = el('button', 'Vazgeç', 'ikincil'); vazgec.type = 'button';
+  vazgec.addEventListener('click', yenile);
+  duzenle.addEventListener('click', () => {
+    mesaj('');
+    kap.disabled = false;
+    rozet.textContent = 'Düzenleniyor';
+    const diger = el('div', undefined, 'adim');
+    const dUst = el('div', undefined, 'adim-ust'); dUst.append(el('h3', 'Diğer işlemler'));
+    diger.append(dUst, iptal);
+    kap.after(diger);
+    cubuk.prepend(vazgec);
+    salt.replaceWith(cubuk);
+  });
+  k.append(kap, salt);
+}
+
 async function bitirCiz(k, bitince) {
   const q = new URLSearchParams({ tarih, sinifId: ders.sinifId, dersSaati: ders.dersSaati });
   const r = await api('/api/yoklama/ogrenciler?' + q);
@@ -122,7 +149,7 @@ async function bitirCiz(k, bitince) {
     bitince();
   });
 
-  k.append(yok, konuKutu, odevKutu, cubuk);
+  saltOkunurKur(k, [yok, konuKutu, odevKutu], cubuk, iptal, durumEtiket, !!r.veri.tamam && !r.veri.iptal, () => bitirCiz(k, bitince));
   hapCiz();
 }
 
@@ -227,6 +254,6 @@ async function kulupBitirCiz(k, bitince) {
     bitince();
   });
 
-  k.append(yok, konuKutu, cubuk);
+  saltOkunurKur(k, [yok, konuKutu], cubuk, iptal, rozet, !!c?.tamam, () => kulupBitirCiz(k, bitince));
   if (basladi) hapCiz();
 }

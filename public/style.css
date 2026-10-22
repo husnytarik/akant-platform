@@ -1786,3 +1786,9 @@ a.bant-kimlik:hover h1 { text-decoration: underline; text-underline-offset: 3px;
 /* Kulüp: dersler Derslerim'de açılır; kartta bağlantılar */
 a.kl-calisma { text-decoration: none; }
 .kl-git-dugme { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; margin: 4px 0 12px; }
+
+/* Bitmiş ders: salt okunur görünüm (Düzenle'ye basılana kadar) */
+.salt-kap { border: 0; margin: 0; padding: 0; min-width: 0; }
+.salt-kap:disabled input, .salt-kap:disabled select, .salt-kap:disabled textarea { opacity: 1; color: var(--murekkep); -webkit-text-fill-color: var(--murekkep); background: transparent; }
+.salt-kap:disabled .yok-hap, .salt-kap:disabled .ks-cip { opacity: 1; cursor: default; }
+.salt-kap:disabled .yok-toplu { display: none; }
