@@ -1,4 +1,5 @@
 // Yönetim: kulüpler, öğrenci talepleri ve kulüp saatleri
+// Kulübe dokununca salt okunur ayrıntı açılır; değişiklik yalnızca "Düzenle" ile, kaydet çubuklu ekranda yapılır.
 let veri = null;
 const kok = $('icerik');
 let sekmeAc, aktifSekme = 'kulupler';
@@ -9,18 +10,29 @@ async function yukle() {
   veri = r.veri;
 }
 
-(async () => {
-  await yukle();
-  if (!veri) return;
-  sekmeAc = sekmeler(kok, [['kulupler', 'Kulüpler'], ['talepler', 'Talepler'], ['saatler', 'Kulüp saatleri']], 'kulupler', (ad, alan) => {
+// Sekmeli ana ekran
+function ana(ilk) {
+  kok.replaceChildren();
+  sekmeAc = sekmeler(kok, [['kulupler', 'Kulüpler'], ['talepler', 'Talepler'], ['saatler', 'Kulüp saatleri']], ilk, (ad, alan) => {
     aktifSekme = ad;
     if (ad === 'kulupler') kulupler(alan);
     else if (ad === 'talepler') talepler(alan);
     else saatler(alan);
   });
+}
+
+(async () => {
+  await yukle();
+  if (veri) ana('kulupler');
 })();
 
 const chip = (m, sinif) => el('span', m, 'kl-chip' + (sinif ? ' ' + sinif : ''));
+
+async function yeniden(m) {
+  await yukle();
+  ana(aktifSekme);
+  if (m) mesaj(m, 'tamam');
+}
 
 // ---------- Kulüpler ----------
 function kulupler(alan) {
@@ -28,84 +40,86 @@ function kulupler(alan) {
   const yeni = el('button', '+ Yeni kulüp', 'birincil kucuk');
   yeni.type = 'button';
   ust.append(el('p', `${veri.kulupler.filter(k => k.aktif).length} aktif kulüp`, 'kl-not'), yeni);
-  const form = el('div');
   const liste = el('div', undefined, 'kl-liste');
-  alan.append(ust, form, liste);
-  yeni.addEventListener('click', () => kulupForm(form, null));
+  alan.append(ust, liste);
+  yeni.addEventListener('click', () => kulupForm(null));
 
   if (!veri.kulupler.length) liste.append(el('p', 'Henüz kulüp yok. “Yeni kulüp” ile ilkini açın.', 'bos-not'));
-  for (const k of veri.kulupler) liste.append(kulupKarti(k, form));
+  for (const k of veri.kulupler) liste.append(kulupKarti(k));
 }
 
-function kulupKarti(k, form) {
-  const kart = el('article', undefined, 'kl-kart' + (k.aktif ? '' : ' pasif'));
+function kulupKarti(k) {
+  const kart = el('button', undefined, 'kl-kart secilebilir' + (k.aktif ? '' : ' pasif'));
+  kart.type = 'button';
   const baslik = el('div', undefined, 'kl-baslik');
   const b = el('div');
   b.append(el('h3', k.ad), el('p', k.tema || ' ', 'kl-not'));
-  baslik.append(b, chip(`${k.uyeSayisi}/${k.kontenjan}`, k.uyeSayisi >= k.kontenjan ? 'dolu' : ''));
-  kart.append(baslik);
-  kart.append(el('p', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'));
+  const sag = el('div', undefined, 'kl-sag');
+  sag.append(chip(`${k.uyeSayisi}/${k.kontenjan}`, k.uyeSayisi >= k.kontenjan ? 'dolu' : ''), el('span', '›', 'kl-git'));
+  baslik.append(b, sag);
+  kart.append(baslik, el('p', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'));
   const etiketler = el('div', undefined, 'kl-chipler');
   for (const d of k.seviyeler) etiketler.append(chip(`${d}. sınıf`));
   if (k.bekleyen) etiketler.append(chip(`${k.bekleyen} talep`, 'vurgu'));
   if (!k.aktif) etiketler.append(chip('Pasif'));
-  kart.append(etiketler);
-  kart.append(el('p', k.ogretmenler.map(o => o.ad).join(', '), 'kl-kisi'));
-  if (k.aciklama) kart.append(el('p', k.aciklama, 'kl-aciklama'));
-
-  const dugmeler = el('div', undefined, 'kl-dugmeler');
-  const dugme = (m, f, sinif) => { const d = el('button', m, 'ikincil kucuk ' + (sinif || '')); d.type = 'button'; d.addEventListener('click', f); dugmeler.append(d); return d; };
-  const uyeKap = el('div');
-  let uyeAcik = false;
-  dugme('Düzenle', () => { kulupForm(form, k); form.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-  dugme('Üyeler', async () => {
-    uyeAcik = !uyeAcik;
-    uyeKap.replaceChildren();
-    if (!uyeAcik) return;
-    const r = await api('/api/kulup/uyeler?kulupId=' + k.id);
-    if (!r.ok) return mesaj(r.veri.hata || 'Üyeler alınamadı', 'hata');
-    if (!r.veri.uyeler.length) uyeKap.append(el('p', 'Henüz üye yok.', 'kl-not'));
-    for (const u of r.veri.uyeler) {
-      const s = el('div', undefined, 'kl-uye');
-      s.append(el('span', u.ad), el('small', u.sinif || ''));
-      const c = el('button', 'Çıkar', 'kl-mini');
-      c.type = 'button';
-      c.addEventListener('click', async () => {
-        if (!confirm(`${u.ad} kulüpten çıkarılsın mı?`)) return;
-        const x = await api('/api/kulup/cikar', { ogrenciId: u.uyelikId });
-        if (!x.ok) return mesaj(x.veri.hata || 'Çıkarılamadı', 'hata');
-        await yeniden('Öğrenci kulüpten çıkarıldı');
-      });
-      s.append(c);
-      uyeKap.append(s);
-    }
-  });
-  dugme(k.aktif ? 'Pasife al' : 'Aktif et', async () => {
-    const r = await api('/api/kulup/durum', { id: k.id, aktif: !k.aktif });
-    if (!r.ok) return mesaj(r.veri.hata || 'Güncellenemedi', 'hata');
-    await yeniden(k.aktif ? 'Kulüp pasife alındı' : 'Kulüp aktif');
-  });
-  dugme('Sil', async () => {
-    if (!confirm(`${k.ad} silinsin mi?`)) return;
-    const r = await api('/api/kulup/sil', { id: k.id });
-    if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
-    await yeniden('Kulüp silindi');
-  }, 'tehlike');
-  kart.append(dugmeler, uyeKap);
+  kart.append(etiketler, el('p', k.ogretmenler.map(o => o.ad).join(', '), 'kl-kisi'));
+  kart.addEventListener('click', () => kulupDetay(k.id));
   return kart;
 }
 
-async function yeniden(m) {
-  await yukle();
-  sekmeAc(aktifSekme);
-  if (m) mesaj(m, 'tamam');
+// Salt okunur ayrıntı
+async function kulupDetay(id) {
+  const k = veri.kulupler.find(x => x.id === id);
+  if (!k) return ana('kulupler');
+  const r = await api('/api/kulup/uyeler?kulupId=' + id);
+  if (!r.ok) return mesaj(r.veri.hata || 'Üyeler alınamadı', 'hata');
+  ekranAc(kok);
+  kok.append(geriDugme('Kulüpler', () => ana('kulupler')));
+
+  const ust = el('div', undefined, 'kl-ust');
+  const b = el('div');
+  b.append(el('h2', k.ad, 'kl-buyuk'), el('p', k.tema || ' ', 'kl-not'));
+  const duzenle = el('button', 'Düzenle', 'birincil kucuk');
+  duzenle.type = 'button';
+  duzenle.addEventListener('click', () => kulupForm(k));
+  ust.append(b, duzenle);
+
+  const genel = el('div', undefined, 'adim');
+  const gUst = el('div', undefined, 'adim-ust');
+  gUst.append(el('h3', 'Kulüp'), el('span', k.aktif ? 'Aktif' : 'Pasif', 'rozet ' + (k.aktif ? 'tamam' : 'bekliyor')));
+  genel.append(gUst,
+    bilgi('Zaman', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`),
+    bilgi('Sınıflar', k.seviyeler.map(d => `${d}. sınıf`).join(', ') || '-'),
+    bilgi('Öğretmenler', k.ogretmenler.map(o => o.ad).join(', ') || '-'),
+    bilgi('Kontenjan', `${k.uyeSayisi} / ${k.kontenjan}` + (k.bekleyen ? ` · ${k.bekleyen} bekleyen talep` : '')));
+  if (k.aciklama) genel.append(bilgi('Tanıtım', k.aciklama));
+
+  const uyeler = el('div', undefined, 'adim');
+  const uUst = el('div', undefined, 'adim-ust');
+  uUst.append(el('h3', 'Üyeler'), el('span', String(r.veri.uyeler.length), 'alt'));
+  uyeler.append(uUst);
+  if (!r.veri.uyeler.length) uyeler.append(el('p', 'Henüz üye yok.', 'kl-not'));
+  for (const u of r.veri.uyeler) {
+    const s = el('div', undefined, 'kl-uye');
+    s.append(el('span', u.ad), el('small', u.sinif || ''));
+    uyeler.append(s);
+  }
+  kok.append(ust, genel, uyeler);
 }
 
-function kulupForm(kap, k) {
-  kap.replaceChildren();
-  const f = el('form', undefined, 'kl-form');
-  f.noValidate = true;
-  f.append(el('h3', k ? 'Kulübü düzenle' : 'Yeni kulüp'));
+// Düzenleme ekranı (k boşsa yeni kulüp)
+async function kulupForm(k) {
+  let uyeListesi = [];
+  if (k) {
+    const r = await api('/api/kulup/uyeler?kulupId=' + k.id);
+    if (!r.ok) return mesaj(r.veri.hata || 'Üyeler alınamadı', 'hata');
+    uyeListesi = r.veri.uyeler;
+  }
+  ekranAc(kok);
+  const ust = el('div', undefined, 'adim-ust kl-ekran-ust');
+  ust.append(el('h2', k ? k.ad : 'Yeni kulüp', 'kl-buyuk'), el('span', k ? 'Düzenleniyor' : 'Yeni kayıt', 'rozet ' + (k ? 'tamam' : 'bekliyor')));
+  kok.append(ust);
+
   const ad = Object.assign(el('input'), { maxLength: 60, value: k?.ad || '', placeholder: 'Örn. Robotik ve Kodlama' });
   const tema = Object.assign(el('input'), { maxLength: 60, value: k?.tema || '', placeholder: 'Örn. Bilim ve teknoloji' });
   const aciklama = Object.assign(el('textarea'), { rows: 3, maxLength: 500, value: k?.aciklama || '', placeholder: 'Öğrenci ve velinin göreceği kısa tanıtım' });
@@ -115,15 +129,18 @@ function kulupForm(kap, k) {
   secenekler(saat, veri.zamanlar.map((z, i) => [i + 1, `${i + 1}. ders · ${z}`]), 'Ders saati seçin');
   if (k) { gun.value = String(k.gun); saat.value = String(k.dersSaati); }
 
-  f.append(alan('Kulüp adı', ad), alan('Tema (isteğe bağlı)', tema), alan('Tanıtım (isteğe bağlı)', aciklama),
-    alan('Kontenjan', kontenjan));
+  const bilgiKutu = el('div', undefined, 'adim');
   const zaman = el('div', undefined, 'kl-iki');
   zaman.append(alan('Gün', gun), alan('Ders saati', saat));
-  f.append(zaman);
+  bilgiKutu.append(el('div', undefined, 'adim-ust'), alan('Kulüp adı', ad), alan('Tema (isteğe bağlı)', tema), alan('Tanıtım (isteğe bağlı)', aciklama),
+    alan('Kontenjan', kontenjan), zaman);
+  bilgiKutu.firstChild.append(el('h3', 'Bilgiler'));
 
   const secimKutusu = (baslik, ipucu, ogeler, secili) => {
-    const kutu = el('fieldset', undefined, 'kl-secim');
-    kutu.append(el('legend', baslik));
+    const kutu = el('div', undefined, 'adim');
+    const u = el('div', undefined, 'adim-ust');
+    u.append(el('h3', baslik));
+    kutu.append(u);
     if (ipucu) kutu.append(el('p', ipucu, 'kl-not'));
     const girdiler = [];
     const sar = el('div', undefined, 'kl-secenekler');
@@ -138,36 +155,84 @@ function kulupForm(kap, k) {
       girdiler.push(g);
     }
     kutu.append(sar);
-    f.append(kutu);
+    kok.append(kutu);
     return () => girdiler.filter(g => g.checked).map(g => g.value);
   };
+  kok.append(bilgiKutu);
   const duzeyler = secimKutusu('Hangi sınıflar katılabilir', 'Seçilen düzeylerin programında bu gün ve saatte “Kulüp” dersi olmalı (Kulüp saatleri sekmesi).',
     veri.duzeyler.map(d => [d, `${d}. sınıf`]), k?.seviyeler || []);
   const hocalar = secimKutusu('Kulüp öğretmenleri', '', veri.ogretmenler.map(o => [o.uyelikId, o.ad]), (k?.ogretmenler || []).map(o => String(o.uyelikId)));
 
-  const dugmeler = el('div', undefined, 'kl-dugmeler');
-  const kaydet = el('button', k ? 'Kaydet' : 'Kulübü aç', 'birincil kucuk');
-  kaydet.type = 'submit';
-  const vazgec = el('button', 'Vazgeç', 'ikincil kucuk');
-  vazgec.type = 'button';
-  vazgec.addEventListener('click', () => kap.replaceChildren());
-  dugmeler.append(kaydet, vazgec);
-  f.append(dugmeler);
+  if (k) {
+    // Üye çıkarma, pasife alma ve silme yalnızca düzenleme ekranında
+    const uyeler = el('div', undefined, 'adim');
+    const uUst = el('div', undefined, 'adim-ust');
+    uUst.append(el('h3', 'Üyeler'));
+    uyeler.append(uUst);
+    if (!uyeListesi.length) uyeler.append(el('p', 'Henüz üye yok.', 'kl-not'));
+    for (const u of uyeListesi) {
+      const s = el('div', undefined, 'kl-uye');
+      s.append(el('span', u.ad), el('small', u.sinif || ''));
+      const c = el('button', 'Çıkar', 'kl-mini');
+      c.type = 'button';
+      c.addEventListener('click', async () => {
+        if (!confirm(`${u.ad} kulüpten çıkarılsın mı?`)) return;
+        const x = await api('/api/kulup/cikar', { ogrenciId: u.uyelikId });
+        if (!x.ok) return mesaj(x.veri.hata || 'Çıkarılamadı', 'hata');
+        s.remove();
+        mesaj(`${u.ad} kulüpten çıkarıldı`, 'tamam');
+      });
+      s.append(c);
+      uyeler.append(s);
+    }
 
-  f.addEventListener('submit', async e => {
-    e.preventDefault();
+    const diger = el('div', undefined, 'adim');
+    const dUst = el('div', undefined, 'adim-ust');
+    dUst.append(el('h3', 'Diğer işlemler'));
+    const dugmeler = el('div', undefined, 'kl-dugmeler');
+    const dugme = (m, f, sinif) => { const d = el('button', m, 'ikincil kucuk ' + (sinif || '')); d.type = 'button'; d.addEventListener('click', f); dugmeler.append(d); };
+    dugme(k.aktif ? 'Pasife al' : 'Aktif et', async () => {
+      const r = await api('/api/kulup/durum', { id: k.id, aktif: !k.aktif });
+      if (!r.ok) return mesaj(r.veri.hata || 'Güncellenemedi', 'hata');
+      await yeniden(k.aktif ? 'Kulüp pasife alındı' : 'Kulüp aktif');
+    });
+    dugme('Kulübü sil', async () => {
+      if (!confirm(`${k.ad} silinsin mi?`)) return;
+      const r = await api('/api/kulup/sil', { id: k.id });
+      if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
+      await yeniden('Kulüp silindi');
+    }, 'tehlike');
+    diger.append(dUst, dugmeler);
+    kok.append(uyeler, diger);
+  }
+
+  const vazgec = el('button', 'Vazgeç', 'ikincil');
+  vazgec.type = 'button';
+  vazgec.addEventListener('click', async () => {
+    if (!k) return ana('kulupler');
+    await yukle();
+    kulupDetay(k.id);
+  });
+  const kaydet = el('button', k ? 'Değişiklikleri kaydet' : 'Kulübü aç', 'birincil');
+  kaydet.type = 'button';
+  const cubuk = el('div', undefined, 'kaydet-cubuk');
+  cubuk.append(vazgec, kaydet);
+  kok.append(cubuk);
+
+  kaydet.addEventListener('click', async () => {
     kaydet.disabled = true;
     const r = await api('/api/kulup/kaydet', {
       id: k?.id, ad: ad.value, tema: tema.value, aciklama: aciklama.value, kontenjan: Number(kontenjan.value),
       gun: gun.value, dersSaati: Number(saat.value), seviyeler: duzeyler(), ogretmenler: hocalar().map(Number),
     });
     kaydet.disabled = false;
-    if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
-    kap.replaceChildren();
-    await yeniden(k ? 'Kulüp güncellendi' : 'Kulüp açıldı');
+    if (!r.ok) { mesaj(r.veri.hata || 'Kaydedilemedi', 'hata'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    await yukle();
+    if (!k) return yeniden('Kulüp açıldı');
+    await kulupDetay(k.id);
+    mesaj('Kulüp güncellendi', 'tamam');
   });
-  kap.append(f);
-  ad.focus();
+  ad.focus({ preventScroll: true });
 }
 
 // ---------- Talepler ----------

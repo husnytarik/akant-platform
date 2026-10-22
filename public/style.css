@@ -1767,3 +1767,18 @@ a.bant-kimlik:hover h1 { text-decoration: underline; text-underline-offset: 3px;
 
 /* Kulüp saatleri formunda düğme alanlardan ayrık dursun */
 .kl-form > button.birincil, .kl-form > .birincil:last-child { margin-top: 12px; }
+
+/* Kulüp ayrıntı ve düzenleme ekranları */
+.kl-geri { display: inline-flex; align-items: center; margin: 0 0 8px; padding: 6px 0; border: 0; background: transparent; color: var(--ana); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; width: auto; height: auto; }
+.kl-buyuk { margin: 0; font-family: var(--serif); font-size: 1.35rem; line-height: 1.25; color: var(--murekkep); }
+.kl-ekran-ust { margin: 4px 0 10px; align-items: center; }
+.kl-bilgi { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px solid #f0e8d6; }
+.kl-bilgi:first-of-type { border-top: 0; }
+.kl-bilgi small { color: var(--soluk); font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
+.kl-bilgi span { font-size: .92rem; line-height: 1.45; }
+.kl-git { color: var(--soluk); font-size: 1.3rem; line-height: 1; }
+.kl-kart.secilebilir:active { background: #faf6ec; }
+.kl-kart .kl-sag .kl-git { margin-left: 2px; }
+.kl-ust .kl-not + .birincil, .kl-ust > div + .birincil { flex: none; }
+.adim .kl-alan:first-of-type label { margin-top: 4px; }
+.kl-buyuk { text-transform: none; letter-spacing: 0; }

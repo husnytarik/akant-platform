@@ -53,6 +53,21 @@ function secenekler(sel, liste, bos) {
   for (const [d, e] of liste) sel.append(Object.assign(el('option', e), { value: String(d) }));
 }
 
+// Ayrıntı ekranları: geri düğmesi ve salt okunur bilgi satırı
+function geriDugme(metin, f) {
+  const b = el('button', '← ' + metin, 'kl-geri');
+  b.type = 'button';
+  b.addEventListener('click', f);
+  return b;
+}
+function bilgi(etiket, deger) {
+  const s = el('div', undefined, 'kl-bilgi');
+  s.append(el('small', etiket), typeof deger === 'string' ? el('span', deger) : deger);
+  return s;
+}
+// Ekran değişince başa dön, eski mesajı sil
+function ekranAc(kok) { mesaj(''); window.scrollTo(0, 0); kok.replaceChildren(); }
+
 (async () => {
   const r = await api('/api/ben');
   if (!r.ok) return;

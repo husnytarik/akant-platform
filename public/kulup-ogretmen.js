@@ -1,20 +1,22 @@
 // Öğretmen: danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar (yoklamalı)
+// Çalışmaya dokununca salt okunur ayrıntı açılır; değişiklik yalnızca "Düzenle" ile, kaydet çubuklu ekranda yapılır.
 const kok = $('icerik');
 let veri = null;
 
-async function yukle() {
+async function yukle(goster = true) {
   const r = await api('/api/kulup/kuluplerim');
   if (!r.ok) return mesaj(r.veri.hata || 'Kulüpler alınamadı', 'hata');
   veri = r.veri;
-  ciz();
+  if (goster) ciz();
 }
 yukle();
 
 const chip = (m, sinif) => el('span', m, 'kl-chip' + (sinif ? ' ' + sinif : ''));
 const DEVAM = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
+const DEVAM_AD = Object.fromEntries(DEVAM);
 
 function ciz() {
-  kok.replaceChildren();
+  ekranAc(kok);
   if (!veri.kulupler.length) return kok.append(el('p', 'Danışmanı olduğunuz bir kulüp yok.', 'bos-not'));
   for (const k of veri.kulupler) kok.append(kart(k));
 }
@@ -29,10 +31,9 @@ function kart(k) {
   const ortak = k.ogretmenler.filter(o => o.ad).map(o => o.ad);
   if (ortak.length > 1) c.append(el('p', 'Danışmanlar: ' + ortak.join(', '), 'kl-kisi'));
 
-  const form = el('div');
   const yeni = el('button', '+ Çalışma ekle', 'birincil kucuk');
   yeni.type = 'button';
-  yeni.addEventListener('click', () => calismaForm(form, k, null));
+  yeni.addEventListener('click', () => calismaForm(k, null));
 
   const uyeler = el('details', undefined, 'kl-detay');
   uyeler.append(el('summary', `Üyeler (${k.uyeler.length})`));
@@ -46,7 +47,7 @@ function kart(k) {
 
   const ust = el('div', undefined, 'kl-ust');
   ust.append(el('h4', 'Haftalık çalışmalar'), yeni);
-  c.append(ust, form);
+  c.append(ust);
 
   if (!k.calismalar.length) c.append(el('p', 'Henüz çalışma girilmedi.', 'kl-not'));
   for (const w of k.calismalar) {
@@ -54,23 +55,58 @@ function kart(k) {
     s.type = 'button';
     const sol = el('div');
     sol.append(el('b', w.baslik), el('small', `${tarihYaz(w.tarih)} · ${TUR[w.tur]}`));
-    s.append(sol, el('span', `${w.geldi}/${w.geldi + w.gelmedi + w.izinli}`, 'kl-sayi'));
-    s.addEventListener('click', async () => {
-      const r = await api('/api/kulup/calisma?id=' + w.id);
-      if (!r.ok) return mesaj(r.veri.hata || 'Çalışma alınamadı', 'hata');
-      calismaForm(form, k, r.veri);
-      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    s.append(sol, el('span', `${w.geldi}/${w.geldi + w.gelmedi + w.izinli}`, 'kl-sayi'), el('span', '›', 'kl-git'));
+    s.addEventListener('click', () => calismaDetay(k, w.id));
     c.append(s);
   }
   return c;
 }
 
-function calismaForm(kap, k, mevcut) {
-  kap.replaceChildren();
-  const f = el('form', undefined, 'kl-form');
-  f.noValidate = true;
-  f.append(el('h3', mevcut ? 'Çalışmayı düzenle' : 'Yeni çalışma'));
+// Salt okunur ayrıntı
+async function calismaDetay(k, id) {
+  const r = await api('/api/kulup/calisma?id=' + id);
+  if (!r.ok) return mesaj(r.veri.hata || 'Çalışma alınamadı', 'hata');
+  const { calisma: w, katilim } = r.veri;
+  ekranAc(kok);
+  kok.append(geriDugme(k.ad, ciz));
+
+  const ust = el('div', undefined, 'kl-ust');
+  const b = el('div');
+  b.append(el('h2', w.baslik, 'kl-buyuk'), el('p', `${tarihYaz(w.tarih)} · ${TUR[w.tur]}`, 'kl-not'));
+  const duzenle = el('button', 'Düzenle', 'birincil kucuk');
+  duzenle.type = 'button';
+  duzenle.addEventListener('click', () => calismaForm(k, r.veri));
+  ust.append(b, duzenle);
+
+  const genel = el('div', undefined, 'adim');
+  const gUst = el('div', undefined, 'adim-ust');
+  gUst.append(el('h3', 'Çalışma'));
+  genel.append(gUst, bilgi('Kulüp', k.ad), bilgi('Tarih', tarihYaz(w.tarih)), bilgi('Tür', TUR[w.tur]));
+  genel.append(bilgi('Açıklama', w.aciklama || 'Açıklama girilmemiş'));
+
+  const say = { geldi: 0, gelmedi: 0, izinli: 0 };
+  for (const u of k.uyeler) { const d = katilim[u.uyelikId]; if (d) say[d]++; }
+  const yok = el('div', undefined, 'adim');
+  const yUst = el('div', undefined, 'adim-ust');
+  yUst.append(el('h3', 'Yoklama'), el('span', `${say.geldi} geldi · ${say.gelmedi} gelmedi · ${say.izinli} izinli`, 'alt'));
+  yok.append(yUst);
+  if (!k.uyeler.length) yok.append(el('p', 'Kulüpte öğrenci yok.', 'kl-not'));
+  for (const u of k.uyeler) {
+    const s = el('div', undefined, 'kl-yok');
+    const d = katilim[u.uyelikId];
+    s.append(el('span', u.ad), d ? chip(DEVAM_AD[d], d === 'gelmedi' ? 'vurgu' : d === 'geldi' ? 'tamam' : '') : chip('Girilmemiş'));
+    yok.append(s);
+  }
+  kok.append(ust, genel, yok);
+}
+
+// Düzenleme ekranı (mevcut boşsa yeni çalışma)
+function calismaForm(k, mevcut) {
+  ekranAc(kok);
+  const ust = el('div', undefined, 'adim-ust kl-ekran-ust');
+  ust.append(el('h2', mevcut ? mevcut.calisma.baslik : 'Yeni çalışma', 'kl-buyuk'), el('span', mevcut ? 'Düzenleniyor' : 'Yeni kayıt', 'rozet ' + (mevcut ? 'tamam' : 'bekliyor')));
+  kok.append(ust);
+
   const tarih = Object.assign(el('input'), { type: 'date', value: mevcut?.calisma.tarih || veri.bugun, max: veri.bugun });
   const tur = el('select');
   secenekler(tur, Object.entries(TUR));
@@ -79,10 +115,16 @@ function calismaForm(kap, k, mevcut) {
   const aciklama = Object.assign(el('textarea'), { rows: 3, maxLength: 1000, value: mevcut?.calisma.aciklama || '', placeholder: 'Bu hafta ne yapıldı? (isteğe bağlı)' });
   const iki = el('div', undefined, 'kl-iki');
   iki.append(alan('Tarih', tarih), alan('Tür', tur));
-  f.append(iki, alan('Başlık', baslik), alan('Açıklama', aciklama));
+  const genel = el('div', undefined, 'adim');
+  const gUst = el('div', undefined, 'adim-ust');
+  gUst.append(el('h3', 'Çalışma'), el('span', k.ad, 'alt'));
+  genel.append(gUst, iki, alan('Başlık', baslik), alan('Açıklama', aciklama));
 
   const durum = {};
-  f.append(el('h4', 'Yoklama'));
+  const yok = el('div', undefined, 'adim');
+  const yUst = el('div', undefined, 'adim-ust');
+  yUst.append(el('h3', 'Yoklama'));
+  yok.append(yUst);
   const yoklama = el('div', undefined, 'kl-yoklama');
   if (!k.uyeler.length) yoklama.append(el('p', 'Kulüpte öğrenci yok.', 'kl-not'));
   for (const u of k.uyeler) {
@@ -103,17 +145,11 @@ function calismaForm(kap, k, mevcut) {
     s.append(grup);
     yoklama.append(s);
   }
-  f.append(yoklama);
+  yok.append(yoklama);
+  kok.append(genel, yok);
 
-  const dugmeler = el('div', undefined, 'kl-dugmeler');
-  const kaydet = el('button', 'Kaydet', 'birincil kucuk');
-  kaydet.type = 'submit';
-  const vazgec = el('button', 'Vazgeç', 'ikincil kucuk');
-  vazgec.type = 'button';
-  vazgec.addEventListener('click', () => kap.replaceChildren());
-  dugmeler.append(kaydet, vazgec);
   if (mevcut) {
-    const sil = el('button', 'Sil', 'ikincil kucuk tehlike');
+    const sil = el('button', 'Çalışmayı sil', 'ikincil kucuk tehlike');
     sil.type = 'button';
     sil.addEventListener('click', async () => {
       if (!confirm('Bu çalışma kaydı silinsin mi?')) return;
@@ -122,21 +158,34 @@ function calismaForm(kap, k, mevcut) {
       await yukle();
       mesaj('Çalışma silindi', 'tamam');
     });
-    dugmeler.append(sil);
+    const diger = el('div', undefined, 'adim');
+    const dUst = el('div', undefined, 'adim-ust');
+    dUst.append(el('h3', 'Diğer işlemler'));
+    diger.append(dUst, sil);
+    kok.append(diger);
   }
-  f.append(dugmeler);
 
-  f.addEventListener('submit', async e => {
-    e.preventDefault();
+  const vazgec = el('button', 'Vazgeç', 'ikincil');
+  vazgec.type = 'button';
+  vazgec.addEventListener('click', () => mevcut ? calismaDetay(k, mevcut.calisma.id) : ciz());
+  const kaydet = el('button', mevcut ? 'Değişiklikleri kaydet' : 'Çalışmayı kaydet', 'birincil');
+  kaydet.type = 'button';
+  const cubuk = el('div', undefined, 'kaydet-cubuk');
+  cubuk.append(vazgec, kaydet);
+  kok.append(cubuk);
+
+  kaydet.addEventListener('click', async () => {
     kaydet.disabled = true;
     const r = await api('/api/kulup/calisma-kaydet', {
       id: mevcut?.calisma.id, kulupId: k.id, tarih: tarih.value, tur: tur.value, baslik: baslik.value, aciklama: aciklama.value, katilim: durum,
     });
     kaydet.disabled = false;
-    if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
-    await yukle();
+    if (!r.ok) { mesaj(r.veri.hata || 'Kaydedilemedi', 'hata'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    await yukle(false);
+    k = veri.kulupler.find(x => x.id === k.id) || k;
+    if (mevcut) await calismaDetay(k, mevcut.calisma.id);
+    else ciz();
     mesaj('Çalışma kaydedildi', 'tamam');
   });
-  kap.append(f);
-  baslik.focus();
+  baslik.focus({ preventScroll: true });
 }
