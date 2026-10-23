@@ -61,25 +61,25 @@ async function raporAc(ogrenciId) {
 
   // Rapora girecek dönemler (veli toplantısı dönemine göre seçilir)
   const secili = new Set(v.donemler.map(d => d.id));
-  const secim = el('fieldset', undefined, 'kl-secim gz-ekran');
-  secim.append(el('legend', 'Rapordaki dönemler'));
-  const sar = el('div', undefined, 'kl-secenekler');
+  const secim = el('section', undefined, 'gz-secim gz-ekran');
+  secim.append(el('h3', 'Rapordaki dönemler'));
   const icerik = el('div');
   const ciz = () => raporCiz(icerik, v, secili, { duzenle: g => gorusmeAc(g), sil: () => raporAc(ogrenciId) });
   for (const d of v.donemler) {
-    const l = el('label', undefined, 'kl-sec');
+    const l = el('label', undefined, 'gz-secim-satir');
     const g = Object.assign(el('input'), { type: 'checkbox', checked: true });
     g.addEventListener('change', () => { g.checked ? secili.add(d.id) : secili.delete(d.id); ciz(); });
-    l.append(g, el('span', d.ad));
-    sar.append(l);
+    const yazi = el('span', undefined, 'gz-secim-yazi');
+    yazi.append(el('b', d.ad), el('small', aralikYaz(d)));
+    l.append(g, yazi, durumRozeti(d));
+    secim.append(l);
   }
-  secim.append(sar);
-
-  const arac = el('div', undefined, 'kl-dugmeler gz-ekran');
+  const arac = el('div', undefined, 'gz-secim-arac');
   const yazdir = el('button', 'Yazdır', 'birincil kucuk'); yazdir.type = 'button';
   yazdir.addEventListener('click', () => window.print());
   const notEkle = el('button', '+ Toplantı / görüşme notu', 'ikincil kucuk'); notEkle.type = 'button';
-  arac.append(yazdir, notEkle);
+  arac.append(notEkle, yazdir);
+  secim.append(arac);
   const formYeri = el('div', undefined, 'gz-ekran');
   const gorusmeAc = g => {
     formYeri.replaceChildren(gorusmeForm({
@@ -89,7 +89,7 @@ async function raporAc(ogrenciId) {
     formYeri.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   notEkle.addEventListener('click', () => gorusmeAc(null));
-  kok.append(secim, arac, formYeri, icerik);
+  kok.append(secim, formYeri, icerik);
   ciz();
 }
 

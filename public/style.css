@@ -1821,3 +1821,12 @@ a.kl-calisma { text-decoration: none; }
   .gz-baslik, .gz-giris { break-inside: avoid; }
 }
 .kl-baslik[role="button"] { cursor: pointer; }
+.gz-secim { margin: 6px 0 4px; padding: 14px 16px 16px; border: 1px solid var(--ince); border-radius: 18px; background: #fffdf8; }
+.gz-secim h3 { margin: 0 0 6px; font-size: 1rem; }
+.gz-secim-satir { display: flex; align-items: center; gap: 12px; margin: 0; padding: 11px 0; border-top: 1px solid #f0e8d6; cursor: pointer; }
+.gz-secim-satir input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--ana); }
+.gz-secim-yazi { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gz-secim-yazi b { font-size: .94rem; }
+.gz-secim-yazi small { color: var(--soluk); font-size: .8rem; }
+.gz-secim-arac { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; padding-top: 14px; border-top: 1px solid #f0e8d6; }
+.gz-secim-arac button { width: 100%; }
