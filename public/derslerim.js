@@ -328,12 +328,17 @@ async function ogrencilerCiz() {
 // Çok kazanımlı kayıtlar satır satır saklanır; listede tek satıra indirilir
 const kazanimYaz = k => (k ? (k.includes('\n') ? 'Kazanımlar: ' : 'Kazanım: ') + k.split('\n').map(x => x.split(' – ')[0]).join(', ') : '');
 
-function listeKart(baslik, alt, aciklama, sil) {
+function listeKart(baslik, alt, aciklama, sil, takip) {
   const kart = el('div', undefined, 'not-kart');
   const ust = el('div', undefined, 'not-ust');
   ust.append(el('strong', baslik), el('span', alt, 'alt'));
   kart.appendChild(ust);
   if (aciklama) kart.appendChild(el('p', aciklama));
+  if (takip) {
+    const t = el('a', takip.metin, 'ikincil kucuk od-takip-baglanti');
+    t.href = takip.href;
+    kart.appendChild(t);
+  }
   const s = el('button', 'Sil', 'ikincil tehlike kucuk');
   s.type = 'button';
   s.addEventListener('click', sil);
@@ -426,6 +431,9 @@ async function odevlerCiz() {
       const s = await api('/api/ders/odev-sil', { id: x.id });
       if (!s.ok) return mesaj(s.veri.hata || 'Hata', 'hata');
       sekmeAc(sekme);
+    }, x.gorunur && x.gorunur > bugun ? null : {
+      metin: x.yapildi || x.soru ? `Takip et · ${x.yapildi} onay bekliyor${x.soru ? `, ${x.soru} soru` : ''}` : `Takip et · ${x.dogrulandi}/${x.toplam} doğrulandı`,
+      href: '/odev-takip?odevId=' + x.id,
     }));
   }
 }

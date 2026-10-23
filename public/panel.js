@@ -115,6 +115,7 @@ const IKON_YOL = {
   rapor: 'M5 20V10M12 20V4M19 20v-7',
   notlarim: 'M5 20V10M12 20V4M19 20v-7',
   'odev-takip': 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h3',
+  'odev-takip-ogretmen': 'M6 3h12v18H6zM9 8h6M9 13l2 2 4-4',
   ogrencim: 'M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5',
   'devamsizlik-veli': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
   'devamsizlik-ogrenci': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',

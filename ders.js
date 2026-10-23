@@ -4,6 +4,7 @@ import { dersStilleri, stilEkle } from './stil.js';
 import { kazanimCoz } from './mufredat.js';
 import { ogretmenKulupDersleri } from './kulup.js';
 import { KULUP_DERSI } from './ders-programi.js';
+import { DURUMLAR, odevSayilari } from './odev.js';
 
 const tamSayi = (v, min, max) => {
   const n = Number(v);
@@ -54,14 +55,18 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
     const sonuc = ogrenciler.map(id => {
       const ad = db.prepare('SELECT u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?').get(id).ad;
       const odevler = db.prepare(`
-        SELECT od.id, od.title AS baslik, od.note AS aciklama, od.kazanim, od.due_date AS sonTarih, co.name AS ders, u.full_name AS ogretmen
+        SELECT od.id, od.title AS baslik, od.note AS aciklama, od.kazanim, od.due_date AS sonTarih, co.name AS ders, u.full_name AS ogretmen,
+          COALESCE(d.durum, 'verildi') AS durum,
+          (SELECT COUNT(*) FROM odev_dosyalari f WHERE f.odev_id = od.id AND f.student_membership_id = cs.student_membership_id AND f.amac = 'teslim') AS dosya,
+          (SELECT COUNT(*) FROM odev_mesajlari mm WHERE mm.odev_id = od.id AND mm.student_membership_id = cs.student_membership_id AND mm.yazan_rol = 'ogretmen' AND mm.okundu = 0) AS yeniMesaj
         FROM class_students cs JOIN assignments a ON a.class_id = cs.class_id
         JOIN odevler od ON od.assignment_id = a.id JOIN courses co ON co.id = a.course_id
+        LEFT JOIN odev_durumlari d ON d.odev_id = od.id AND d.student_membership_id = cs.student_membership_id
         LEFT JOIN memberships tm ON tm.id = a.teacher_membership_id LEFT JOIN users u ON u.id = tm.user_id
         WHERE cs.student_membership_id = ? AND (od.visible_from IS NULL OR od.visible_from <= ?) ORDER BY od.due_date DESC, od.id DESC LIMIT 60`).all(id, bugun());
-      return { ad, odevler };
+      return { id, ad, odevler };
     });
-    json(res, 200, { bugun: bugun(), ogrenciler: sonuc });
+    json(res, 200, { bugun: bugun(), durumlar: DURUMLAR, ogrenciler: sonuc });
     return true;
   }
 
@@ -283,7 +288,8 @@ export async function dersApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/ders/odevler') {
     const a = atamaGetir(url.searchParams.get('atamaId'));
     if (!a) return hata(404, 'Ders bulunamadı');
-    json(res, 200, { odevler: db.prepare('SELECT id, title AS baslik, note AS aciklama, kazanim, due_date AS sonTarih, visible_from AS gorunur FROM odevler WHERE assignment_id = ? ORDER BY due_date DESC, id DESC LIMIT 100').all(a.id) });
+    json(res, 200, { odevler: db.prepare(`SELECT od.id, od.title AS baslik, od.note AS aciklama, od.kazanim, od.due_date AS sonTarih, od.visible_from AS gorunur, ${odevSayilari}
+      FROM odevler od JOIN assignments a ON a.id = od.assignment_id WHERE od.assignment_id = ? ORDER BY od.due_date DESC, od.id DESC LIMIT 100`).all(a.id) });
     return true;
   }
 

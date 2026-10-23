@@ -180,8 +180,13 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
       db.prepare('INSERT INTO konular (assignment_id, date, title, note, created_at, yoklama_id, kazanim) VALUES (?,?,?,?,?,?,?)')
         .run(ders.atamaId, tarih, konu, aciklama || null, simdi, id, kazanim || null);
       // Ödev: öğrenci/veli "Ödevler" sayfasında görünür; boş bırakılırsa bu dersin ödevi kaldırılır
-      db.prepare('DELETE FROM odevler WHERE yoklama_id = ?').run(id);
-      if (odevBaslik) {
+      // Var olan ödev yerinde güncellenir ki öğrencilerin işaretleri, fotoğrafları ve soruları kaybolmasın
+      const mevcutOdev = db.prepare('SELECT id FROM odevler WHERE yoklama_id = ?').get(id);
+      if (!odevBaslik) db.prepare('DELETE FROM odevler WHERE yoklama_id = ?').run(id);
+      else if (mevcutOdev) {
+        db.prepare('UPDATE odevler SET assignment_id = ?, title = ?, note = ?, due_date = ?, kazanim = ? WHERE id = ?')
+          .run(ders.atamaId, odevBaslik, odevAciklama || null, odevTarih, odevKazanim || null, mevcutOdev.id);
+      } else {
         db.prepare('INSERT INTO odevler (assignment_id, title, note, due_date, created_at, yoklama_id, kazanim) VALUES (?,?,?,?,?,?,?)')
           .run(ders.atamaId, odevBaslik, odevAciklama || null, odevTarih, simdi, id, odevKazanim || null);
       }

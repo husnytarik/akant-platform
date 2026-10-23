@@ -6,8 +6,8 @@
   "description": "Akant Koleji okul yönetim platformu - giriş sistemi prototipi",
   "scripts": {
     "start": "node --no-warnings server.js",
-    "test-sunucu": "node --no-warnings db.js --seed && node --no-warnings ornek-veri.js && node --no-warnings etkinlik-verisi.js && node --no-warnings sinav-verisi.js && node --no-warnings kulup-verisi.js && node --no-warnings gelisim-verisi.js && node --no-warnings server.js",
-    "ornek": "node --no-warnings ornek-veri.js && node --no-warnings etkinlik-verisi.js && node --no-warnings sinav-verisi.js && node --no-warnings kulup-verisi.js && node --no-warnings gelisim-verisi.js",
+    "test-sunucu": "node --no-warnings db.js --seed && node --no-warnings ornek-veri.js && node --no-warnings etkinlik-verisi.js && node --no-warnings sinav-verisi.js && node --no-warnings kulup-verisi.js && node --no-warnings gelisim-verisi.js && node --no-warnings odev-takip-verisi.js && node --no-warnings server.js",
+    "ornek": "node --no-warnings ornek-veri.js && node --no-warnings etkinlik-verisi.js && node --no-warnings sinav-verisi.js && node --no-warnings kulup-verisi.js && node --no-warnings gelisim-verisi.js && node --no-warnings odev-takip-verisi.js",
     "seed": "node --no-warnings db.js --seed"
   },
   "engines": { "node": ">=22.5" }

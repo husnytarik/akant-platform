@@ -1,46 +1,65 @@
-function el(tag, metin, sinif) {
-  const e = document.createElement(tag);
-  if (metin !== undefined) e.textContent = metin;
-  if (sinif) e.className = sinif;
-  return e;
-}
+// Öğrenci: ödevlerini görür, yaptım / yapamadım işaretler, fotoğraf ekler, soru sorar. Veli: çocuklarının ödevlerini salt okunur izler.
+const kok = $('icerik');
+let veri = null;
 
-const AY = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-const kisa = t => t.split('-').reverse().join('.');
-
-(async () => {
-  const r = await fetch('/api/ders/odevlerim');
-  if (r.status === 401) { location.href = '/'; return; }
+async function yukle() {
+  const r = await api('/api/ders/odevlerim');
   if (!r.ok) { location.href = '/panel'; return; }
-  const { bugun, ogrenciler } = await r.json();
-  const liste = document.getElementById('liste');
-  if (!ogrenciler.length) liste.appendChild(el('p', 'Bağlı öğrenci bulunamadı.', 'alt'));
+  veri = r.veri;
+  liste();
+}
+yukle();
+
+function liste() {
+  ekranAc(kok);
+  const { bugun, ogrenciler, durumlar } = veri;
+  if (!ogrenciler.length) return kok.append(el('p', 'Bağlı öğrenci bulunamadı.', 'bos-not'));
   const gunFark = t => Math.round((new Date(t + 'T00:00:00Z') - new Date(bugun + 'T00:00:00Z')) / 86400000);
   for (const o of ogrenciler) {
-    liste.appendChild(el('h2', o.ad, 'baslik2'));
-    const bekleyen = o.odevler.filter(x => x.sonTarih >= bugun).length;
-    const ozet = el('div', undefined, 'odev-ozet');
-    for (const [say, ad, sinif] of [[bekleyen, 'Bekleyen', 'bekleyen'], [o.odevler.length - bekleyen, 'Süresi dolan', 'dolan']]) {
+    kok.append(el('h2', o.ad, 'baslik2'));
+    const sayi = d => o.odevler.filter(x => d.includes(x.durum)).length;
+    const ozet = el('div', undefined, 'odev-ozet od-uclu');
+    for (const [say, ad, sinif] of [
+      [sayi(['verildi', 'duzeltme', 'yapilamadi']), 'Yapılacak', 'bekleyen'],
+      [sayi(['yapildi']), 'Onay bekliyor', 'bekleyen'],
+      [sayi(['dogrulandi']), durumlar.dogrulandi.ad, 'dolan'],
+    ]) {
       const k = el('div', undefined, 'odev-sayac ' + sinif);
       k.append(el('strong', String(say)), el('span', ad));
-      ozet.appendChild(k);
+      ozet.append(k);
     }
-    liste.appendChild(ozet);
-    if (!o.odevler.length) liste.appendChild(el('p', 'Verilmiş ödev yok.', 'bos-not'));
+    kok.append(ozet);
+    if (!o.odevler.length) kok.append(el('p', 'Verilmiş ödev yok.', 'bos-not'));
     for (const x of o.odevler) {
-      const gecmis = x.sonTarih < bugun;
+      const bitti = x.durum === 'dogrulandi';
+      const gecmis = x.sonTarih < bugun && !bitti;
       const fark = gunFark(x.sonTarih);
-      const kart = el('div', undefined, 'odev-kart' + (gecmis ? ' gecmis' : fark <= 1 ? ' yakin' : ''));
+      const kart = el('button', undefined, 'odev-kart od-tikla' + (gecmis ? ' gecmis' : !bitti && fark <= 1 && x.durum === 'verildi' ? ' yakin' : bitti ? ' bitti' : ''));
+      kart.type = 'button';
       const [, a, g] = x.sonTarih.split('-');
       const rozet = el('div', undefined, 'tarih-rozet');
-      rozet.append(el('strong', String(Number(g))), el('span', AY[Number(a) - 1]));
+      rozet.append(el('strong', String(Number(g))), el('span', AYLAR[Number(a) - 1]));
       const orta = el('div', undefined, 'etut-orta');
       orta.append(el('strong', x.baslik), el('span', `${x.ders}${x.ogretmen ? ' · ' + x.ogretmen : ''}`, 'alt'));
-      if (x.aciklama) orta.appendChild(el('span', x.aciklama, 'odev-aciklama'));
-      if (x.kazanim) orta.appendChild(el('span', 'Kazanım: ' + x.kazanim, 'odev-aciklama'));
-      const sag = el('span', gecmis ? 'Süresi doldu' : fark === 0 ? 'Bugün' : fark === 1 ? 'Yarın' : `${fark} gün`, 'etiket odev-etiket');
-      kart.append(rozet, orta, sag);
-      liste.appendChild(kart);
+      if (x.aciklama) orta.append(el('span', x.aciklama, 'odev-aciklama'));
+      const etiketler = el('div', undefined, 'kl-chipler');
+      etiketler.append(durumChip(durumlar, x.durum));
+      if (!bitti) etiketler.append(chip(gecmis ? 'Süresi doldu' : fark === 0 ? 'Bugün' : fark === 1 ? 'Yarın' : `${fark} gün`));
+      if (x.dosya) etiketler.append(chip(`${x.dosya} fotoğraf`));
+      if (x.yeniMesaj) etiketler.append(chip('Yeni yanıt', 'vurgu'));
+      orta.append(etiketler);
+      kart.append(rozet, orta, el('span', '›', 'kl-git'));
+      kart.addEventListener('click', () => detay(o, x));
+      kok.append(kart);
     }
   }
-})();
+}
+
+async function detay(o, x) {
+  ekranAc(kok);
+  await odevEkrani(kok, {
+    odevId: x.id, ogrenciId: o.id, geriMetin: 'Ödevler',
+    geri: async () => { await yukle(); },
+    degisti: () => { /* liste geri dönüşte yeniden yüklenir */ },
+  });
+}

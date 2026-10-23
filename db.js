@@ -311,6 +311,43 @@ CREATE TABLE IF NOT EXISTS gelisim_gorusmeleri (
   yazan_membership_id   INTEGER NOT NULL REFERENCES memberships(id),
   created_at            INTEGER NOT NULL
 );
+-- Ödev takibi: öğrencinin işareti (yapıldı / yapamadı), öğretmenin doğrulaması; satır yoksa ödev "verildi" durumundadır
+CREATE TABLE IF NOT EXISTS odev_durumlari (
+  odev_id               INTEGER NOT NULL REFERENCES odevler(id) ON DELETE CASCADE,
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  durum                 TEXT NOT NULL CHECK (durum IN ('yapildi','yapilamadi','dogrulandi','duzeltme')),
+  ogrenci_notu          TEXT,
+  ogretmen_notu         TEXT,
+  isaret_zamani         INTEGER,
+  dogrulama_zamani      INTEGER,
+  guncelleme            INTEGER NOT NULL,
+  PRIMARY KEY (odev_id, student_membership_id)
+);
+-- Öğrencinin yüklediği fotoğraflar: mesaj_id boşsa ödevin teslimi, doluysa sorunun eki
+CREATE TABLE IF NOT EXISTS odev_dosyalari (
+  id                    INTEGER PRIMARY KEY,
+  odev_id               INTEGER NOT NULL REFERENCES odevler(id) ON DELETE CASCADE,
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  mesaj_id              INTEGER,
+  amac                  TEXT NOT NULL CHECK (amac IN ('teslim','soru')),
+  mime                  TEXT NOT NULL,
+  boyut                 INTEGER NOT NULL,
+  veri                  BLOB NOT NULL,
+  created_at            INTEGER NOT NULL
+);
+-- Ödev altındaki öğrenci-öğretmen yazışması (soru ve cevap); okundu: karşı taraf açıp gördü mü
+CREATE TABLE IF NOT EXISTS odev_mesajlari (
+  id                    INTEGER PRIMARY KEY,
+  odev_id               INTEGER NOT NULL REFERENCES odevler(id) ON DELETE CASCADE,
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  yazan_membership_id   INTEGER NOT NULL REFERENCES memberships(id),
+  yazan_rol             TEXT NOT NULL CHECK (yazan_rol IN ('ogrenci','ogretmen')),
+  metin                 TEXT NOT NULL,
+  okundu                INTEGER NOT NULL DEFAULT 0,
+  created_at            INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_odev_mesaj ON odev_mesajlari (odev_id, student_membership_id);
+CREATE INDEX IF NOT EXISTS ix_odev_dosya ON odev_dosyalari (odev_id, student_membership_id);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,
