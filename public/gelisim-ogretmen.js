@@ -74,7 +74,9 @@ async function ogrenciAc(o, sinif, mesajMetin) {
   const baslik = el('div', undefined, 'kl-ust');
   const b = el('div');
   b.append(el('h2', o.ad, 'kl-buyuk'), el('p', `${sinif.ad}${o.okulNo ? ' · No ' + o.okulNo : ''}`, 'kl-not'));
-  baslik.append(b);
+  const raporDugme = el('button', 'Rapor / Yazdır', 'ikincil kucuk'); raporDugme.type = 'button';
+  raporDugme.addEventListener('click', () => raporAcOgretmen(o, sinif));
+  baslik.append(b, raporDugme);
   kok.append(baslik);
 
   const girisler = new Map(rd.girisler.map(g => [g.baslikId, g.metin]));
@@ -161,6 +163,15 @@ async function ogrenciAc(o, sinif, mesajMetin) {
   gk.append(dg, formYeri);
   kok.append(gk);
   if (mesajMetin) mesaj(mesajMetin, 'tamam');
+}
+
+// Öğretmenin raporu: yalnızca kendi gözlemleri ve veli toplantısı / görüşme notları (yönetimin yazdıkları dahil)
+async function raporAcOgretmen(o, sinif) {
+  const r = await api('/api/gelisim/rapor?ogrenciId=' + o.id);
+  if (!r.ok) return mesaj(r.veri.hata || 'Rapor alınamadı', 'hata');
+  ekranAc(kok);
+  kok.append(geriDugme(o.ad, () => ogrenciAc(o, sinif)));
+  raporEkrani(kok, r.veri, { ogrenciId: o.id, yenile: () => raporAcOgretmen(o, sinif), not: 'Raporda yalnızca sizin girdiğiniz gözlemler yer alır; veli toplantısı ve görüşme notları yönetimin yazdıklarıyla birlikte görünür.' });
 }
 
 function girisBlogu(ad, yazi) {

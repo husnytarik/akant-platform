@@ -182,6 +182,43 @@ function raporCiz(kap, v, secili, { duzenle, sil } = {}) {
   kap.append(r);
 }
 
+// Rapor ekranı (yönetim ve öğretmen ortak): rapora girecek dönemler seçilir, yazdırılır, toplantı / görüşme notu eklenir.
+// Not ekleme ve düzenleme sonrası yenile() raporu yeniden yükler.
+function raporEkrani(kok, v, { ogrenciId, yenile, not }) {
+  const secili = new Set(v.donemler.map(d => d.id));
+  const secim = el('section', undefined, 'gz-secim gz-ekran');
+  secim.append(el('h3', 'Rapordaki dönemler'));
+  if (not) secim.append(el('p', not, 'kl-not'));
+  const icerik = el('div');
+  const ciz = () => raporCiz(icerik, v, secili, { duzenle: g => gorusmeAc(g), sil: yenile });
+  for (const d of v.donemler) {
+    const l = el('label', undefined, 'gz-secim-satir');
+    const g = Object.assign(el('input'), { type: 'checkbox', checked: true });
+    g.addEventListener('change', () => { g.checked ? secili.add(d.id) : secili.delete(d.id); ciz(); });
+    const yazi = el('span', undefined, 'gz-secim-yazi');
+    yazi.append(el('b', d.ad), el('small', aralikYaz(d)));
+    l.append(g, yazi, durumRozeti(d));
+    secim.append(l);
+  }
+  const arac = el('div', undefined, 'gz-secim-arac');
+  const yazdir = el('button', 'Yazdır', 'birincil kucuk'); yazdir.type = 'button';
+  yazdir.addEventListener('click', () => window.print());
+  const notEkle = el('button', '+ Toplantı / görüşme notu', 'ikincil kucuk'); notEkle.type = 'button';
+  arac.append(notEkle, yazdir);
+  secim.append(arac);
+  const formYeri = el('div', undefined, 'gz-ekran');
+  const gorusmeAc = g => {
+    formYeri.replaceChildren(gorusmeForm({
+      ogrenciId, donemler: v.donemler, bugun: v.bugun, mevcut: g || null,
+      bitince: m => yenile().then(() => mesaj(m, 'tamam')), vazgec: () => formYeri.replaceChildren(),
+    }));
+    formYeri.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  notEkle.addEventListener('click', () => gorusmeAc(null));
+  kok.append(secim, formYeri, icerik);
+  ciz();
+}
+
 (async () => {
   const r = await api('/api/ben');
   if (!r.ok) return;

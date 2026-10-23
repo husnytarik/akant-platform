@@ -55,42 +55,9 @@ async function raporSec(alanKutu) {
 async function raporAc(ogrenciId) {
   const r = await api('/api/gelisim/rapor?ogrenciId=' + ogrenciId);
   if (!r.ok) return mesaj(r.veri.hata || 'Rapor alınamadı', 'hata');
-  const v = r.veri;
   ekranAc(kok);
   kok.append(geriDugme('Rapor', () => ana('rapor')));
-
-  // Rapora girecek dönemler (veli toplantısı dönemine göre seçilir)
-  const secili = new Set(v.donemler.map(d => d.id));
-  const secim = el('section', undefined, 'gz-secim gz-ekran');
-  secim.append(el('h3', 'Rapordaki dönemler'));
-  const icerik = el('div');
-  const ciz = () => raporCiz(icerik, v, secili, { duzenle: g => gorusmeAc(g), sil: () => raporAc(ogrenciId) });
-  for (const d of v.donemler) {
-    const l = el('label', undefined, 'gz-secim-satir');
-    const g = Object.assign(el('input'), { type: 'checkbox', checked: true });
-    g.addEventListener('change', () => { g.checked ? secili.add(d.id) : secili.delete(d.id); ciz(); });
-    const yazi = el('span', undefined, 'gz-secim-yazi');
-    yazi.append(el('b', d.ad), el('small', aralikYaz(d)));
-    l.append(g, yazi, durumRozeti(d));
-    secim.append(l);
-  }
-  const arac = el('div', undefined, 'gz-secim-arac');
-  const yazdir = el('button', 'Yazdır', 'birincil kucuk'); yazdir.type = 'button';
-  yazdir.addEventListener('click', () => window.print());
-  const notEkle = el('button', '+ Toplantı / görüşme notu', 'ikincil kucuk'); notEkle.type = 'button';
-  arac.append(notEkle, yazdir);
-  secim.append(arac);
-  const formYeri = el('div', undefined, 'gz-ekran');
-  const gorusmeAc = g => {
-    formYeri.replaceChildren(gorusmeForm({
-      ogrenciId, donemler: v.donemler, bugun: v.bugun, mevcut: g || null,
-      bitince: m => raporAc(ogrenciId).then(() => mesaj(m, 'tamam')), vazgec: () => formYeri.replaceChildren(),
-    }));
-    formYeri.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
-  notEkle.addEventListener('click', () => gorusmeAc(null));
-  kok.append(secim, formYeri, icerik);
-  ciz();
+  raporEkrani(kok, r.veri, { ogrenciId, yenile: () => raporAc(ogrenciId) });
 }
 
 // ---------- Dönemler ----------
