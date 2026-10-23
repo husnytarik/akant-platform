@@ -1866,3 +1866,21 @@ input[type="file"][hidden] { display: none !important; }
 .gz-ogrenci .kl-chipler { flex: none; flex-wrap: nowrap; align-items: center; }
 .gz-ogrenci .kl-chip { flex: none; }
 .etut-orta .kl-chip { flex: none; }
+
+/* Gelişim gözlemleri: dönem seçici, özet kartı, ilerleme */
+.gz-donem-bar { display: flex; gap: 8px; margin: 2px -4px 14px; padding: 2px 4px; overflow-x: auto; scrollbar-width: none; }
+.gz-donem-bar::-webkit-scrollbar { display: none; }
+.gz-donem-dugme { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; margin: 0; padding: 0 16px; border: 1px solid var(--ince); border-radius: 999px; background: #fff; color: var(--soluk); font: inherit; font-size: .9rem; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.gz-donem-dugme[aria-pressed="true"] { border-color: var(--murekkep); background: var(--murekkep); color: #fff; font-weight: 600; }
+.gz-nokta { width: 8px; height: 8px; border-radius: 50%; background: #b9b2a3; }
+.gz-donem-dugme.acik .gz-nokta { background: #2e9d5b; }
+.gz-donem-dugme.yaklasan .gz-nokta { background: #d9a21b; }
+.gz-ozet { margin: 0 0 18px; padding: 18px 18px 16px; border-radius: 22px; background: linear-gradient(160deg, color-mix(in srgb, var(--ana) 9%, #fff), #fff 70%); border: 1px solid color-mix(in srgb, var(--ana) 16%, #fff); }
+.gz-ozet-ust { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gz-ozet-ust h2 { text-transform: none; letter-spacing: 0; color: var(--murekkep); margin: 0; font-family: var(--serif); font-size: 1.45rem; }
+.gz-ozet-tarih { margin: 6px 0 0; font-size: .86rem; color: var(--soluk); }
+.gz-ozet-not { margin: 2px 0 0; font-size: .9rem; font-weight: 600; color: var(--murekkep); }
+.gz-ilerleme { height: 8px; margin: 14px 0 6px; border-radius: 999px; background: #eee8db; overflow: hidden; }
+.gz-ilerleme i { display: block; height: 100%; border-radius: 999px; background: var(--ana); }
+.gz-ilerleme.ince { height: 5px; margin: 4px 0 8px; }
+.gz-ozet-say { margin: 0; font-size: .8rem; color: var(--soluk); }

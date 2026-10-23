@@ -12,6 +12,7 @@ async function yukle(donemId) {
 }
 yukle();
 
+const kisaAd = ad => ad.split(' (')[0];
 const secilenDonem = () => veri.donemler.find(d => d.id === veri.donemId);
 
 function ana() {
@@ -20,17 +21,35 @@ function ana() {
   if (!veri.siniflar.length) return kok.append(el('p', 'Size bağlı sınıf bulunamadı.', 'bos-not'));
   const d = secilenDonem();
 
-  const sec = el('select');
-  secenekler(sec, veri.donemler.map(x => [x.id, `${x.ad} · ${DURUM[x.durum]}`]));
-  sec.value = String(d.id);
-  sec.addEventListener('change', () => yukle(Number(sec.value)));
-  const ust = el('div', undefined, 'kl-form');
-  ust.append(alan('Dönem', sec));
-  const not = d.durum === 'acik' ? `Giriş ${tarihYaz(d.bitis)} tarihine kadar açık.`
-    : d.durum === 'yaklasan' ? `Bu dönem ${tarihYaz(d.baslangic)} tarihinde açılacak; şimdilik yalnızca görüntülenir.`
-    : 'Bu dönem kapandı; girişler yalnızca görüntülenir.';
-  ust.append(el('p', not + (d.toplantiTarihi ? ` Veli toplantısı: ${tarihYaz(d.toplantiTarihi)}.` : ''), 'kl-not'));
-  kok.append(ust);
+  // Dönem seçici: kısa adlı hap düğmeler (durum noktasıyla), altında seçili dönemin özeti
+  const bar = el('div', undefined, 'gz-donem-bar');
+  for (const x of veri.donemler) {
+    const dg = el('button', undefined, 'gz-donem-dugme ' + x.durum);
+    dg.type = 'button';
+    dg.setAttribute('aria-pressed', String(x.id === d.id));
+    dg.append(el('span', undefined, 'gz-nokta'), el('span', kisaAd(x.ad)));
+    dg.addEventListener('click', () => x.id !== d.id && yukle(x.id));
+    bar.append(dg);
+  }
+  kok.append(bar);
+
+  const toplamOgrenci = veri.siniflar.reduce((t, x) => t + x.ogrenciler.length, 0);
+  const toplamTamam = veri.siniflar.reduce((t, x) => t + x.ogrenciler.filter(y => veri.basliklar.length && y.girilen >= veri.basliklar.length).length, 0);
+  const ozet = el('section', undefined, 'gz-ozet ' + d.durum);
+  const ozetUst = el('div', undefined, 'gz-ozet-ust');
+  ozetUst.append(el('h2', kisaAd(d.ad)), durumRozeti(d));
+  const not = d.durum === 'acik' ? `Giriş ${tarihYaz(d.bitis)} tarihine kadar açık`
+    : d.durum === 'yaklasan' ? `${tarihYaz(d.baslangic)} tarihinde açılacak`
+    : 'Girişler yalnızca görüntülenir';
+  ozet.append(ozetUst, el('p', `${aralikYaz(d)}${d.toplantiTarihi ? ' · Veli toplantısı ' + tarihYaz(d.toplantiTarihi) : ''}`, 'gz-ozet-tarih'), el('p', not, 'gz-ozet-not'));
+  if (d.durum !== 'yaklasan') {
+    const cubuk = el('div', undefined, 'gz-ilerleme');
+    const dolgu = el('i');
+    dolgu.style.width = (toplamOgrenci ? Math.round(100 * toplamTamam / toplamOgrenci) : 0) + '%';
+    cubuk.append(dolgu);
+    ozet.append(cubuk, el('p', `${toplamTamam} / ${toplamOgrenci} öğrenci tamamlandı`, 'gz-ozet-say'));
+  }
+  kok.append(ozet);
 
   const toplam = veri.basliklar.length;
   for (const s of veri.siniflar) {
@@ -39,7 +58,11 @@ function ana() {
     const sol = el('div');
     sol.append(el('h3', s.ad), el('p', s.dersler || ' ', 'kl-not'));
     const tamam = s.ogrenciler.filter(o => toplam && o.girilen >= toplam).length;
-    b.append(sol, chip(`${tamam}/${s.ogrenciler.length} tamam`, s.ogrenciler.length && tamam === s.ogrenciler.length ? 'tamam' : ''));
+    b.append(sol, chip(`${tamam}/${s.ogrenciler.length}`, s.ogrenciler.length && tamam === s.ogrenciler.length ? 'tamam' : ''));
+    const ilerleme = el('div', undefined, 'gz-ilerleme ince');
+    const dolgu = el('i');
+    dolgu.style.width = (s.ogrenciler.length ? Math.round(100 * tamam / s.ogrenciler.length) : 0) + '%';
+    ilerleme.append(dolgu);
     const liste = el('div');
     liste.hidden = !acikSiniflar.has(s.id) && veri.siniflar.length > 1;
     b.setAttribute('role', 'button');
@@ -47,7 +70,7 @@ function ana() {
     const degis = () => { liste.hidden = !liste.hidden; liste.hidden ? acikSiniflar.delete(s.id) : acikSiniflar.add(s.id); };
     b.addEventListener('click', degis);
     b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); degis(); } });
-    kart.append(b, liste);
+    kart.append(b, ilerleme, liste);
     for (const o of s.ogrenciler) {
       const satir = el('button', undefined, 'gz-ogrenci');
       satir.type = 'button';
