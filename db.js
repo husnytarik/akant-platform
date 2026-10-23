@@ -271,6 +271,46 @@ CREATE TABLE IF NOT EXISTS kulup_katilim (
   durum                 TEXT NOT NULL CHECK (durum IN ('geldi','gelmedi','izinli')),
   PRIMARY KEY (calisma_id, student_membership_id)
 );
+-- Gelişim raporu: yönetim başlıkları ve dönemleri belirler, öğretmenler dönem açıkken öğrenci başına başlık başlık yazar
+CREATE TABLE IF NOT EXISTS gelisim_basliklari (
+  id         INTEGER PRIMARY KEY,
+  branch_id  INTEGER NOT NULL REFERENCES branches(id),
+  ad         TEXT NOT NULL,
+  aciklama   TEXT NOT NULL DEFAULT '',
+  sira       INTEGER NOT NULL,
+  aktif      INTEGER NOT NULL DEFAULT 1,
+  UNIQUE (branch_id, ad)
+);
+CREATE TABLE IF NOT EXISTS gelisim_donemleri (
+  id               INTEGER PRIMARY KEY,
+  branch_id        INTEGER NOT NULL REFERENCES branches(id),
+  ad               TEXT NOT NULL,
+  baslangic        TEXT NOT NULL,
+  bitis            TEXT NOT NULL,
+  toplanti_tarihi  TEXT,
+  created_at       INTEGER NOT NULL,
+  UNIQUE (branch_id, ad)
+);
+CREATE TABLE IF NOT EXISTS gelisim_girisleri (
+  donem_id              INTEGER NOT NULL REFERENCES gelisim_donemleri(id),
+  baslik_id             INTEGER NOT NULL REFERENCES gelisim_basliklari(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  teacher_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  metin                 TEXT NOT NULL,
+  guncelleme            INTEGER NOT NULL,
+  PRIMARY KEY (donem_id, baslik_id, student_membership_id, teacher_membership_id)
+);
+-- Veli toplantısı sonucu ya da veli görüşmesi notu (isteğe bağlı olarak bir döneme bağlı)
+CREATE TABLE IF NOT EXISTS gelisim_gorusmeleri (
+  id                    INTEGER PRIMARY KEY,
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  donem_id              INTEGER REFERENCES gelisim_donemleri(id),
+  tur                   TEXT NOT NULL CHECK (tur IN ('toplanti','gorusme')),
+  tarih                 TEXT NOT NULL,
+  notu                  TEXT NOT NULL,
+  yazan_membership_id   INTEGER NOT NULL REFERENCES memberships(id),
+  created_at            INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY,
   at         INTEGER NOT NULL,

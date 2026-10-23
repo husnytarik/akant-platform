@@ -16,6 +16,7 @@ import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
 import { profilApi } from './profil.js';
 import { kulupApi } from './kulup.js';
+import { gelisimApi } from './gelisim.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
@@ -45,6 +46,8 @@ const MODULLER = [
   { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yol: '/kulupler' },
   { id: 'kulup-ogretmen', ad: 'Kulüplerim', aciklama: 'Danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar', roller: ['ogretmen'], yol: '/kulupler' },
   { id: 'kulup-ogrenci', ad: 'Kulüp', aciklama: 'Kulüp tercihleri ve kulübüm', roller: ['ogrenci', 'veli'], yol: '/kulupler' },
+  { id: 'gelisim-yonetim', ad: 'Gelişim raporu', aciklama: 'Gözlem başlıkları ve dönemleri belirle, öğrenci raporunu yazdır', roller: ['yonetim'], yol: '/gelisim' },
+  { id: 'gelisim-ogretmen', ad: 'Gelişim gözlemleri', aciklama: 'Dönem geldiğinde öğrencilerim için gözlem gir, önceki girişleri takip et', roller: ['ogretmen'], yol: '/gelisim' },
   { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
   { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
@@ -296,6 +299,12 @@ async function api(req, res, url) {
     if (await kulupApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname.startsWith('/api/gelisim/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await gelisimApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
   if (url.pathname.startsWith('/api/etut/')) {
@@ -446,6 +455,7 @@ function statik(req, res, url) {
   if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
   if (ad === '/kulupler') ad = '/kulupler.html';
+  if (ad === '/gelisim') ad = '/gelisim.html';
   if (ad === '/yoklama') { res.writeHead(302, { Location: '/derslerim' + url.search }); res.end(); return; }
   if (ad === '/devamsizlik') ad = '/devamsizlik.html';
   if (ad === '/derslerim') ad = '/derslerim.html';

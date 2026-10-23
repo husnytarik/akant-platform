@@ -1792,3 +1792,32 @@ a.kl-calisma { text-decoration: none; }
 .salt-kap:disabled input, .salt-kap:disabled select, .salt-kap:disabled textarea { opacity: 1; color: var(--murekkep); -webkit-text-fill-color: var(--murekkep); background: transparent; }
 .salt-kap:disabled .yok-hap, .salt-kap:disabled .ks-cip { opacity: 1; cursor: default; }
 .salt-kap:disabled .yok-toplu { display: none; }
+
+/* Gelişim raporu */
+.gz-baslik-dugme { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.gz-baslik-dugme b { font-size: .95rem; }
+.gz-baslik-dugme small { color: var(--soluk); font-size: .8rem; line-height: 1.35; }
+.gz-ogrenci { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 0; border: 0; border-top: 1px solid #f0e8d6; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.gz-ogrenci > span:first-child { flex: 1; min-width: 0; font-size: .94rem; }
+.gz-rapor { margin: 8px 0 24px; }
+.gz-kurum { margin: 0 0 4px; font-size: .74rem; font-weight: 700; letter-spacing: .08em; color: var(--ana); }
+.gz-donem { margin: 20px 0 0; padding-top: 14px; border-top: 2px solid var(--ince); }
+.gz-donem-ust h3 { margin: 0; }
+.gz-donem-ust small { color: var(--soluk); font-size: .8rem; }
+.gz-baslik { margin: 14px 0 0; }
+.gz-baslik h4 { margin: 0 0 4px; font-size: .88rem; color: var(--ana); }
+.gz-giris { padding: 8px 0; border-top: 1px solid #f0e8d6; }
+.gz-giris small { display: block; color: var(--soluk); font-weight: 600; font-size: .8rem; }
+.gz-giris p, .gz-metin { margin: 3px 0 0; white-space: pre-line; font-size: .9rem; line-height: 1.5; }
+.gz-giris-ust { display: flex; flex-direction: column; gap: 1px; }
+.gz-giris-ust b { font-size: .88rem; }
+.gz-arac { margin-top: 6px; }
+.salt-kap textarea { width: 100%; box-sizing: border-box; font: inherit; }
+@media print {
+  .bant, .sekmeler, .gz-ekran, .gz-arac, .kaydet-cubuk, .kl-geri, .mesaj { display: none !important; }
+  body { background: #fff; }
+  main.kart { box-shadow: none; border: 0; padding: 0; max-width: none; margin: 0; background: #fff; }
+  .gz-donem { break-inside: auto; }
+  .gz-baslik, .gz-giris { break-inside: avoid; }
+}
+.kl-baslik[role="button"] { cursor: pointer; }
