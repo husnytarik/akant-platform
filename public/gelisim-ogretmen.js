@@ -149,12 +149,15 @@ async function ogrenciAc(o, sinif, mesajMetin) {
   const gk = bolum('Veli toplantısı ve görüşmeler');
   const formYeri = el('div');
   const yenile = m => ogrenciAc(o, sinif, m);
-  const formAc = g => formYeri.replaceChildren(gorusmeForm({ ogrenciId: o.id, donemler: v.donemler, bugun: v.bugun, mevcut: g || null, bitince: yenile, vazgec: () => formYeri.replaceChildren() }));
-  const ekle = el('button', '+ Not ekle', 'ikincil kucuk'); ekle.type = 'button';
-  ekle.addEventListener('click', () => formAc(null));
+  const formAc = (g, tur) => formYeri.replaceChildren(gorusmeForm({ ogrenciId: o.id, donemler: v.donemler, bugun: v.bugun, mevcut: g || null, tur, bitince: yenile, vazgec: () => formYeri.replaceChildren() }));
+  const dg = el('div', undefined, 'gz-secim-arac');
+  for (const [tur, etiket] of [['toplanti', '+ Veli toplantısı'], ['gorusme', '+ Veli görüşmesi']]) {
+    const e = el('button', etiket, 'ikincil kucuk'); e.type = 'button';
+    e.addEventListener('click', () => formAc(null, tur));
+    dg.append(e);
+  }
   if (!gorusmeler.length) gk.append(el('p', 'Henüz toplantı ya da görüşme notu yok.', 'kl-not'));
-  for (const g of gorusmeler) gk.append(gorusmeSatiri(g, { duzenle: formAc, sil: () => yenile('Not silindi') }));
-  const dg = el('div', undefined, 'kl-dugmeler'); dg.append(ekle);
+  for (const g of gorusmeler) gk.append(gorusmeSatiri(g, { duzenle: x => formAc(x), sil: () => yenile('Not silindi') }));
   gk.append(dg, formYeri);
   kok.append(gk);
   if (mesajMetin) mesaj(mesajMetin, 'tamam');

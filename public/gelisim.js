@@ -79,12 +79,12 @@ function bolum(baslik, sag) {
 }
 
 // Veli toplantısı / görüşmesi notu ekleme ve düzenleme formu (isteğe bağlı döneme bağlanır)
-function gorusmeForm({ ogrenciId, donemler, bugun, mevcut, bitince, vazgec }) {
+function gorusmeForm({ ogrenciId, donemler, bugun, mevcut, tur: ilkTur, bitince, vazgec }) {
   const kap = el('div', undefined, 'kl-form');
-  kap.append(el('h3', mevcut ? 'Notu düzenle' : 'Toplantı / görüşme notu'));
+  kap.append(el('h3', mevcut ? 'Notu düzenle' : ilkTur ? GOR_TUR[ilkTur] + ' notu' : 'Toplantı / görüşme notu'));
   const tur = el('select');
   secenekler(tur, Object.entries(GOR_TUR));
-  tur.value = mevcut?.tur || 'gorusme';
+  tur.value = mevcut?.tur || ilkTur || 'gorusme';
   const tarih = Object.assign(el('input'), { type: 'date', value: mevcut?.tarih || bugun });
   const donem = el('select');
   secenekler(donem, donemler.map(d => [d.id, d.ad]), 'Döneme bağlama');
