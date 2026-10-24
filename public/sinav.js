@@ -955,7 +955,7 @@ function kazanimArama(dersAd, programDers, sinifNo) {
     if (!aktif) return;
     const benim = ++sayac, girdi = aktif;
     const q = girdi.value.trim();
-    girdi.closest('.kz-soru').after(liste);
+    girdi.closest('.kz-sira').after(liste);
     if (!sel.value && q.length < 2) {
       liste.replaceChildren(el('p', 'Tüm programlarda aramak için en az 2 harf yazın veya yukarıdan ders seçin.', 'alt'));
       return liste.classList.remove('gizli');
@@ -987,6 +987,8 @@ function kazanimArama(dersAd, programDers, sinifNo) {
   return { arac, liste, baglan, kapat };
 }
 
+const hazirlikAcik = new Set(); // Açık tutulan ders satırları (yeniden çizimde korunur)
+
 async function hazirlikCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
@@ -997,33 +999,35 @@ async function hazirlikCiz() {
   if (!v.dersler.length) return kutu.append(el('p', 'Bu sınavda dersiniz yok.', 'alt'));
   if (ben.yon && v.durum !== 'aktif') kutu.append(el('p', 'Sınav taslak: öğretmenler henüz göremez. Soru sayılarını gözden geçirip Ayarlar bölümünden etkinleştirin.', 'kl-not'));
   kutu.append(el('p', ben.yon
-    ? 'Her dersin öğretmenleri soru soru cevap anahtarını ve kazanımı girip onaylar; siz de düzeltebilirsiniz. Cevap anahtarı tamamlanmadan öğrenci cevapları girilemez.'
-    : 'Dersinizin öğretmenleri bu bölümü ortak doldurur. Her soru için doğru şıkkı ve ölçtüğü kazanımı girip "Onayla"ya basın; yönetim dersin hazır olduğunu görür. Onaydan sonra da "Düzenle" ile değiştirebilirsiniz.', 'alt'));
-  for (const d of v.dersler) kutu.append(hazirlikDuzen === d.id ? hazirlikForm(d, v) : hazirlikKart(d));
+    ? 'Dersin öğretmenleri cevap anahtarını ve kazanımları girip onaylar; siz de düzeltebilirsiniz. Anahtar tamamlanmadan öğrenci cevapları girilemez.'
+    : 'Her soru için doğru şıkkı ve (isteğe bağlı) kazanımı girip "Onayla"ya basın. Onaydan sonra "Düzenle" ile değiştirebilirsiniz.', 'alt'));
+  const grup = el('div', undefined, 'hz-grup');
+  for (const d of v.dersler) grup.append(hazirlikDuzen === d.id ? hazirlikForm(d, v) : hazirlikKart(d, v.dersler.length === 1));
+  kutu.append(grup);
 }
 
-// Salt okunur kart: durum, ilerleme ve sorular
-function hazirlikKart(d) {
-  const kart = el('section', undefined, 'hz-kart');
-  const ust = el('div', undefined, 'hz-ust');
+// Salt okunur satır: ders, durum ve ilerleme tek satırda; açılınca soru listesi
+function hazirlikKart(d, tek) {
+  const satir = el('details', undefined, 'hz-ders');
+  satir.open = tek || hazirlikAcik.has(d.id);
+  satir.addEventListener('toggle', () => { if (satir.open) hazirlikAcik.add(d.id); else hazirlikAcik.delete(d.id); });
   const durum = d.onay ? ['Onaylandı', 'onay'] : d.tamam ? ['Onay bekliyor', 'bekle'] : ['Eksik', 'eksik'];
-  ust.append(el('strong', d.ders), el('span', durum[0], 'hz-durum ' + durum[1]));
-  kart.append(ust, el('p', `${d.soruSayisi} soru · cevap anahtarı ${d.sik}/${d.soruSayisi} · kazanım ${d.kazanim}/${d.gerekli}`, 'mad-ince'));
-  if (d.onay) kart.append(el('p', `Onaylayan: ${d.onayAd || '–'}${d.onayTarih ? ' · ' + tarihSaat(d.onayTarih) : ''}`, 'mad-ince'));
-  const ayrinti = el('details', undefined, 'hz-ayrinti');
-  ayrinti.append(el('summary', 'Soruları göster'));
+  const ust = el('summary', undefined, 'hz-ust');
+  const ad = el('span', undefined, 'hz-ad');
+  ad.append(el('strong', d.ders), el('small', `${d.soruSayisi} soru · anahtar ${d.sik}/${d.soruSayisi}${d.gerekli ? ` · kazanım ${d.kazanim}/${d.gerekli}` : ''}`));
+  ust.append(ad, el('span', durum[0], 'hz-durum ' + durum[1]));
+  satir.append(ust);
+  const govde = el('div', undefined, 'hz-govde');
+  if (d.onay) govde.append(el('p', `Onaylayan: ${d.onayAd || '–'}${d.onayTarih ? ' · ' + tarihSaat(d.onayTarih) : ''}`, 'mad-ince'));
   const liste = el('ol', undefined, 'hz-liste');
   for (const q of d.sorular) {
     const li = el('li', undefined, q.iptal ? 'iptal' : '');
     li.append(el('b', String(q.no)), el('span', q.sik || '–', 'hz-sik' + (q.sik ? '' : ' yok')));
-    const yazi = el('span', q.kazanim || (q.iptal ? 'İptal edilen soru' : 'Kazanım girilmedi'), q.kazanim ? '' : 'mad-ince');
-    li.append(yazi);
-    if (q.iptal && q.kazanim) li.append(el('em', 'iptal'));
+    li.append(el('span', q.kazanim || (q.iptal ? 'İptal edilen soru' : '—'), q.kazanim ? '' : 'mad-ince'));
     liste.append(li);
   }
-  ayrinti.append(liste);
-  kart.append(ayrinti);
-  const arac = el('div', undefined, 'dugme-satir');
+  govde.append(liste);
+  const arac = el('div', undefined, 'hz-arac');
   const duz = el('button', 'Düzenle', 'ikincil kucuk'); duz.type = 'button';
   duz.addEventListener('click', () => { hazirlikDuzen = d.id; hazirlikCiz(); });
   arac.append(duz);
@@ -1037,50 +1041,52 @@ function hazirlikKart(d) {
     });
     arac.append(onay);
   }
-  kart.append(arac);
-  return kart;
+  govde.append(arac);
+  satir.append(govde);
+  return satir;
 }
 
-// Düzenleme formu: bir dersin tüm soruları tek kayıtta Kaydet / Vazgeç ile
+// Düzenleme formu: sıkı satırlar (no · şık · kazanım · aynı · iptal); tüm dersin soruları tek kayıtta Kaydet / Vazgeç ile
 function hazirlikForm(d, v) {
-  const kart = el('section', undefined, 'hz-kart duzen');
+  const kart = el('section', undefined, 'hz-ders duzen');
   const ust = el('div', undefined, 'hz-ust');
-  ust.append(el('strong', d.ders + ' · düzenleniyor'), el('span', `${d.soruSayisi} soru`, 'mad-ince'));
+  const ad = el('span', undefined, 'hz-ad');
+  ad.append(el('strong', d.ders), el('small', `${d.soruSayisi} soru · düzenleniyor`));
+  ust.append(ad);
   kart.append(ust);
-  if (!ben.yon) kart.append(el('p', 'Kaydederseniz onay kalkar; tamamlayınca yeniden "Onayla"ya basın. İptal edilen soru tüm öğrencilere doğru sayılır.', 'alt'));
+  const govde = el('div', undefined, 'hz-govde');
+  if (!ben.yon) govde.append(el('p', 'Kaydederseniz onay kalkar; bitince yeniden "Onayla"ya basın. İptal edilen soru herkese doğru sayılır.', 'mad-ince'));
 
   // Cevap anahtarını tek seferde yaz: ABCDE… ("-" boş bırakır)
   const hizli = el('input', undefined, 'cevap-giris'); hizli.maxLength = d.soruSayisi; hizli.autocomplete = 'off'; hizli.spellcheck = false;
-  hizli.placeholder = 'Örn. ABCDABCDAB…'; hizli.setAttribute('aria-label', 'Cevap anahtarını tek seferde yaz');
+  hizli.placeholder = 'ABCDABCD…'; hizli.setAttribute('aria-label', 'Cevap anahtarını tek seferde yaz');
   hizli.value = d.sorular.map(q => q.sik || '-').join('').replace(/-+$/, '');
-  kart.append(el('label', 'Cevap anahtarı (hızlı giriş)'), hizli);
+  const hizliSatir = el('label', undefined, 'hz-hizli');
+  hizliSatir.append(el('span', 'Hızlı anahtar'), hizli);
 
   const { arac, liste, baglan } = kazanimArama(d.ders, (kazProgramDersleri || []), String(v.duzey || ''));
-  kart.append(el('label', 'Kazanım programı'), arac);
+  govde.append(hizliSatir, arac);
   const sorular = el('div', undefined, 'kz-liste');
   const girdiler = [];
   for (const q of d.sorular) {
-    const k = el('div', undefined, 'mad-kart kz-soru');
-    const no = el('span', String(q.no), 'mad-no'); no.style.setProperty('--c', '#5878a8');
+    const k = el('div', undefined, 'kz-sira');
+    const no = el('b', String(q.no), 'kz-no');
     const sik = el('select'); sik.setAttribute('aria-label', `Soru ${q.no} doğru şık`);
-    for (const h of ['', ...'ABCDE']) { const o = el('option', h || 'Şık'); o.value = h; sik.append(o); }
+    for (const h of ['', ...'ABCDE']) { const o = el('option', h || '–'); o.value = h; sik.append(o); }
     sik.value = q.sik;
-    const ip = el('input'); ip.type = 'checkbox'; ip.checked = q.iptal;
-    const ipEt = el('label', undefined, 'kz-iptal'); ipEt.append(ip, document.createTextNode('İptal'));
-    const ustSatir = el('div', undefined, 'kz-ust');
-    ustSatir.append(no, sik, ipEt);
-    if (q.kim) ustSatir.append(el('span', q.kim, 'mad-ince'));
-    const gi = el('textarea'); gi.rows = 2; gi.placeholder = 'Kazanım — yazın ya da programdan seçin'; gi.value = q.kazanim; gi.maxLength = 300; gi.autocomplete = 'off'; gi.spellcheck = false;
+    const gi = el('textarea'); gi.rows = 1; gi.placeholder = 'Kazanım'; gi.value = q.kazanim; gi.maxLength = 300; gi.autocomplete = 'off'; gi.spellcheck = false;
     gi.setAttribute('aria-label', `${d.ders} soru ${q.no} kazanımı`);
     baglan(gi);
-    const kazSatir = el('div', undefined, 'kaz-satir'); kazSatir.append(gi);
-    if (q.no > 1) {
-      const ayni = el('button', '↑', 'kaz-ayni'); ayni.type = 'button'; ayni.title = 'Üsttekiyle aynı'; ayni.setAttribute('aria-label', 'Üsttekiyle aynı');
-      ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].gi.value; liste.classList.add('gizli'); });
-      kazSatir.append(ayni);
-    }
-    k.append(ustSatir, kazSatir);
-    girdiler.push({ q, sik, ip, gi });
+    const ayni = el('button', '↑', 'kaz-ayni'); ayni.type = 'button'; ayni.title = 'Üsttekiyle aynı'; ayni.setAttribute('aria-label', 'Üsttekiyle aynı');
+    if (q.no > 1) ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].gi.value; liste.classList.add('gizli'); });
+    else ayni.disabled = true;
+    const ip = el('button', '⊘', 'kz-iptal'); ip.type = 'button'; ip.title = 'Soruyu iptal et (herkese doğru sayılır)'; ip.setAttribute('aria-label', `Soru ${q.no} iptal`);
+    const ipDurum = { var: q.iptal };
+    const ipCiz = () => { ip.classList.toggle('acik', ipDurum.var); ip.setAttribute('aria-pressed', ipDurum.var ? 'true' : 'false'); k.classList.toggle('iptal', ipDurum.var); };
+    ip.addEventListener('click', () => { ipDurum.var = !ipDurum.var; ipCiz(); });
+    ipCiz();
+    k.append(no, sik, gi, ayni, ip);
+    girdiler.push({ q, sik, ipDurum, gi });
     sorular.append(k);
   }
   hizli.addEventListener('input', () => {
@@ -1088,7 +1094,7 @@ function hazirlikForm(d, v) {
     girdiler.forEach((g, i) => { g.sik.value = hizli.value[i] && hizli.value[i] !== '-' ? hizli.value[i] : ''; });
   });
   for (const g of girdiler) g.sik.addEventListener('change', () => { hizli.value = girdiler.map(x => x.sik.value || '-').join('').replace(/-+$/, ''); });
-  kart.append(sorular);
+  govde.append(sorular);
 
   const cubuk = el('div', undefined, 'kaydet-cubuk');
   const kaydet = el('button', 'Kaydet', 'birincil'); kaydet.type = 'button';
@@ -1097,15 +1103,16 @@ function hazirlikForm(d, v) {
   kaydet.addEventListener('click', async () => {
     const s = await api('/api/sinav/sorular', {
       id: acik.sinav.id, dersId: d.id,
-      sorular: girdiler.map(g => ({ no: g.q.no, sik: g.sik.value, iptal: g.ip.checked, kazanim: g.gi.value })),
+      sorular: girdiler.map(g => ({ no: g.q.no, sik: g.sik.value, iptal: g.ipDurum.var, kazanim: g.gi.value })),
     });
     if (!s.ok) return mesaj(s.veri.hata || 'Kaydedilemedi', 'hata');
     hazirlikDuzen = null;
     await hazirlikCiz();
     mesaj(ben.yon ? `${d.ders} kaydedildi.` : `${d.ders} kaydedildi. Eksiksizse "Onayla"ya basın.`, 'tamam');
   });
-  cubuk.append(kaydet, vazgec);
-  kart.append(cubuk);
+  cubuk.append(vazgec, kaydet);
+  govde.append(cubuk);
+  kart.append(govde);
   return kart;
 }
 

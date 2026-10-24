@@ -235,55 +235,84 @@ function ogretmenKarti(e) {
   d.appendChild(el('summary', alinan ? `Öğrenci durumları ve yoklama (${alinan}/${e.katilimcilar.length} işaretli)` : 'Öğrenci durumları ve yoklama'));
   const bugun = new Date().toLocaleDateString('sv-SE');
   const yoklamaAcik = !iptal && e.tarih <= bugun;
-  const durum = new Map(e.katilimcilar.map(k => [k.ogrenciId, k.devam || 'geldi']));
-  const t = el('div', undefined, 'yoklama-liste' + (yoklamaAcik ? ' hapli' : ''));
   const IS = { geldi: '✓', gelmedi: '✗', izinli: 'İ' };
-  for (const k of e.katilimcilar) {
-    if (yoklamaAcik) {
-      const hap = el('button', undefined, 'yok-hap iki d-' + durum.get(k.ogrenciId));
-      hap.type = 'button';
-      const govde = el('span', undefined, 'yok-govde');
-      govde.append(el('span', k.ad, 'yok-isim'), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
-      const ikon = el('span', PASTA_IKON[durum.get(k.ogrenciId)], 'yok-ikon');
-      hap.append(govde, ikon);
-      hap.addEventListener('click', () => pastaAc(k.ad, hap, DEVAM_SECENEK, durum.get(k.ogrenciId), deger => {
-        durum.set(k.ogrenciId, deger);
-        hap.className = 'yok-hap iki d-' + deger;
-        ikon.textContent = PASTA_IKON[deger];
-      }));
-      t.appendChild(hap);
-      continue;
+  const kayitli = alinan > 0;
+  let duzenle = yoklamaAcik && !kayitli; // kaydedilmiş yoklama önce salt okunur açılır
+  let durum;
+  const alan = el('div');
+  const ciz = () => {
+    alan.replaceChildren();
+    durum = new Map(e.katilimcilar.map(k => [k.ogrenciId, k.devam || 'geldi']));
+    const t = el('div', undefined, 'yoklama-liste' + (duzenle ? ' hapli' : ''));
+    for (const k of e.katilimcilar) {
+      if (duzenle) {
+        const hap = el('button', undefined, 'yok-hap iki d-' + durum.get(k.ogrenciId));
+        hap.type = 'button';
+        const govde = el('span', undefined, 'yok-govde');
+        govde.append(el('span', k.ad, 'yok-isim'), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
+        const ikon = el('span', PASTA_IKON[durum.get(k.ogrenciId)], 'yok-ikon');
+        hap.append(govde, ikon);
+        hap.addEventListener('click', () => pastaAc(k.ad, hap, DEVAM_SECENEK, durum.get(k.ogrenciId), deger => {
+          durum.set(k.ogrenciId, deger);
+          hap.className = 'yok-hap iki d-' + deger;
+          ikon.textContent = PASTA_IKON[deger];
+        }));
+        t.appendChild(hap);
+        continue;
+      }
+      const satir = el('div', undefined, 'yok-satir');
+      const ad = el('div', undefined, 'yok-ad');
+      ad.append(el('span', k.ad), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
+      satir.appendChild(ad);
+      const m = el('span', k.devam ? IS[k.devam] : '–', 'isaret ' + (k.devam || 'yok'));
+      m.setAttribute('aria-label', k.devam ? DEVAM_ADI[k.devam] : 'Kayıt yok');
+      satir.appendChild(m);
+      t.appendChild(satir);
     }
-    const satir = el('div', undefined, 'yok-satir');
-    const ad = el('div', undefined, 'yok-ad');
-    ad.append(el('span', k.ad), el('small', YANIT_ADI[k.yanit], 'etiket mini y-' + k.yanit));
-    satir.appendChild(ad);
-    const m = el('span', k.devam ? IS[k.devam] : '–', 'isaret ' + (k.devam || 'yok'));
-    m.setAttribute('aria-label', k.devam ? DEVAM_ADI[k.devam] : 'Kayıt yok');
-    satir.appendChild(m);
-    t.appendChild(satir);
-  }
-  d.appendChild(t);
-  if (yoklamaAcik) {
-    d.appendChild(dugme('Yoklamayı kaydet', async () => {
-      const r = await api('/api/etut/yoklama', {
-        etutId: e.id, kayitlar: e.katilimcilar.map(k => ({ ogrenciId: k.ogrenciId, durum: durum.get(k.ogrenciId) })),
-      });
-      if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-      mesaj(`Yoklama kaydedildi: ${r.veri.geldi} geldi, ${r.veri.gelmedi} gelmedi, ${r.veri.izinli} izinli.`, 'tamam');
-      listeYukle();
-    }, 'birincil'));
-  } else if (!iptal) {
-    d.appendChild(el('p', 'Yoklama etüt günü açılır.', 'alt'));
-  }
+    alan.appendChild(t);
+    if (yoklamaAcik && duzenle) {
+      const cubuk = el('div', undefined, 'kaydet-cubuk');
+      if (kayitli) cubuk.appendChild(dugme('Vazgeç', () => { duzenle = false; ciz(); }));
+      cubuk.appendChild(dugme('Yoklamayı kaydet', async () => {
+        const r = await api('/api/etut/yoklama', {
+          etutId: e.id, kayitlar: e.katilimcilar.map(k => ({ ogrenciId: k.ogrenciId, durum: durum.get(k.ogrenciId) })),
+        });
+        if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+        mesaj(`Yoklama kaydedildi: ${r.veri.geldi} geldi, ${r.veri.gelmedi} gelmedi, ${r.veri.izinli} izinli.`, 'tamam');
+        listeYukle();
+      }, 'birincil'));
+      alan.appendChild(cubuk);
+    } else if (yoklamaAcik) {
+      alan.appendChild(dugme('Yoklamayı düzenle', () => { duzenle = true; ciz(); }));
+    } else if (!iptal) {
+      alan.appendChild(el('p', 'Yoklama etüt günü açılır.', 'alt'));
+    }
+  };
+  ciz();
+  d.appendChild(alan);
   kart.appendChild(d);
   if (!iptal) {
-    kart.appendChild(dugme('Etüdü iptal et', async () => {
-      const r = await api('/api/etut/iptal', { etutId: e.id });
-      if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-      mesaj('Etüt iptal edildi.', 'tamam');
-      listeYukle();
-    }, 'ikincil tehlike'));
+    // İptal geri alınamaz: önce açık bir onay istenir
+    const iptalAlan = el('div');
+    const iptalDugme = dugme('Etüdü iptal et', () => {
+      iptalAlan.replaceChildren();
+      const onay = el('div', undefined, 'onay-kutu');
+      onay.appendChild(el('p', `“${e.konu}” etüdü iptal edilecek. Veliler ve öğrenciler iptal olarak görür; bu işlem geri alınamaz.`));
+      const cubuk = el('div', undefined, 'onay-dugmeler');
+      cubuk.append(
+        dugme('Vazgeç', () => { iptalAlan.replaceChildren(iptalDugme); }),
+        dugme('Evet, iptal et', async () => {
+          const r = await api('/api/etut/iptal', { etutId: e.id });
+          if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+          mesaj('Etüt iptal edildi.', 'tamam');
+          listeYukle();
+        }, 'birincil tehlike-dolu'),
+      );
+      onay.appendChild(cubuk);
+      iptalAlan.appendChild(onay);
+    }, 'ikincil tehlike');
+    iptalAlan.appendChild(iptalDugme);
+    kart.appendChild(iptalAlan);
   }
   return kart;
 }
