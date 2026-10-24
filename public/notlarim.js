@@ -53,10 +53,11 @@ function sinavKarti(s, acik) {
   const izgara = el('div', undefined, 'sn-dersler');
   for (const d of s.dersler) {
     const h = el('span', undefined, 'sn-ders');
-    h.append(el('small', d.ders), el('b', String(d.puan)), el('small', `net ${d.net} · ${d.dogru}/${d.yanlis}/${d.bos}`));
+    h.append(el('small', d.ders), el('b', String(d.puan)), el('small', d.net === null ? 'yazılı' : `net ${d.net} · ${d.dogru}/${d.yanlis}/${d.bos}`));
     izgara.append(h);
   }
-  kart.append(izgara, el('p', `Hücrelerde puan, altında net ve doğru/yanlış/boş yazar. ${s.yanlisKat ? `${s.yanlisKat} yanlış 1 doğruyu götürür.` : 'Yanlışlar doğruyu götürmez.'}`, 'mad-ince'));
+  if (s.kapsam && s.kapsam.length) { kart.append(el('h4', 'Sınavın kazanımları', 'baslik3')); const ul = el('ul', undefined, 'kapsam-liste'); for (const x of s.kapsam) ul.append(el('li', x)); kart.append(ul); }
+  if (s.dersler.some(d => d.net !== null)) kart.append(izgara, el('p', `Hücrelerde puan, altında net ve doğru/yanlış/boş yazar. ${s.yanlisKat ? `${s.yanlisKat} yanlış 1 doğruyu götürür.` : 'Yanlışlar doğruyu götürmez.'}`, 'mad-ince'));
 
   for (const d of s.dersler) if (d.kazanimlar && d.kazanimlar.length) kart.append(kazanimBolumu(d));
   return kart;

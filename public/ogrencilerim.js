@@ -120,7 +120,7 @@ async function sinavCiz() {
     const dersler = el('div', undefined, 'ogs-dersler');
     for (const d of s.dersler) {
       const h = el('div', undefined, 'ogs-ders');
-      h.append(el('small', d.ders), el('b', String(d.net)));
+      h.append(el('small', d.ders), el('b', String(d.net ?? d.puan)));
       dersler.appendChild(h);
     }
     kart.append(ust, dersler);

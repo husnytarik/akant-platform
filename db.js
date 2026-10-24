@@ -412,6 +412,25 @@ if (!sutunlar('memberships').some(c => c.name === 'okul_no')) {
   // Okul numarası: şube içinde öğrenciye özgü; optik okuyucu dosyalarında öğrenci eşleştirmesi bununla yapılır
   db.exec('ALTER TABLE memberships ADD COLUMN okul_no TEXT');
 }
+if (!sutunlar('sinavlar').some(c => c.name === 'tur')) {
+  // 'test': optik/cevap anahtarlı sınav · 'yazili': öğretmenin öğrenci puanlarını tek tek girdiği yazılı sınav
+  db.exec("ALTER TABLE sinavlar ADD COLUMN tur TEXT NOT NULL DEFAULT 'test'");
+}
+// Yazılı sınav: öğrencinin puanı (0-100) ve sınavın bütününün ölçtüğü kazanımlar (soru eşlemesi yok)
+db.exec(`
+CREATE TABLE IF NOT EXISTS sinav_puanlar (
+  sinav_ders_id         INTEGER NOT NULL REFERENCES sinav_dersler(id),
+  student_membership_id INTEGER NOT NULL REFERENCES memberships(id),
+  puan                  REAL NOT NULL,
+  PRIMARY KEY (sinav_ders_id, student_membership_id)
+);
+CREATE TABLE IF NOT EXISTS sinav_genel_kazanim (
+  sinav_id INTEGER NOT NULL REFERENCES sinavlar(id),
+  sira     INTEGER NOT NULL,
+  kazanim  TEXT NOT NULL,
+  PRIMARY KEY (sinav_id, sira)
+);
+`);
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS uq_okul_no ON memberships (branch_id, okul_no) WHERE okul_no IS NOT NULL');
 
 // Şubedeki sıradaki okul numarası (1001'den başlar)

@@ -15,21 +15,28 @@
   <main class="kart panel genis">
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
+    <!-- 1) Sınav listesi -->
     <section id="liste-bolum" class="bolum-kutu">
       <div class="kutu-ust">
-        <h2 class="baslik2">Sınavlarım</h2>
+        <h2 class="baslik2">Sınavlar</h2>
         <button id="yeni-ac" type="button">+ Yeni sınav</button>
       </div>
       <div id="liste"></div>
     </section>
 
+    <!-- 2) Yeni sınav: yalnızca oluşturma -->
     <section id="yeni-bolum" class="bolum-kutu gizli">
+      <button id="yeni-geri" type="button" class="ikincil kucuk geri-dugme">&larr; Sınavlar</button>
       <h2 class="baslik2">Yeni sınav</h2>
+      <div class="tur-sec" id="s-tur" role="group" aria-label="Sınav türü">
+        <button type="button" data-tur="test" aria-pressed="true"><b>Test</b><small>Optik, cevap anahtarlı</small></button>
+        <button type="button" data-tur="yazili" aria-pressed="false"><b>Yazılı</b><small>Puanları tek tek girilir</small></button>
+      </div>
       <label for="s-ad">Sınav adı</label>
-      <input id="s-ad" maxlength="80" placeholder="Örn. 1. Dönem 1. Deneme">
+      <input id="s-ad" maxlength="80" placeholder="Örn. 1. Dönem 1. Yazılı">
       <div class="form-satir">
         <div><label for="s-tarih">Tarih</label><input id="s-tarih" type="date"></div>
-        <div>
+        <div id="s-kat-kutu">
           <label for="s-kat">Yanlış doğruyu götürür mü?</label>
           <select id="s-kat">
             <option value="0">Götürmez</option>
@@ -41,24 +48,37 @@
       </div>
       <h3 class="baslik3">Sınıflar</h3>
       <div id="s-siniflar" class="sinav-secim"></div>
-      <h3 class="baslik3">Dersler ve cevap anahtarı</h3>
-      <div id="s-dersler"></div>
-      <button id="ders-ekle" type="button" class="ikincil">+ Ders ekle</button>
+
+      <div id="blok-test">
+        <h3 class="baslik3">Dersler ve cevap anahtarı</h3>
+        <div id="s-dersler"></div>
+        <button id="ders-ekle" type="button" class="ikincil">+ Ders ekle</button>
+        <p class="alt">Öğrenci cevaplarını okul yönetimi girer; siz sonuçları ve cevapları görüntülersiniz.</p>
+      </div>
+      <div id="blok-yazili" class="gizli">
+        <h3 class="baslik3">Ders</h3>
+        <select id="y-ders" aria-label="Ders"></select>
+        <h3 class="baslik3">Sınavın kazanımları <small class="alt">(isteğe bağlı)</small></h3>
+        <div id="y-kaz"></div>
+        <p class="alt">Öğrencilerin puanlarını sınavı oluşturduktan sonra tek tek girersiniz.</p>
+      </div>
+
       <div class="dugme-satir">
         <button id="s-kaydet" type="button">Sınavı oluştur</button>
         <button id="s-vazgec" type="button" class="ikincil">Vazgeç</button>
       </div>
     </section>
 
-    <section id="detay-bolum" class="bolum-kutu">
-      <h2 id="d-baslik" class="baslik2">Sınav detayı</h2>
-      <div class="sekmeler" id="d-sekmeler">
-        <button type="button" data-sekme="cevap" aria-pressed="true">Cevaplar</button>
-        <button type="button" data-sekme="sonuc" aria-pressed="false">Sonuçlar</button>
-        <button type="button" data-sekme="analiz" aria-pressed="false">Madde analizi</button>
-        <button type="button" data-sekme="kazanim" aria-pressed="false">Kazanımlar</button>
-        <button type="button" data-sekme="anahtar" aria-pressed="false">Anahtar ve iptal</button>
+    <!-- 3) Sınav: sonuçları inceleme ve (ayrı bir kipte) düzenleme -->
+    <section id="detay-bolum" class="bolum-kutu gizli">
+      <button id="detay-geri" type="button" class="ikincil kucuk geri-dugme">&larr; Sınavlar</button>
+      <h2 id="d-baslik" class="baslik2"></h2>
+      <p id="d-alt" class="alt"></p>
+      <div class="mod-anahtar" id="d-mod" role="group" aria-label="Görünüm">
+        <button type="button" data-mod="incele" aria-pressed="true">Sonuçlar</button>
+        <button type="button" data-mod="duzen" aria-pressed="false">Düzenle</button>
       </div>
+      <div class="sekmeler" id="d-sekmeler"></div>
       <div id="d-icerik"></div>
     </section>
   </main>

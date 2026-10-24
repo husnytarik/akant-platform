@@ -108,11 +108,13 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   const yol = url.pathname;
   if (!yol.startsWith('/api/sinav/')) return false;
   const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
+  const yon = o.role === 'yonetim';
   const sinavim = id => db.prepare('SELECT * FROM sinavlar WHERE id = ? AND teacher_membership_id = ?').get(id, o.membership_id);
   // Sınav sahibi her şeyi yönetir; sınıflarında o dersi veren diğer öğretmenler yalnızca kendi dersinin kazanımlarını girer
   const erisim = id => {
     const s = db.prepare('SELECT * FROM sinavlar WHERE id = ?').get(id);
     if (!s) return null;
+    if (yon) return { s, sahip: true, duzenle: new Set(dersleri(id).map(d => d.id)) };
     const dersAd = db.prepare(`SELECT DISTINCT co.name FROM assignments a JOIN courses co ON co.id = a.course_id
       JOIN sinav_siniflar ss ON ss.class_id = a.class_id WHERE ss.sinav_id = ? AND a.teacher_membership_id = ?`)
       .all(id, o.membership_id).map(r => r.name);
@@ -134,6 +136,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     .all(id).map(d => ({ ...d, iptal: JSON.parse(d.iptal) }));
   const sinavSiniflari = id => db.prepare('SELECT c.id, c.name FROM sinav_siniflar ss JOIN classes c ON c.id = ss.class_id WHERE ss.sinav_id = ? ORDER BY c.name').all(id);
 
+  const genelKazanim = id => db.prepare('SELECT kazanim FROM sinav_genel_kazanim WHERE sinav_id = ? ORDER BY sira').all(id).map(r => r.kazanim);
+  const kazanimListe = v => [...new Set((Array.isArray(v) ? v : []).map(x => String(x || '').replace(/\s+/g, ' ').trim()).filter(Boolean))];
+
   // Soru başına kazanım: dersId -> [kazanım | null, ...]
   const kazanimlari = sinavId => {
     const harita = new Map(dersleri(sinavId).map(d => [d.id, Array(d.soruSayisi).fill(null)]));
@@ -149,6 +154,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   // ks: { dersAd, tam } verilirse öğrenci başına yalnız görünür dersler hesaplanır (diğer branşlar sızmaz); genel yalnız toplu bilgidir
   const sonucHesapla = (s, kazanimli = false, ks = null) => {
   const dersler = dersleri(s.id);
+  const yazili = s.tur === 'yazili';
+  const puanHarita = new Map(yazili ? db.prepare(`SELECT p.sinav_ders_id AS dersId, p.student_membership_id AS ogrenciId, p.puan FROM sinav_puanlar p
+    JOIN sinav_dersler d ON d.id = p.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id).map(p => [p.dersId + ':' + p.ogrenciId, p.puan]) : []);
   const gorur = (d, sinifId) => !ks || ks.tam.has(sinifId) || ks.dersAd.has(d.ders);
   const kaz = kazanimlari(s.id);
   const ogrenciler = sinifOgrencileri(sinavSiniflari(s.id).map(c => c.id));
@@ -162,6 +170,13 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     let topPuan = 0, say = 0;
     for (const d of dersler) {
       if (!gorur(d, g.sinifId)) continue;
+      if (yazili) {
+        const p = puanHarita.get(d.id + ':' + g.ogrenciId);
+        if (p === undefined) continue;
+        dersSonuc[d.id] = { dogru: null, yanlis: null, bos: null, net: null, puan: p };
+        topPuan += p; say++;
+        continue;
+      }
       const c = harita.get(d.id + ':' + g.ogrenciId);
       if (!c) continue;
       const r = hesapla(d.anahtar, d.iptal, c, s.yanlis_kat);
@@ -180,7 +195,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   const gorunenDersler = dersler.filter(d => ogrenciler.some(g => gorur(d, g.sinifId)));
   const analizeBakar = d => !ks || ks.dersAd.has(d.ders) || ks.tam.size === sinavSiniflari(s.id).length;
 
-  const analiz = dersler.filter(analizeBakar).map(d => {
+  const analiz = dersler.filter(d => !yazili && analizeBakar(d)).map(d => {
     const girenCevaplar = ogrenciler.map(g => ({ id: g.ogrenciId, c: harita.get(d.id + ':' + g.ogrenciId) })).filter(x => x.c);
     const n = girenCevaplar.length;
     const net = new Map(girenCevaplar.map(x => [x.id, hesapla(d.anahtar, d.iptal, x.c, s.yanlis_kat).net]));
@@ -227,7 +242,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       genel = { giren: t.giren, beklenen: t.beklenen, dersSayisi: t.dersler.length, ortalama: p.length ? Math.round(p.reduce((a, b) => a + b, 0) / p.length * 10) / 10 : null };
     }
     return {
-      sinav: { id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin },
+      sinav: { id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin, tur: s.tur, kapsam: genelKazanim(s.id) },
       dersler: gorunenDersler.map(d => ({ id: d.id, ders: d.ders, soruSayisi: d.soruSayisi })),
       ogrenciler: satirlar, giren: girenler.length, beklenen: ogrenciler.length, analiz, genel, kisitli: !!ks,
     };
@@ -242,6 +257,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     if (!g || g.ortalama === null) return null;
     return {
       ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, ortalama: g.ortalama, sira: g.sira, giren: r.giren,
+      yazili: s.tur === 'yazili', kapsam: genelKazanim(s.id),
       dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], kazanimlar: g.kazanim[d.id] })),
     };
   }).filter(Boolean);
@@ -268,7 +284,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     return true;
   }
 
-  if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
+  // Yönetim: tüm sınavları görür; öğrenci cevaplarını ve cevap anahtarını yalnızca o girer/değiştirir
+  const YON_YOL = new Set(['/api/sinav/liste', '/api/sinav/detay', '/api/sinav/sonuc', '/api/sinav/cevaplar', '/api/sinav/anahtar']);
+  if (o.role !== 'ogretmen' && !(yon && YON_YOL.has(yol))) return hata(403, 'Bu işlem için yetkiniz yok');
 
   // Eksik kazanım hatırlatması: öğretmenin ders verdiği sınıf+ders için, sınavda bir kazanımı edinemeyen (< %40) öğrenciler.
   // Sınav sonuçlarından hesaplanır; öğretmen "tekrar ettim" derse (sınav, sınıf, kazanım) kapatılır.
@@ -347,12 +365,12 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   }
 
   if (req.method === 'GET' && yol === '/api/sinav/liste') {
-    const kendi = db.prepare(`SELECT s.id, s.name, s.date, s.yanlis_kat, s.yayin, s.teacher_membership_id, u.full_name AS sahipAd
+    const kendi = db.prepare(`SELECT s.id, s.name, s.date, s.yanlis_kat, s.yayin, s.tur, s.teacher_membership_id, u.full_name AS sahipAd
       FROM sinavlar s JOIN memberships m ON m.id = s.teacher_membership_id JOIN users u ON u.id = m.user_id
-      WHERE s.teacher_membership_id = ? ORDER BY s.date DESC, s.id DESC`).all(o.membership_id);
+      WHERE ${yon ? 'm.branch_id = (SELECT branch_id FROM memberships WHERE id = ?)' : 's.teacher_membership_id = ?'} ORDER BY s.date DESC, s.id DESC`).all(o.membership_id);
     // Başka öğretmenin, benim dersimi ve sınıfımı kapsayan sınavları: kazanım girmek için ortak görünür
     // Ayrıca yayınlanmış sınavlar genel bilgi olarak: sınıfında ders veriyorsa ya da sınıf öğretmeniyse
-    const paylasilan = db.prepare(`SELECT DISTINCT s.id, s.name, s.date, s.yanlis_kat, s.yayin, s.teacher_membership_id, u.full_name AS sahipAd
+    const paylasilan = yon ? [] : db.prepare(`SELECT DISTINCT s.id, s.name, s.date, s.yanlis_kat, s.yayin, s.tur, s.teacher_membership_id, u.full_name AS sahipAd
       FROM sinavlar s JOIN memberships m ON m.id = s.teacher_membership_id JOIN users u ON u.id = m.user_id
       WHERE s.teacher_membership_id != ? AND (
         EXISTS (SELECT 1 FROM sinav_siniflar ss JOIN sinav_dersler sd ON sd.sinav_id = s.id
@@ -363,15 +381,19 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
           OR EXISTS (SELECT 1 FROM sinav_siniflar ss JOIN classes c ON c.id = ss.class_id AND c.homeroom_membership_id = ? WHERE ss.sinav_id = s.id))))
       ORDER BY s.date DESC, s.id DESC`).all(o.membership_id, o.membership_id, o.membership_id, o.membership_id);
     const kazanimSayisi = db.prepare('SELECT COUNT(*) AS n FROM sinav_kazanim k JOIN sinav_dersler d ON d.id = k.sinav_ders_id WHERE d.sinav_id = ?');
+    const genelSayisi = db.prepare('SELECT COUNT(*) AS n FROM sinav_genel_kazanim WHERE sinav_id = ?');
+    const puanSayisi = db.prepare(`SELECT COUNT(DISTINCT p.student_membership_id) AS n FROM sinav_puanlar p
+      JOIN sinav_dersler d ON d.id = p.sinav_ders_id WHERE d.sinav_id = ?`);
     json(res, 200, {
+      yonetim: yon,
       sinavlar: [...kendi, ...paylasilan].map(s => ({
-        id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin,
-        sahip: s.teacher_membership_id === o.membership_id, sahipAd: s.sahipAd,
+        id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin, tur: s.tur,
+        sahip: yon || s.teacher_membership_id === o.membership_id, sahipAd: s.sahipAd,
         siniflar: sinavSiniflari(s.id).map(c => c.name),
         dersler: dersleri(s.id).map(d => d.ders),
         soru: dersleri(s.id).reduce((t, d) => t + d.soruSayisi, 0),
-        kazanimli: kazanimSayisi.get(s.id).n,
-        okunan: db.prepare(`SELECT COUNT(DISTINCT c.student_membership_id) AS n FROM sinav_cevaplar c
+        kazanimli: s.tur === 'yazili' ? genelSayisi.get(s.id).n : kazanimSayisi.get(s.id).n,
+        okunan: s.tur === 'yazili' ? puanSayisi.get(s.id).n : db.prepare(`SELECT COUNT(DISTINCT c.student_membership_id) AS n FROM sinav_cevaplar c
           JOIN sinav_dersler d ON d.id = c.sinav_ders_id WHERE d.sinav_id = ?`).get(s.id).n,
       })),
     });
@@ -406,6 +428,26 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     if (!siniflar.length) return hata(400, 'En az bir sınıf seçin');
     const yetkili = db.prepare('SELECT 1 FROM assignments WHERE class_id = ? AND teacher_membership_id = ?');
     if (!siniflar.every(id => yetkili.get(id, o.membership_id))) return hata(403, 'Seçilen sınıflardan birinde dersiniz yok');
+    if (b.tur === 'yazili') {
+      const ders = String(b.ders || '').trim();
+      const kaz = kazanimListe(b.kazanimlar);
+      if (!ders || ders.length > 60) return hata(400, 'Ders seçin');
+      if (kaz.length > 30 || kaz.some(k => k.length > 300)) return hata(400, 'En çok 30 kazanım, her biri en çok 300 karakter olabilir');
+      const verir = db.prepare(`SELECT 1 FROM assignments a JOIN courses co ON co.id = a.course_id
+        WHERE a.class_id = ? AND a.teacher_membership_id = ? AND co.name = ?`);
+      if (!siniflar.every(id => verir.get(id, o.membership_id, ders))) return hata(403, 'Seçilen sınıflardan birinde bu dersi vermiyorsunuz');
+      const yid = islem(() => {
+        const sid = Number(db.prepare("INSERT INTO sinavlar (name, date, teacher_membership_id, yanlis_kat, created_at, tur) VALUES (?,?,?,0,?,'yazili')")
+          .run(ad, tarih, o.membership_id, Date.now()).lastInsertRowid);
+        for (const c of siniflar) db.prepare('INSERT INTO sinav_siniflar (sinav_id, class_id) VALUES (?,?)').run(sid, c);
+        db.prepare("INSERT INTO sinav_dersler (sinav_id, ders, soru_sayisi, anahtar, iptal) VALUES (?,?,0,'','[]')").run(sid, ders);
+        kaz.forEach((k, i) => db.prepare('INSERT INTO sinav_genel_kazanim (sinav_id, sira, kazanim) VALUES (?,?,?)').run(sid, i + 1, k));
+        return sid;
+      });
+      denetle(o.user_id, 'sinav-olustur', { id: yid, ad, tur: 'yazili' });
+      json(res, 200, { id: yid });
+      return true;
+    }
     const d = dersleriOku(b);
     if (d.hata) return hata(400, d.hata);
     const id = islem(() => {
@@ -426,7 +468,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     if (!e) return hata(404, 'Sınav bulunamadı');
     const { s, sahip } = e;
     const siniflar = sinavSiniflari(s.id);
-    const sinav = { id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin };
+    const sinav = { id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin, tur: s.tur, kapsam: genelKazanim(s.id) };
     // Ortak öğretmen öğrenci cevaplarını ve sonuçları görmez; yalnızca soru-kazanım eşlemesine erişir
     if (!sahip) return json(res, 200, { sahip, sinav, siniflar, dersler: dersleri(s.id).filter(d => e.duzenle.has(d.id)), ogrenciler: [] }), true;
     const ogrenciler = sinifOgrencileri(siniflar.map(c => c.id));
@@ -434,9 +476,12 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       FROM sinav_cevaplar c JOIN sinav_dersler d ON d.id = c.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id);
     const harita = {};
     for (const c of cevaplar) (harita[c.ogrenciId] ||= {})[c.dersId] = c.cevaplar;
+    const puanlar = {};
+    if (s.tur === 'yazili') for (const p of db.prepare(`SELECT p.student_membership_id AS ogrenciId, p.puan FROM sinav_puanlar p
+      JOIN sinav_dersler d ON d.id = p.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id)) puanlar[p.ogrenciId] = p.puan;
     json(res, 200, {
-      sahip, sinav, siniflar, dersler: dersleri(s.id),
-      ogrenciler: ogrenciler.map(g => ({ ...g, cevaplar: harita[g.ogrenciId] || {} })),
+      sahip, yonetim: yon, sinav, siniflar, dersler: dersleri(s.id),
+      ogrenciler: ogrenciler.map(g => ({ ...g, cevaplar: harita[g.ogrenciId] || {}, puan: puanlar[g.ogrenciId] ?? null })),
     });
     return true;
   }
@@ -491,8 +536,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
 
   // Cevap anahtarı düzeltme, soru iptali, yanlış katsayısı: sonuçlar cevaplardan hesaplandığı için anında yeniden hesaplanır
   if (req.method === 'POST' && yol === '/api/sinav/anahtar') {
+    if (!yon) return hata(403, 'Cevap anahtarını yalnızca okul yönetimi değiştirebilir');
     const b = await govde(req);
-    const s = sinavim(tamSayi(b.id, 1, 1e9));
+    const s = db.prepare("SELECT * FROM sinavlar WHERE id = ? AND tur = 'test'").get(tamSayi(b.id, 1, 1e9));
     if (!s) return hata(404, 'Sınav bulunamadı');
     const kat = katOku(b.yanlisKat);
     if (kat === null || kat === 1) return hata(400, 'Yanlış katsayısı 0 (yok) veya 2-10 olmalı');
@@ -518,8 +564,9 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
 
   // Öğrenci cevapları: { id, kayitlar: [{ ogrenciId, dersId, cevaplar }] }
   if (req.method === 'POST' && yol === '/api/sinav/cevaplar') {
+    if (!yon) return hata(403, 'Öğrenci cevaplarını yalnızca okul yönetimi girebilir veya değiştirebilir');
     const b = await govde(req);
-    const s = sinavim(tamSayi(b.id, 1, 1e9));
+    const s = db.prepare("SELECT * FROM sinavlar WHERE id = ? AND tur = 'test'").get(tamSayi(b.id, 1, 1e9));
     if (!s) return hata(404, 'Sınav bulunamadı');
     if (!Array.isArray(b.kayitlar) || b.kayitlar.length > 2000) return hata(400, 'Geçersiz istek');
     const dersler = new Map(dersleri(s.id).map(d => [d.id, d]));
@@ -536,6 +583,53 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
           .run(d.id, og, cevapTemiz(c, d.soruSayisi));
       }
     });
+    denetle(o.user_id, 'sinav-cevap', { id: s.id, adet: b.kayitlar.length });
+    json(res, 200, { tamam: true });
+    return true;
+  }
+
+  // Yazılı sınav: öğrenci puanları { id, kayitlar: [{ ogrenciId, puan }] } (boş puan = girmedi)
+  if (req.method === 'POST' && yol === '/api/sinav/puanlar') {
+    const b = await govde(req);
+    const s = db.prepare("SELECT * FROM sinavlar WHERE id = ? AND teacher_membership_id = ? AND tur = 'yazili'").get(tamSayi(b.id, 1, 1e9), o.membership_id);
+    if (!s) return hata(404, 'Sınav bulunamadı');
+    if (!Array.isArray(b.kayitlar) || b.kayitlar.length > 2000) return hata(400, 'Geçersiz istek');
+    const ders = dersleri(s.id)[0];
+    const ogr = new Set(sinifOgrencileri(sinavSiniflari(s.id).map(c => c.id)).map(g => g.ogrenciId));
+    const yeni = [];
+    for (const k of b.kayitlar) {
+      const og = Number(k.ogrenciId);
+      if (!ogr.has(og)) return hata(400, 'Geçersiz öğrenci');
+      const ham = String(k.puan ?? '').trim().replace(',', '.');
+      if (!ham) { yeni.push([og, null]); continue; }
+      const p = Number(ham);
+      if (!Number.isFinite(p) || p < 0 || p > 100) return hata(400, 'Puan 0 ile 100 arasında olmalı');
+      yeni.push([og, Math.round(p * 10) / 10]);
+    }
+    islem(() => {
+      for (const [og, p] of yeni) {
+        if (p === null) db.prepare('DELETE FROM sinav_puanlar WHERE sinav_ders_id = ? AND student_membership_id = ?').run(ders.id, og);
+        else db.prepare(`INSERT INTO sinav_puanlar (sinav_ders_id, student_membership_id, puan) VALUES (?,?,?)
+          ON CONFLICT (sinav_ders_id, student_membership_id) DO UPDATE SET puan = excluded.puan`).run(ders.id, og, p);
+      }
+    });
+    denetle(o.user_id, 'sinav-puan', { id: s.id, adet: yeni.length });
+    json(res, 200, { tamam: true });
+    return true;
+  }
+
+  // Yazılı sınav: sınavın bütününün ölçtüğü kazanımlar
+  if (req.method === 'POST' && yol === '/api/sinav/yazili-kazanim') {
+    const b = await govde(req);
+    const s = db.prepare("SELECT * FROM sinavlar WHERE id = ? AND teacher_membership_id = ? AND tur = 'yazili'").get(tamSayi(b.id, 1, 1e9), o.membership_id);
+    if (!s) return hata(404, 'Sınav bulunamadı');
+    const kaz = kazanimListe(b.kazanimlar);
+    if (kaz.length > 30 || kaz.some(k => k.length > 300)) return hata(400, 'En çok 30 kazanım, her biri en çok 300 karakter olabilir');
+    islem(() => {
+      db.prepare('DELETE FROM sinav_genel_kazanim WHERE sinav_id = ?').run(s.id);
+      kaz.forEach((k, i) => db.prepare('INSERT INTO sinav_genel_kazanim (sinav_id, sira, kazanim) VALUES (?,?,?)').run(s.id, i + 1, k));
+    });
+    denetle(o.user_id, 'sinav-yazili-kazanim', { id: s.id });
     json(res, 200, { tamam: true });
     return true;
   }
@@ -544,7 +638,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/sinav/sonuc') {
     const e = erisim(tamSayi(url.searchParams.get('id'), 1, 1e9));
     if (!e) return hata(404, 'Sınav bulunamadı');
-    json(res, 200, sonucHesapla(e.s, url.searchParams.get('kazanim') === '1', kisit(e.s)));
+    json(res, 200, sonucHesapla(e.s, url.searchParams.get('kazanim') === '1', yon ? null : kisit(e.s)));
     return true;
   }
 
@@ -566,6 +660,8 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     islem(() => {
       db.prepare('DELETE FROM sinav_cevaplar WHERE sinav_ders_id IN (SELECT id FROM sinav_dersler WHERE sinav_id = ?)').run(s.id);
       db.prepare('DELETE FROM sinav_kazanim WHERE sinav_ders_id IN (SELECT id FROM sinav_dersler WHERE sinav_id = ?)').run(s.id);
+      db.prepare('DELETE FROM sinav_puanlar WHERE sinav_ders_id IN (SELECT id FROM sinav_dersler WHERE sinav_id = ?)').run(s.id);
+      db.prepare('DELETE FROM sinav_genel_kazanim WHERE sinav_id = ?').run(s.id);
       db.prepare('DELETE FROM kazanim_hatirlatma_kapat WHERE sinav_id = ?').run(s.id);
       db.prepare('DELETE FROM sinav_dersler WHERE sinav_id = ?').run(s.id);
       db.prepare('DELETE FROM sinav_siniflar WHERE sinav_id = ?').run(s.id);
