@@ -2332,3 +2332,20 @@ main .kz-sira select { padding: 6px 4px 6px 10px; }
 main .hz-govde { padding: 0 12px 14px; }
 main .kz-sira select { height: 40px; min-height: 40px; }
 main .kz-sira textarea { min-height: 40px; }
+
+/* Sınav ders kutuları: puan sağda, doğru/yanlış/boş renkli noktalarla */
+main .sn-dersler { gap: 8px; }
+main .sn-ders { gap: 10px; padding: 12px 14px; border-radius: 16px; background: #f8f5ed; }
+main .sn-ust { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+main .sn-ust small { font-size: .8rem; color: var(--murekkep, #1d2433); }
+main .sn-ust b { flex: none; font-size: 1.25rem; color: var(--ana, #0b2545); }
+main .sn-alt { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+main .sn-alt small { font-size: .74rem; color: var(--soluk, #8a867d); }
+main .sn-say { display: inline-flex; gap: 9px; }
+main .sn-say em { display: inline-flex; align-items: center; gap: 4px; font-style: normal; font-size: .76rem; color: var(--soluk, #8a867d); }
+main .sn-say em::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2e9e5b; }
+main .sn-say em.sn-y::before { background: #d64545; }
+main .sn-say em.sn-b::before { background: #c9c3b3; }
+main .sn-alt small { flex: none; overflow: visible; text-overflow: clip; }
+main .sn-say { gap: 7px; }
+main .sn-ders { padding: 12px; }
