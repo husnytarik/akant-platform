@@ -1948,6 +1948,79 @@ main h3.rp-baslik { margin: 26px 0 4px; padding-top: 14px; border-top: 1px solid
 .rp-kaz b { color: var(--c); font-size: .8rem; white-space: nowrap; }
 .rp-kaz small { grid-column: 1 / -1; color: var(--soluk); font-size: .74rem; }
 
+/* v7 sade: tek seviye kart, kart içi öğeler çerçevesiz, kompakt düğmeler */
+:root { --kart-golge: 0 1px 2px rgba(60,50,30,.05), 0 8px 20px -16px rgba(60,50,30,.35); --ic-zemin: #f8f5ee; }
+
+/* Üst düzey kartlar: ince, yumuşak */
+main .bolum-kutu, main .sinav-kart, main .not-kart, main .kutu, main .kart-yumusak, main .ders-panel, main .hafta-detay, main .tablo-sar {
+  border: 0 !important; border-radius: 18px; box-shadow: var(--kart-golge) !important; padding-left: 16px; padding-right: 16px; }
+main .tablo-sar { padding: 4px 12px; }
+
+/* Kartların içindeki öğeler: çerçeve yok, hafif zemin */
+main .kutu :is(.ders-oge, .odev-kart, .etut-satir, .ders-satir, .profil-blok, .sinav-ozet, .sn-kart, .mad-kart, .mad-kaz, .sc-kart, .veli-kart, .ogr-kart, .tablo-sar),
+main .bolum-kutu :is(.ders-oge, .odev-kart, .etut-satir, .ders-satir, .profil-blok, .sn-kart, .mad-kart, .mad-kaz, .sc-kart, .tablo-sar),
+main .ders-panel :is(.ders-oge, .odev-kart, .etut-satir, .profil-blok, .tablo-sar),
+main .hafta-detay :is(.ders-oge, .odev-kart, .etut-satir, .profil-blok, .tablo-sar),
+main .not-kart :is(.ders-oge, .profil-blok, .tablo-sar, .sn-kart) {
+  border: 0 !important; box-shadow: none !important; background: var(--ic-zemin); border-radius: 14px; }
+main .tablo-sar .tablo-sar, main .kutu .tablo-sar { padding: 2px 8px; }
+
+/* Üst düzey satır kartları (ders, öğrenci, madde) daha hafif */
+main .ders-satir, main .ders-satir:not(.etut-satir), main .ogr-kart, main .mad-kart, main .mad-kaz, main .sc-kart, main .sn-kart, main .veli-kart, main .profil-blok, main .sinav-ozet, main #s-dersler .sinav-ders {
+  border-color: transparent; box-shadow: var(--kart-golge); border-radius: 16px; }
+main .ders-satir, main .ders-satir:not(.etut-satir), main .ders-satir:not(.etut-satir):hover, main .ders-satir.secili:not(.etut-satir) { min-height: 54px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 6px; border-radius: 16px; }
+main .ders-satir.etut-satir, main .ders-satir.etut-satir:hover, main .ders-satir.etut-satir.secili { min-height: 54px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 6px; border-radius: 16px; }
+
+/* Düğmeler: kompakt */
+main .birincil, main .dugme-link, main button.birincil, main a.birincil { min-height: 40px; padding: 0 18px; border-radius: 12px; font-size: .92rem; }
+main .ikincil, main button.ikincil, main a.ikincil { min-height: 36px; padding: 0 14px; border-radius: 12px; font-size: .88rem; }
+main .kucuk, main .birincil.kucuk, main .ikincil.kucuk { min-height: 32px; padding: 0 12px; font-size: .84rem; border-radius: 10px; }
+main .kutu .birincil, main .kutu .ikincil, main .ders-panel .birincil, main .ders-panel .ikincil, main .not-kart .birincil, main .not-kart .ikincil, main .bolum-kutu .birincil, main .bolum-kutu .ikincil { width: auto; }
+main .kutu-ust button, main .not-ust button, main td button, main .dugme-satir > button, main .mini-form button, main #yeni-ac { min-height: 34px; padding: 0 14px; border-radius: 10px; font-size: .86rem; }
+main .sekmeler button { height: 34px; font-size: .86rem; }
+main input, main select, main textarea { min-height: 40px; border-radius: 12px; }
+main textarea { min-height: 72px; }
+main .ikon-dugme, main .gun-baslik #bugun.ikon-dugme { width: 36px; min-height: 36px; height: 36px; border-radius: 12px; }
+main #yeni-bolum #s-kaydet, main #yeni-bolum #s-vazgec { min-height: 42px; border-radius: 12px; }
+
+/* Yapışkan çubuklar: alanları kapatmasın */
+.kaydet-cubuk { position: static; padding: 6px 0 calc(12px + env(safe-area-inset-bottom)); background: none !important; margin-top: 4px; }
+.kaydet-cubuk .birincil { flex: 1; }
+#bitir-sabit { height: 40px; padding: 0 18px; border-radius: 20px; font-size: .9rem; bottom: calc(14px + env(safe-area-inset-bottom)); }
+main:has(#bitir-sabit) { padding-bottom: 72px; }
+
+/* Panel karoları: alçak, yatay */
+.kare-grid { gap: 10px; margin-top: 14px; }
+.kare { flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; padding: 12px 14px; border-radius: 16px; border-color: transparent; box-shadow: var(--kart-golge) !important; }
+.kare strong { font-size: .95rem; line-height: 1.15; }
+.kare small { position: static; margin-left: auto; font-size: .68rem; }
+.kare .kare-ikon { flex: none; width: 36px; height: 36px; border-radius: 11px; }
+.kare.soon { border: 1px dashed #ddd5c2; }
+
+/* Uyarı kartı ve sınıf başlıkları */
+#geciken.uyari { border: 0; background: #fdf1ef; }
+.kare.soon small { display: none; }
+main .kh { border: 0; background: #fdf6e6; border-radius: 14px; margin-top: 8px; }
+main .kh details > summary { min-height: 38px !important; height: auto; padding: 0 !important; }
+main .kh .kh-kart { border: 0; background: #fff; }
+.kare strong { min-width: 0; font-size: .9rem; overflow-wrap: anywhere; }
+.kare { gap: 10px; padding: 12px; }
+.kare .kare-ikon { width: 32px; height: 32px; border-radius: 10px; }
+.kare .kare-ikon svg { width: 18px; height: 18px; }
+.pf-bolum, .kl-kart, main .nt-gelisim { border: 0 !important; box-shadow: var(--kart-golge); border-radius: 16px; }
+.kl-kart { padding: 12px 16px; }
+.pf-kaydet { position: static; margin-top: 10px; padding: 4px 0 calc(16px + env(safe-area-inset-bottom)); background: none; }
+.pf-kaydet .birincil { min-height: 42px; }
+@media (max-width: 640px) {
+  main table[data-kart] tr { background: #fff !important; border: 0 !important; border-radius: 16px !important; box-shadow: var(--kart-golge); margin: 0 0 10px; padding: 8px 14px !important; }
+  main table[data-kart] td { padding: 6px 0 !important; border-bottom: 1px solid #f1ede4 !important; }
+  main table[data-kart] td:last-child { border-bottom: 0 !important; }
+  main table[data-kart] td button, main table[data-kart] td select { min-height: 36px; }
+}
+@media (max-width: 640px) {
+  main .tablo-sar:has(table[data-kart]) { background: transparent; box-shadow: none !important; padding: 0; overflow: visible; }
+}
+
 @media print {
   .karne-acik #liste-bolum, .karne-acik #yeni-bolum, .karne-acik #d-baslik, .karne-acik #d-sekmeler { display: none !important; }
   .karne-acik .bolum-kutu { border: 0; padding: 0; margin: 0; box-shadow: none; background: #fff; }

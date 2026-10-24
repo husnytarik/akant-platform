@@ -193,5 +193,6 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
 
 document.getElementById('cikis').addEventListener('click', async () => {
   await fetch('/api/cikis', { method: 'POST' });
+  try { localStorage.removeItem('ana-renk'); } catch {}
   location.href = '/';
 });
