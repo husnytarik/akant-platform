@@ -14,7 +14,55 @@ const sec = a => a[Math.floor(Math.random() * a.length)];
 const karistir = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 const KONULAR = ['Giriş ve tekrar', 'Yeni konu anlatımı', 'Alıştırmalar', 'Uygulama çalışması', 'Konu özeti', 'Soru çözümü', 'Değerlendirme', 'Grup çalışması'];
-const ODEVLER = ['Çalışma kâğıdı', 'Ders kitabı alıştırmaları', 'Konu tekrarı', 'Araştırma ödevi', 'Test çözümü'];
+// Derse özgü, gerçekçi ödevler: [başlık, açıklama]
+const ODEVLER = {
+  'Türkçe': [
+    ['Okuma günlüğü: bir bölüm özeti', 'Okuduğun kitabın bu haftaki bölümünü 5-6 cümleyle özetle. Bölümde geçen yeni 5 kelimeyi anlamlarıyla birlikte defterine yaz.'],
+    ['Paragraf soruları', 'Ders kitabı sayfa 52-53 paragraf sorularını çöz. Her sorunun yanına ana fikri bulduğun cümlenin altını çizdiğin satırı yaz.'],
+    ['Kısa yazı: Hayalimdeki okul', 'Hayalindeki okulu anlatan 8-10 cümlelik bir yazı yaz. Yazında en az üç sıfat ve iki bağlaç kullan, noktalama işaretlerine dikkat et.'],
+  ],
+  'Matematik': [
+    ['Problem seti: kesirlerle işlemler', 'Çalışma kâğıdındaki 12 problemi defterine çöz. İşlem basamaklarını yaz; sonucu hem kesir hem karma sayı olarak göster.'],
+    ['Ders kitabı alıştırmaları', 'Sayfa 64-65, 1-10. sorular. Çözemediğin soruların numarasını işaretle, derste birlikte bakacağız.'],
+    ['Günlük hayattan kesir', 'Evde bir yemek tarifi seç; malzeme miktarlarını yarıya ve iki katına çıkararak yeni bir tablo hazırla.'],
+  ],
+  'Fen Bilimleri': [
+    ['Mıknatıs deneyi raporu', 'Evde bulunan 10 eşyayı mıknatısla dene. Çeken ve çekmeyenleri iki sütunlu tabloya yaz, bir sonuç cümlesi ekle.'],
+    ['Konu özeti ve kavram haritası', 'Bu haftaki üniteyi bir sayfada kavram haritası olarak özetle. Harita en az 8 kavram ve bağlantı sözcükleri içersin.'],
+    ['Test çözümü', 'Çalışma kitabı sayfa 38 testini zaman tutarak çöz. Süreni ve yanlış yaptığın soruların numaralarını yaz.'],
+  ],
+  'Sosyal Bilgiler': [
+    ['Aile tarihi röportajı', 'Büyüklerinden biriyle çocukluğundaki bir okul günü hakkında konuş. Öğrendiklerini 6-8 cümleyle yaz, mümkünse eski bir fotoğraf ekle.'],
+    ['Harita çalışması', 'Atlasından Türkiye siyasi haritasını çiz; komşu ülkeleri ve çevre denizleri etiketle.'],
+    ['Ders kitabı soruları', 'Sayfa 44-45 "Değerlendirelim" soruları. Cevaplarını tam cümleyle yaz.'],
+  ],
+  'İngilizce': [
+    ['Vocabulary practice', 'Learn the 12 new words in Unit 3. Write each word in a sentence of your own (12 sentences) and be ready for a short quiz.'],
+    ['Workbook pages', 'Workbook pages 28-29. Complete all exercises and record yourself reading the dialogue on page 29 (optional).'],
+    ['My daily routine', 'Write 8 sentences about your daily routine using "first, then, after that". Use present simple tense.'],
+  ],
+  'Görsel Sanatlar': [
+    ['Sonbahar teması resim', 'Sonbaharı anlatan bir resim yap. Sulu boya veya pastel kullanabilirsin; bir sonraki derse A4 kâğıtta getir.'],
+    ['Malzeme hazırlığı', 'Gelecek haftaki kolaj çalışması için eski dergi ve gazete kesikleri, makas ve yapıştırıcı getir.'],
+  ],
+  'Müzik': [
+    ['Şarkı sözü ezberi', 'Derste öğrendiğimiz şarkının ilk iki kıtasını ezberle. Gelecek derste tek tek söyleyeceğiz.'],
+    ['Dinleme çalışması', 'Sevdiğin bir müzik parçasını dinle; hangi çalgıları duyduğunu ve parçanın sende bıraktığı duyguyu 3-4 cümleyle yaz.'],
+  ],
+  'Bilişim': [
+    ['Güvenli internet kuralları', 'Güvenli internet kullanımı için kendi 5 maddelik kural listeni hazırla ve bir posterde göster.'],
+    ['Klavye alıştırması', 'Haftada üç gün, günde 10 dakika on parmak klavye alıştırması yap; ilerlemeni not et.'],
+  ],
+  'Beden Eğitimi': [
+    ['Haftalık hareket takvimi', 'Bu hafta her gün en az 30 dakika hareket et. Ne yaptığını ve süresini tabloya işle, velinin imzasını aldır.'],
+    ['Spor kıyafeti hatırlatması', 'Gelecek ders için spor kıyafetini ve yedek çorabını unutma.'],
+  ],
+  'Din Kültürü': [
+    ['Değerler çalışması', 'Dürüstlük ve yardımlaşma konusunda yaşadığın ya da tanık olduğun bir örneği 5-6 cümleyle yaz.'],
+    ['Ders kitabı soruları', 'Sayfa 30-31 etkinliklerini tamamla; boş bıraktığın etkinlik olmasın.'],
+  ],
+};
+const ODEV_GENEL = [['Konu tekrarı', 'Bu haftaki konuları defterinden tekrar et; anlamadığın yerleri not alıp derste sor.']];
 const ETUT_KONULARI = ['Soru çözümü', 'Konu tekrarı', 'Eksik konular', 'Sınav hazırlık', 'Problemler'];
 
 function calistir() {
@@ -79,14 +127,16 @@ function calistir() {
     let odevSayisi = 0;
     for (const a of atamalar) {
       if (Math.random() < 0.7) {
-        odevEkle.run(a.id, sec(ODEVLER), 'Ders kitabından belirtilen bölümler.', kaydir(bugun, Math.floor(Math.random() * 12) - 3), simdi, sonrakiKonu(a.id).kazanim);
+        const [baslik, not] = sec(ODEVLER[a.ders] || ODEV_GENEL);
+        odevEkle.run(a.id, baslik, not, kaydir(bugun, Math.floor(Math.random() * 12) - 3), simdi, sonrakiKonu(a.id).kazanim);
         odevSayisi++;
       }
     }
     // Demo öğretmenin dersleri için garanti kayıt
     const demoOgrt = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id WHERE u.full_name = 'Ceren Husny' AND m.role = 'ogretmen'`).get()?.id;
     for (const a of atamalar.filter(a => a.ogr === demoOgrt)) {
-      odevEkle.run(a.id, 'Alıştırma çalışması', 'Sayfa 40-41 alıştırmaları.', kaydir(bugun, 4), simdi, sonrakiKonu(a.id).kazanim);
+      const [baslik, not] = (ODEVLER[a.ders] || ODEV_GENEL)[0];
+      odevEkle.run(a.id, baslik, not, kaydir(bugun, 4), simdi, sonrakiKonu(a.id).kazanim);
       odevSayisi++;
     }
 
