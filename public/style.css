@@ -1884,3 +1884,71 @@ input[type="file"][hidden] { display: none !important; }
 .gz-ilerleme i { display: block; height: 100%; border-radius: 999px; background: var(--ana); }
 .gz-ilerleme.ince { height: 5px; margin: 4px 0 8px; }
 .gz-ozet-say { margin: 0; font-size: .8rem; color: var(--soluk); }
+
+/* Sınav sonuçları: sınıf özeti, öğrenci sırası, öğrenci raporu */
+main .sr-ozet { margin: 4px 0 18px; padding: 18px 18px 16px; border: 1px solid var(--ince); border-radius: 22px; background: #fffdf8; }
+.sr-ust { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.sr-ust small { display: block; color: var(--soluk); font-size: .8rem; }
+.sr-buyuk { display: block; font-family: var(--serif); font-size: 2.6rem; font-weight: 500; line-height: 1.05; color: var(--ana); }
+.sr-katilim { flex: none; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--ana) 10%, #fff); color: var(--ana); font-size: .78rem; font-weight: 600; }
+.sr-istat { display: flex; gap: 8px; margin: 14px 0 4px; }
+.sr-istat div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 9px 12px; border-radius: 14px; background: #f7f3ea; }
+.sr-istat b { font-family: var(--serif); font-size: 1.15rem; font-weight: 500; }
+.sr-istat small { color: var(--soluk); font-size: .72rem; }
+main h3.sr-alt { margin: 18px 0 8px; font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--soluk); }
+.sr-seg { display: flex; gap: 3px; height: 30px; }
+.sr-seg span { min-width: 26px; display: grid; place-items: center; border-radius: 8px; background: var(--r); color: #fff; font-size: .78rem; font-weight: 700; }
+.sr-lejant { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: .74rem; color: var(--soluk); }
+.sr-lejant span { display: inline-flex; align-items: center; gap: 5px; }
+.sr-lejant i { width: 8px; height: 8px; border-radius: 50%; background: var(--r); }
+.sr-ozet .yatay-cubuk i, .rp-ders .yatay-cubuk i { background: var(--r, var(--ana)); }
+.sr-ozet .yatay-satir { grid-template-columns: 112px 1fr 26px; }
+.sr-liste-ust { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 2px; }
+.sr-liste-ust h3 { margin: 0; font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--murekkep); }
+.sr-liste-ust small { color: var(--soluk); font-size: .76rem; }
+.sr-liste { margin: 10px 0 14px; border: 1px solid var(--ince); border-radius: 20px; background: #fff; overflow: hidden; }
+.sr-satir { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0; padding: 12px 16px; border: 0; border-top: 1px solid #f0e8d6; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.sr-satir:first-child { border-top: 0; }
+button.sr-satir { cursor: pointer; }
+button.sr-satir:active { background: #faf6ec; }
+.sr-satir.yok { opacity: .6; }
+.sr-sira { flex: none; width: 24px; text-align: center; font-family: var(--serif); font-size: 1.1rem; color: var(--soluk); }
+.sr-kim { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sr-kim strong { font-size: .95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-kim small { color: var(--soluk); font-size: .74rem; }
+.sr-mini { flex: none; display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+.sr-mini i { width: 7px; height: var(--h); border-radius: 3px; background: var(--r); }
+.sr-mini i.yok { height: 4px; background: #e6e0d2; }
+.sr-puan { flex: none; min-width: 48px; padding: 3px 0; border-radius: 999px; text-align: center; font-weight: 700; font-size: .92rem; color: var(--r); background: color-mix(in srgb, var(--r) 13%, #fff); }
+.sr-girmedi { flex: none; font-size: .78rem; color: var(--soluk); }
+
+.rp-arac-ust { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.rp-arac-ust h3 { margin: 0; font-size: 1rem; text-transform: none; letter-spacing: 0; }
+.rp-rapor { margin: 14px 0 20px; padding: 22px 20px; border: 1px solid var(--ince); border-radius: 22px; background: #fff; }
+.rp-kurum { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 12px; border-bottom: 2px solid var(--murekkep); font-size: .78rem; color: var(--soluk); }
+.rp-kurum b { color: var(--murekkep); font-size: .9rem; letter-spacing: .02em; }
+.rp-kim { margin: 16px 0 14px; }
+.rp-kim h2 { margin: 0; font-family: var(--serif); font-size: 1.7rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--murekkep); }
+.rp-kim p { margin: 2px 0 0; font-size: .95rem; }
+.rp-kim small { display: block; margin-top: 2px; color: var(--soluk); font-size: .82rem; }
+.rp-ozet { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.rp-ozet div { display: grid; gap: 2px; padding: 12px 16px; border-radius: 16px; background: color-mix(in srgb, var(--ana) 9%, #fff); }
+.rp-ozet strong { font-family: var(--serif); font-size: 1.7rem; font-weight: 500; line-height: 1; color: var(--ana); }
+.rp-ozet span { font-size: .76rem; color: var(--soluk); }
+.rp-ders { margin: 16px 0 0; break-inside: avoid; }
+.rp-ders-ust { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.rp-ders-ust strong { font-size: 1rem; }
+.rp-ders-ust b { font-family: var(--serif); font-size: 1.25rem; font-weight: 500; color: var(--r); }
+.rp-ders p { margin: 5px 0 0; }
+main h3.rp-baslik { margin: 26px 0 4px; padding-top: 14px; border-top: 1px solid #eee8db; font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--murekkep); }
+.rp-kaz-blok { margin-top: 12px; }
+.rp-kaz-blok h4 { margin: 0 0 4px; font-size: .86rem; color: var(--soluk); }
+.rp-kaz { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 0; border-top: 1px solid #f4efe3; break-inside: avoid; font-size: .88rem; }
+.rp-kaz b { color: var(--c); font-size: .8rem; white-space: nowrap; }
+.rp-kaz small { grid-column: 1 / -1; color: var(--soluk); font-size: .74rem; }
+
+@media print {
+  .karne-acik #liste-bolum, .karne-acik #yeni-bolum, .karne-acik #d-baslik, .karne-acik #d-sekmeler { display: none !important; }
+  .karne-acik .bolum-kutu { border: 0; padding: 0; margin: 0; box-shadow: none; background: #fff; }
+  .rp-rapor { margin: 0; padding: 0; border: 0; }
+}
