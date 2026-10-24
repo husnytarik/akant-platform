@@ -1,5 +1,5 @@
 // Öğretmen: dönem açıkken öğrencilerim için yönetimin belirlediği başlıklarda gözlem girer; önceki dönemlerdeki kendi girişlerini
-// ve veli toplantısı / görüşme notlarını salt okunur görür. Girişi tamamlanmış öğrenci "Düzenle"ye basılana kadar kilitli açılır.
+// ve veli toplantısı / görüşme notlarını salt okunur görür. Öğrenci önce salt okunur açılır; giriş yalnızca "Düzenle" / "Gözlem gir" ile ayrı bir formda yapılır.
 const kok = $('icerik');
 let veri = null;
 const acikSiniflar = new Set(); // ekran yenilense de açık sınıflar açık kalır
@@ -85,7 +85,7 @@ function ana() {
   }
 }
 
-async function ogrenciAc(o, sinif, mesajMetin) {
+async function ogrenciAc(o, sinif, mesajMetin, duzenKipi) {
   acikSiniflar.add(sinif.id);
   const r = await api('/api/gelisim/rapor?ogrenciId=' + o.id);
   if (!r.ok) return mesaj(r.veri.hata || 'Öğrenci alınamadı', 'hata');
@@ -93,36 +93,35 @@ async function ogrenciAc(o, sinif, mesajMetin) {
   const d = secilenDonem();
   const rd = v.donemler.find(x => x.id === d.id);
   ekranAc(kok);
-  kok.append(geriDugme('Öğrenciler', async () => { await yukle(veri.donemId); }));
-
-  const baslik = el('div', undefined, 'kl-ust');
-  const b = el('div', undefined, 'ot-kim');
-  const yazi = el('div');
-  yazi.append(el('h2', o.ad, 'kl-buyuk'), el('p', `${sinif.ad}${o.okulNo ? ' · No ' + o.okulNo : ''}`, 'kl-not'));
-  b.append(avatarYap(o.ad, o.foto, 'orta'), yazi);
-  const raporDugme = el('button', 'Rapor / Yazdır', 'ikincil kucuk'); raporDugme.type = 'button';
-  raporDugme.addEventListener('click', () => raporAcOgretmen(o, sinif));
-  baslik.append(b, raporDugme);
-  kok.append(baslik);
-
   const girisler = new Map(rd.girisler.map(g => [g.baslikId, g.metin]));
   const aktif = veri.basliklar;
+  const dolu = aktif.filter(bl => girisler.get(bl.id)).length;
 
-  // Bu dönem: açıksa form (hepsi doluysa kilitli), değilse salt okunur
-  const bu = bolum(d.ad, durumRozeti(d));
-  kok.append(bu);
-  if (d.durum === 'acik') {
-    const kap = el('fieldset', undefined, 'salt-kap');
+  const baslik = el('div', undefined, 'kl-ust');
+  const kim = el('div', undefined, 'ot-kim');
+  const yazi = el('div');
+  yazi.append(el('h2', o.ad, 'kl-buyuk'), el('p', `${sinif.ad}${o.okulNo ? ' · No ' + o.okulNo : ''}`, 'kl-not'));
+  kim.append(avatarYap(o.ad, o.foto, 'orta'), yazi);
+
+  // Düzenleme kipi: yalnızca form; Vazgeç ya da Kaydet sonrası inceleme ekranına dönülür
+  if (duzenKipi && d.durum === 'acik') {
+    kok.append(geriDugme(o.ad, () => ogrenciAc(o, sinif)));
+    baslik.append(kim);
+    kok.append(baslik);
+    const bu = bolum(`${kisaAd(d.ad)} · gözlem girişi`, durumRozeti(d));
     const alanlar = new Map();
     for (const bl of aktif) {
-      const t = Object.assign(el('textarea'), { rows: 3, maxLength: 1000, value: girisler.get(bl.id) || '', placeholder: bl.aciklama || 'Gözleminizi yazın' });
+      const t = Object.assign(el('textarea'), { rows: 4, maxLength: 1000, value: girisler.get(bl.id) || '', placeholder: bl.aciklama || 'Gözleminizi yazın' });
       alanlar.set(bl.id, t);
-      kap.append(alan(bl.ad, t));
+      bu.append(alan(bl.ad, t));
     }
-    bu.append(kap);
+    kok.append(bu);
     const kaydet = el('button', 'Kaydet', 'birincil'); kaydet.type = 'button';
+    const vazgec = el('button', 'Vazgeç', 'ikincil'); vazgec.type = 'button';
+    vazgec.addEventListener('click', () => ogrenciAc(o, sinif));
     const cubuk = el('div', undefined, 'kaydet-cubuk');
-    cubuk.append(kaydet);
+    cubuk.append(vazgec, kaydet);
+    kok.append(cubuk);
     kaydet.addEventListener('click', async () => {
       kaydet.disabled = true;
       const s = await api('/api/gelisim/giris-kaydet', { donemId: d.id, ogrenciId: o.id, girisler: Object.fromEntries([...alanlar].map(([id, t]) => [id, t.value])) });
@@ -131,25 +130,30 @@ async function ogrenciAc(o, sinif, mesajMetin) {
       o.girilen = s.veri.dolu;
       await ogrenciAc(o, sinif, 'Kaydedildi');
     });
-    const tumuDolu = aktif.length && aktif.every(bl => girisler.get(bl.id));
-    if (tumuDolu) {
-      kap.disabled = true;
-      const duzenle = el('button', 'Düzenle', 'birincil'); duzenle.type = 'button';
-      const salt = el('div', undefined, 'kaydet-cubuk');
-      salt.append(duzenle);
-      const vazgec = el('button', 'Vazgeç', 'ikincil'); vazgec.type = 'button';
-      vazgec.addEventListener('click', () => ogrenciAc(o, sinif));
-      duzenle.addEventListener('click', () => {
-        mesaj('');
-        kap.disabled = false;
-        kaydet.textContent = 'Değişiklikleri kaydet';
-        cubuk.prepend(vazgec);
-        salt.replaceWith(cubuk);
-      });
-      kok.append(salt);
-    } else kok.append(cubuk);
-  } else if (d.durum === 'yaklasan') {
+    return;
+  }
+
+  // İnceleme kipi: sade, salt okunur
+  kok.append(geriDugme('Öğrenciler', async () => { await yukle(veri.donemId); }));
+  const raporDugme = el('button', 'Rapor / Yazdır', 'ikincil kucuk'); raporDugme.type = 'button';
+  raporDugme.addEventListener('click', () => raporAcOgretmen(o, sinif));
+  baslik.append(kim, raporDugme);
+  kok.append(baslik);
+
+  const sag = el('span', undefined, 'gz-bolum-sag');
+  if (d.durum === 'acik') sag.append(chip(`${dolu}/${aktif.length}`, aktif.length && dolu === aktif.length ? 'tamam' : ''));
+  sag.append(durumRozeti(d));
+  const bu = bolum(kisaAd(d.ad), sag);
+  kok.append(bu);
+  if (d.durum === 'yaklasan') {
     bu.append(el('p', `Bu dönem ${tarihYaz(d.baslangic)} tarihinde açılacak.`, 'kl-not'));
+  } else if (d.durum === 'acik') {
+    for (const bl of aktif) bu.append(girisBlogu(bl.ad, girisler.get(bl.id)));
+    const duzenle = el('button', dolu ? 'Düzenle' : 'Gözlem gir', 'birincil'); duzenle.type = 'button';
+    duzenle.addEventListener('click', () => ogrenciAc(o, sinif, '', true));
+    const cubuk = el('div', undefined, 'kaydet-cubuk');
+    cubuk.append(duzenle);
+    kok.append(cubuk);
   } else {
     const gor = v.basliklar.filter(bl => rd.girisler.some(g => g.baslikId === bl.id));
     if (!gor.length) bu.append(el('p', 'Bu dönemde bu öğrenci için giriş yapmadınız.', 'kl-not'));
@@ -202,6 +206,6 @@ async function raporAcOgretmen(o, sinif) {
 
 function girisBlogu(ad, yazi) {
   const k = el('div', undefined, 'gz-baslik');
-  k.append(el('h4', ad), el('p', yazi, 'gz-metin'));
+  k.append(el('h4', ad), yazi ? el('p', yazi, 'gz-metin') : el('p', 'Girilmedi', 'gz-metin gz-yok'));
   return k;
 }

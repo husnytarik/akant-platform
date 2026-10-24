@@ -2192,3 +2192,12 @@ main .pz-satir .sc-ad strong { color: var(--murekkep); font-size: .95rem; }
 .oku-liste { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .oku-kaz { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--ic-zemin); font-size: .88rem; line-height: 1.4; }
 .oku-kaz b { color: var(--murekkep); font-size: .8rem; }
+
+/* Gelişim gözlemleri: inceleme kipi (sade, salt okunur) */
+.gz-bolum-sag { display: inline-flex; align-items: center; gap: 6px; }
+main .adim .gz-baslik { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--ic-zemin); }
+main .adim .gz-baslik + .gz-baslik { margin-top: 8px; }
+main .adim-ust + .gz-baslik { margin-top: 10px; }
+main .adim .gz-baslik h4 { margin: 0 0 3px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--soluk); }
+main .adim .gz-baslik .gz-metin { margin: 0; font-size: .95rem; line-height: 1.5; color: var(--murekkep); }
+main .adim .gz-baslik .gz-yok { color: var(--soluk); font-style: italic; }
