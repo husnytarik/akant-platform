@@ -47,6 +47,7 @@ function kazanimSecici({ tek = false, secili = [], degisti } = {}) {
 
   kutu.append(ozet, unite, liste);
   kutu.kodlar = () => [...secim];
+  kutu.metin = metinDe;
   kutu.hazir = (async () => {
     const r = await api('/api/mufredat/kazanimlar?' + new URLSearchParams({ sinifId: ders.sinifId, ders: ders.ders }));
     if (!r.ok || !r.veri.var) { kutu.classList.add('gizli'); return { var: false }; }

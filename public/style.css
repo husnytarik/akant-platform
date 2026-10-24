@@ -2184,3 +2184,11 @@ main .pz-satir { display: flex; flex-direction: row; flex-wrap: nowrap; align-it
 main .pz-satir .sc-ad { flex: 1; min-width: 0; }
 main label.pz-satir input[type="text"] { flex: none; width: 84px; height: 40px; min-height: 0; margin: 0; padding: 0 8px; }
 main .pz-satir .sc-ad strong { color: var(--murekkep); font-size: .95rem; }
+
+/* Dersi bitir: görüntüleme kartları (düzenleme ayrı formda) */
+.oku-alan { margin: 10px 0 0; }
+.oku-alan small { display: block; color: var(--soluk); font-size: .76rem; }
+.oku-alan p { margin: 2px 0 0; font-size: .95rem; line-height: 1.4; overflow-wrap: anywhere; }
+.oku-liste { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.oku-kaz { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--ic-zemin); font-size: .88rem; line-height: 1.4; }
+.oku-kaz b { color: var(--murekkep); font-size: .8rem; }

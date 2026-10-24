@@ -2,14 +2,12 @@
 // derslerim.js içinden çağrılır (el, api, mesaj, kazanimSecici, ders, tarih, bugun oradan gelir).
 const BITIR_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['gec', 'Geç'], ['izinli', 'İzinli']];
 
-// Bitmiş ders önce salt okunur açılır; değişiklik için "Düzenle"ye basılır (yanlışlıkla dokunma kaydı bozmasın).
-// cubuk: [iptal, kaydet] çubuğu; bitmediyse doğrudan form olarak açılır.
-function saltOkunurKur(k, bolumler, cubuk, iptal, rozet, bitmis, yenile) {
-  const kap = el('fieldset', undefined, 'salt-kap');
+// Bitmiş ders önce yalnızca görüntülenir (özet kartlar); değişiklik için "Düzenle"ye basılınca ayrı bir düzenleme formu açılır
+// (yanlışlıkla dokunma kaydı bozmasın). gorunum: özet kartları; cubuk: [iptal, kaydet] çubuğu; bitmediyse doğrudan form açılır.
+function saltOkunurKur(k, bolumler, cubuk, iptal, bitmis, yenile, gorunum) {
+  const kap = el('div', undefined, 'salt-kap');
   kap.append(...bolumler);
   if (!bitmis) return k.append(kap, cubuk);
-  kap.disabled = true;
-  rozet.textContent = 'Tamamlandı';
   const duzenle = el('button', 'Düzenle', 'birincil'); duzenle.type = 'button';
   const salt = el('div', undefined, 'kaydet-cubuk');
   salt.append(duzenle);
@@ -17,16 +15,45 @@ function saltOkunurKur(k, bolumler, cubuk, iptal, rozet, bitmis, yenile) {
   vazgec.addEventListener('click', yenile);
   duzenle.addEventListener('click', () => {
     mesaj('');
-    kap.disabled = false;
-    rozet.textContent = 'Düzenleniyor';
     const diger = el('div', undefined, 'adim');
     const dUst = el('div', undefined, 'adim-ust'); dUst.append(el('h3', 'Diğer işlemler'));
     diger.append(dUst, iptal);
-    kap.after(diger);
     cubuk.prepend(vazgec);
-    salt.replaceWith(cubuk);
+    k.replaceChildren(kap, diger, cubuk);
+    window.scrollTo({ top: 0 });
   });
-  k.append(kap, salt);
+  k.append(gorunum, salt);
+}
+
+// Görüntüleme kartı: başlık + (isteğe bağlı) sağ rozet, altında içerik
+function okuKart(baslik, rozet, ...icerik) {
+  const kart = el('div', undefined, 'adim');
+  const ust = el('div', undefined, 'adim-ust');
+  ust.append(el('h3', baslik));
+  if (rozet) ust.append(rozet);
+  kart.append(ust, ...icerik);
+  return kart;
+}
+const okuAlan = (ad, deger) => { const a = el('div', undefined, 'oku-alan'); a.append(el('small', ad), el('p', deger)); return a; };
+const tarihNokta = t => t.split('-').reverse().join('.');
+
+// Yoklama özeti: sayılar + gelmeyenlerin adları (herkes geldiyse tek satır)
+function yoklamaOzeti(ogrenciler, durumDe, secenek, renk) {
+  const kap = el('div', undefined, 'yok-ozet');
+  const say = Object.fromEntries(secenek.map(([d]) => [d, 0]));
+  for (const o of ogrenciler) say[durumDe(o)]++;
+  const dilimler = secenek.map(([d, e]) => ({ deger: say[d], renk: renk[d], etiket: e.toLocaleLowerCase('tr') }));
+  kap.append(yiginCubuk(dilimler), gosterge(dilimler.filter(d => d.deger > 0 || d.etiket === 'geldi')));
+  const parcalar = [];
+  for (const [d, e] of secenek) {
+    if (d === 'geldi') continue;
+    const adlar = ogrenciler.filter(o => durumDe(o) === d).map(o => o.ad);
+    if (adlar.length) { const s = el('div', undefined, 'oku-alan'); s.append(el('small', e + ' (' + adlar.length + ')'), el('p', adlar.join(', '))); parcalar.push(s); }
+  }
+  if (!ogrenciler.length) parcalar.push(el('p', 'Öğrenci yok.', 'alt'));
+  else if (!parcalar.length) parcalar.push(el('p', 'Herkes geldi.', 'alt'));
+  kap.append(...parcalar);
+  return kap;
 }
 
 async function bitirCiz(k, bitince) {
@@ -149,7 +176,33 @@ async function bitirCiz(k, bitince) {
     bitince();
   });
 
-  saltOkunurKur(k, [yok, konuKutu, odevKutu], cubuk, iptal, durumEtiket, !!r.veri.tamam && !r.veri.iptal, () => bitirCiz(k, bitince));
+  // Görüntüleme: kayıtlı hâli (değişiklik için "Düzenle")
+  const bitmis = !!r.veri.tamam && !r.veri.iptal;
+  const gorunum = el('div');
+  if (bitmis) {
+    const kayitli = new Map(ogrenciler.map(o => [o.ogrenciId, o.durum]));
+    const kazOku = el('div', undefined, 'oku-liste');
+    const konuIcerik = [kazOku];
+    const kodlar = r.veri.kazanimKodlari || [];
+    kazSec.hazir.then(h => {
+      if (h.var) {
+        for (const kod of kodlar) { const s = el('div', undefined, 'oku-kaz'); s.append(el('b', kod), el('span', kazSec.metin(kod))); kazOku.append(s); }
+        if (!kodlar.length) kazOku.append(el('p', 'Kazanım seçilmemiş.', 'alt'));
+      } else if (r.veri.konu) kazOku.append(okuAlan('Konu', r.veri.konu));
+      else kazOku.append(el('p', 'Konu girilmemiş.', 'alt'));
+    });
+    if (r.veri.aciklama) konuIcerik.push(okuAlan('Açıklama', r.veri.aciklama));
+    const od = r.veri.odev;
+    const odevIcerik = od && od.baslik
+      ? [okuAlan(od.baslik, od.aciklama || 'Açıklama yok'), okuAlan('Son teslim', tarihNokta(od.sonTarih))]
+      : [el('p', 'Ödev verilmedi.', 'alt')];
+    gorunum.append(
+      okuKart('Yoklama', el('span', 'Tamamlandı', 'rozet tamam'), yoklamaOzeti(ogrenciler, o => kayitli.get(o.ogrenciId), BITIR_SECENEK, RENK)),
+      okuKart('İşlenen konu', null, ...konuIcerik),
+      okuKart('Ödev', null, ...odevIcerik),
+    );
+  }
+  saltOkunurKur(k, [yok, konuKutu, odevKutu], cubuk, iptal, bitmis, () => bitirCiz(k, bitince), gorunum);
   hapCiz();
 }
 
@@ -255,6 +308,19 @@ async function kulupBitirCiz(k, bitince, kulupId = ders.kulupId, gun = tarih) {
     bitince();
   });
 
-  saltOkunurKur(k, [yok, konuKutu], cubuk, iptal, rozet, !!c?.tamam, () => kulupBitirCiz(k, bitince));
+  // Görüntüleme: kayıtlı hâli (değişiklik için "Düzenle")
+  const gorunum = el('div');
+  if (c?.tamam) {
+    const KR = { geldi: '#2e9e5b', gelmedi: '#d64545', izinli: '#8a867d' };
+    const kayitli = new Map(uyeler.map(u => [u.uyelikId, katilim[u.uyelikId] || 'geldi']));
+    const turAd = (KULUP_TUR.find(([d]) => d === c.tur) || KULUP_TUR[0])[1];
+    const konuIcerik = [okuAlan(turAd, c.baslik || 'Konu girilmemiş')];
+    if (c.aciklama) konuIcerik.push(okuAlan('Açıklama', c.aciklama));
+    gorunum.append(
+      okuKart('Yoklama', el('span', 'Tamamlandı', 'rozet tamam'), yoklamaOzeti(uyeler.map(u => ({ ...u, ogrenciId: u.uyelikId })), o => kayitli.get(o.ogrenciId), KULUP_SECENEK, KR)),
+      okuKart('İşlenen konu', null, ...konuIcerik),
+    );
+  }
+  saltOkunurKur(k, [yok, konuKutu], cubuk, iptal, !!c?.tamam, () => kulupBitirCiz(k, bitince), gorunum);
   if (basladi) hapCiz();
 }
