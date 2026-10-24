@@ -110,18 +110,20 @@ async function sinavCiz() {
   if (!r.ok) return k.appendChild(el('p', r.veri.hata || 'Hata', 'alt'));
   if (!r.veri.sinavlar.length) return k.appendChild(el('p', 'Yayınlanmış sınav sonucu yok.', 'bos-not'));
   for (const s of r.veri.sinavlar) {
-    const kart = el('div', undefined, 'sinav-ozet');
-    const ust = el('div', undefined, 'sinav-ozet-ust');
-    ust.append(el('strong', s.ad), el('span', kisaTarih(s.tarih)));
-    const alt = el('div', undefined, 'sinav-ozet-alt');
-    alt.append(el('b', String(s.ortalama)), el('span', `ortalama · ${s.sira}/${s.giren}. sıra`));
-    const dersler = el('div', undefined, 'sinav-dersler');
+    const kart = el('article', undefined, 'ogs-kart');
+    const ust = el('div', undefined, 'ogs-ust');
+    const kim = el('div', undefined, 'ogs-kim');
+    kim.append(el('strong', s.ad), el('small', kisaTarih(s.tarih)));
+    const puan = el('div', undefined, 'ogs-puan');
+    puan.append(el('b', String(s.ortalama)), el('small', `ortalama · ${s.sira}. sıra (${s.giren} öğrenci)`));
+    ust.append(kim, puan);
+    const dersler = el('div', undefined, 'ogs-dersler');
     for (const d of s.dersler) {
-      const c = el('span', undefined, 'ogr-sinav-ders');
-      c.append(document.createTextNode(d.ders + ' '), el('b', String(d.net)));
-      dersler.appendChild(c);
+      const h = el('div', undefined, 'ogs-ders');
+      h.append(el('small', d.ders), el('b', String(d.net)));
+      dersler.appendChild(h);
     }
-    kart.append(ust, alt, dersler);
+    kart.append(ust, dersler);
     k.appendChild(kart);
   }
 }
