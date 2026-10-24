@@ -342,7 +342,7 @@ async function listeYukle() {
   for (const e of etutler) liste.appendChild(kart(e));
 }
 
-// Öğretmen: derslerdeki gibi kısa satırlar (tarih · saat), seçilen etüdün detayı altta
+// Öğretmen: derslerdeki gibi kısa satırlar (tarih · saat); seçilen etüdün detayı dokunulan satırın hemen altında açılır
 let seciliEtut = null;
 let kapatici = null;   // boşluğa dokununca açık etüdü kapatır
 document.addEventListener('click', ev => kapatici?.(ev));
@@ -354,6 +354,7 @@ function ogretmenListesi(liste, etutler) {
     seciliEtut = e.id;
     for (const [id, s] of satirlar) s.setAttribute('aria-pressed', String(id === e.id));
     detay.replaceChildren(ogretmenKarti(e));
+    satirlar.get(e.id).after(detay);
   };
   const kapat = () => {
     seciliEtut = null;
