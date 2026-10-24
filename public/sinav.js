@@ -1,10 +1,11 @@
 const $ = id => document.getElementById(id);
-let secenekler = { siniflar: [], dersler: [] };
+let secenekler = { duzeyler: [] };
 let acik = null;          // açık sınavın detayı
 let ben = { yon: false }; // yönetim hesabı mı
 let mod = 'incele';       // incele | duzen
 let sekme = 'sonuc';
-let yeniTur = 'test';
+let yeniTur = 'deneme'; // deneme | acilis | yazili
+let hazirlikDuzen = null; // Hazırlık sekmesinde düzenlenen dersin id'si
 let yaziKaz = null;       // yazılı sınav formundaki kazanım seçici
 
 function mesaj(metin, tur = '') {
@@ -46,31 +47,37 @@ const KAT_YAZI = k => (k ? `${k} yanlış 1 doğruyu götürür` : 'yanlış gö
 const yazili = () => acik.sinav.tur === 'yazili';
 
 // ---------- Liste ----------
+const TUR_YAZI = s => (s.tur === 'yazili' ? 'Yazılı' : s.amac === 'acilis' ? 'Açılış sınavı' : 'Deneme');
 async function listeYukle() {
   const r = await api('/api/sinav/liste');
   const kutu = $('liste');
   kutu.replaceChildren();
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   ben.yon = !!r.veri.yonetim;
-  $('yeni-ac').classList.toggle('gizli', ben.yon);
-  if (!r.veri.sinavlar.length) kutu.append(el('p', ben.yon ? 'Henüz sınav yok.' : 'Henüz sınav yok. Sağ üstteki "Yeni sınav" ile başlayın.', 'bos-not'));
+  $('yeni-ac').classList.toggle('gizli', !ben.yon);
+  if (!r.veri.sinavlar.length) kutu.append(el('p', ben.yon ? 'Henüz sınav yok. Sağ üstteki "Yeni sınav" ile başlayın.' : 'Şu an sizin dersinize açılmış bir sınav yok. Yönetim sınavı etkinleştirince burada görünür.', 'bos-not'));
   for (const s of r.veri.sinavlar) {
     const kart = el('button', '', 'sinav-kart');
     kart.type = 'button';
     const rozetler = el('span', undefined, 'sl-rozetler');
     const rozet = (yazi, tur = '') => rozetler.append(el('span', yazi, 'sl-rozet ' + tur));
-    rozet(s.tur === 'yazili' ? 'Yazılı' : 'Test', 'tur');
-    if (s.sahip) {
-      rozet(s.yayin ? 'Yayında' : 'Yayınlanmadı', s.yayin ? 'acik' : '');
+    rozet(TUR_YAZI(s), 'tur');
+    if (ben.yon) {
+      rozet(s.durum === 'aktif' ? 'Etkin' : 'Taslak', s.durum === 'aktif' ? 'acik' : 'eksik');
+      if (s.amac !== 'acilis') rozet(s.yayin ? 'Yayında' : 'Yayınlanmadı', s.yayin ? 'acik' : '');
       rozet(s.tur === 'yazili' ? `${s.okunan} puan girildi` : `${s.okunan} öğrenci cevabı`);
-    } else rozet(`Paylaşılan · ${s.sahipAd}`);
-    if (s.tur === 'yazili') { if (s.kazanimli) rozet(`${s.kazanimli} kazanım`); } else rozet(`Kazanım ${s.kazanimli}/${s.soru}`, s.kazanimli === s.soru ? 'tam' : 'eksik');
+    }
+    if (s.tur === 'test') {
+      const hazir = s.hazirlik.filter(h => h.onay).length;
+      if (ben.yon) rozet(`Hazırlık ${hazir}/${s.hazirlik.length} ders`, hazir === s.hazirlik.length ? 'tam' : 'eksik');
+      else for (const h of s.hazirlik) rozet(`${h.ders}: ${h.onay ? 'onaylandı' : h.tamam ? 'onay bekliyor' : 'eksik'}`, h.onay ? 'tam' : 'eksik');
+    } else if (s.kazanimli) rozet(`${s.kazanimli} kazanım`);
     kart.append(
       el('strong', s.ad),
-      el('span', `${tarihYaz(s.tarih)} · ${s.siniflar.join(', ')} · ${s.dersler.join(', ')}${ben.yon ? ' · ' + s.sahipAd : ''}`, 'alt'),
+      el('span', `${tarihYaz(s.tarih)} · ${s.duzey ? s.duzey + '. sınıf' : s.siniflar.join(', ')} · ${s.dersler.join(', ')}`, 'alt'),
       rozetler,
     );
-    kart.addEventListener('click', () => detayAc(s.id));
+    kart.addEventListener('click', () => detayAc(s.id, !ben.yon && s.tur === 'test' ? 'hazirlik' : undefined));
     kutu.append(kart);
   }
 }
@@ -145,99 +152,99 @@ const sinifDuzeyi = adlar => {
   return seviye.size === 1 ? String([...seviye][0]) : '';
 };
 
-// ---------- Yeni sınav ----------
-function dersSatiri(ders = '', n = '', anahtar = '') {
+// ---------- Yeni sınav (yalnız yönetim) ----------
+const seciliDuzey = () => secenekler.duzeyler.find(d => d.duzey === Number($('s-duzey').value));
+function dersSatiri(ders = '', n = '') {
   const s = el('div', '', 'sinav-ders');
   const sel = el('select');
   sel.setAttribute('aria-label', 'Ders');
-  for (const d of secenekler.dersler) { const o = el('option', d); o.value = d; sel.append(o); }
+  for (const d of seciliDuzey()?.dersler || []) { const o = el('option', d); o.value = d; sel.append(o); }
   if (ders) sel.value = ders;
-  const sayi = el('input'); sayi.type = 'number'; sayi.min = 1; sayi.max = 200; sayi.value = n; sayi.placeholder = 'Soru sayısı';
+  const sayi = el('input'); sayi.type = 'number'; sayi.min = 1; sayi.max = 200; sayi.value = n; sayi.placeholder = 'Soru';
   sayi.setAttribute('aria-label', 'Soru sayısı');
-  const ank = el('input', undefined, 'cevap-giris'); ank.placeholder = 'Cevap anahtarı: ABCDABCD...'; ank.value = anahtar; ank.autocomplete = 'off';
-  ank.setAttribute('aria-label', 'Cevap anahtarı');
-  const sayac = el('span', '', 'alt');
-  const guncelle = () => { sayac.textContent = `${ank.value.replace(/\s/g, '').length} harf`; };
-  ank.addEventListener('input', guncelle); guncelle();
-  const sil = el('button', 'Kaldır', 'ikincil'); sil.type = 'button';
+  const sil = el('button', '✕', 'ikincil'); sil.type = 'button'; sil.setAttribute('aria-label', 'Dersi kaldır');
   sil.addEventListener('click', () => s.remove());
-  s.append(sel, sayi, ank, sayac, sil);
+  s.append(sel, sayi, sil);
   return s;
 }
 
+const TUR_NOT = {
+  deneme: 'Sınıf düzeyinin tüm şubeleri aynı sınava girer. Sonuçları yayınlayınca öğrenci ve veli görür.',
+  acilis: 'Yıl başı yerleştirme sınavı. Sonuçları yalnız okul görür; öğrenci ve velilere hiçbir bildirim gitmez.',
+  yazili: 'Ders ve düzey bazında; soru ve cevap anahtarı yok. Puanları dersin öğretmenleri kendi sınıfları için girer.',
+};
 function turSec(tur) {
   yeniTur = tur;
   for (const b of $('s-tur').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.tur === tur));
-  $('blok-test').classList.toggle('gizli', tur !== 'test');
+  $('tur-not').textContent = TUR_NOT[tur];
+  $('blok-test').classList.toggle('gizli', tur === 'yazili');
   $('blok-yazili').classList.toggle('gizli', tur !== 'yazili');
-  $('s-kat-kutu').classList.toggle('gizli', tur !== 'test');
+  $('s-kat-kutu').classList.toggle('gizli', tur === 'yazili');
+}
+
+// Düzey değişince dersler o düzeyin derslerine döner
+function duzeySecildi() {
+  const d = seciliDuzey();
+  $('s-sube').textContent = d ? `Şubeler: ${d.siniflar.join(', ')} (hepsi birlikte sınava girer)` : '';
+  // Dört temel ders hazır gelir (soru sayısını yönetim yazar); gerekmeyen satır ✕ ile kalkar, boş bırakılan da sınava eklenmez
+  const temel = ['Türkçe', 'Matematik', 'Fen Bilimleri', 'Sosyal Bilgiler'].filter(x => d?.dersler.includes(x));
+  $('s-dersler').replaceChildren(...(temel.length ? temel : ['']).map(x => dersSatiri(x)));
+  const yd = $('y-ders');
+  yd.replaceChildren();
+  for (const ad of d?.dersler || []) { const o = el('option', ad); o.value = ad; yd.append(o); }
+  if (yaziKaz) yaziKaz.yenile();
 }
 
 async function yeniAc() {
   const r = await api('/api/sinav/secenekler');
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   secenekler = r.veri;
-  if (!secenekler.siniflar.length) return mesaj('Size atanmış sınıf/ders yok.', 'hata');
+  if (!secenekler.duzeyler.length) return mesaj('Şubenizde sınıf/ders ataması yok.', 'hata');
   gorunum('yeni');
   $('s-ad').value = '';
   $('s-tarih').value = new Date().toLocaleDateString('sv-SE');
   $('s-kat').value = '0';
-  const kutu = $('s-siniflar');
-  kutu.replaceChildren();
-  for (const c of secenekler.siniflar) {
-    const l = el('label', '', 'onay');
-    const cb = el('input'); cb.type = 'checkbox'; cb.value = c.id;
-    l.append(cb, document.createTextNode(c.name));
-    kutu.append(l);
-  }
-  $('s-dersler').replaceChildren(dersSatiri());
-  const yd = $('y-ders');
-  yd.replaceChildren();
-  for (const d of secenekler.dersler) { const o = el('option', d); o.value = d; yd.append(o); }
+  const dz = $('s-duzey');
+  dz.replaceChildren();
+  for (const d of secenekler.duzeyler) { const o = el('option', `${d.duzey}. sınıf`); o.value = d.duzey; dz.append(o); }
   const prog = await programDersleri();
-  const seciliSinifAdlari = () => [...kutu.querySelectorAll('input:checked')].map(i => secenekler.siniflar.find(c => c.id === Number(i.value))?.name || '');
-  yaziKaz = kazanimSecici([], () => (prog.includes(yd.value) ? yd.value : ''), () => sinifDuzeyi(seciliSinifAdlari()));
+  const yd = $('y-ders');
+  yaziKaz = kazanimSecici([], () => (prog.includes(yd.value) ? yd.value : ''), () => String(seciliDuzey()?.duzey || ''));
   $('y-kaz').replaceChildren(yaziKaz);
   yd.onchange = () => yaziKaz.yenile();
-  turSec('test');
+  dz.onchange = duzeySecildi;
+  duzeySecildi();
+  turSec('deneme');
 }
 
 function dersleriTopla(kutu) {
   return [...kutu.querySelectorAll('.sinav-ders')].map(s => {
-    const [sel, sayi, ank] = s.querySelectorAll('select, input');
-    return { ders: sel.value, soruSayisi: Number(sayi.value), anahtar: ank.value };
-  });
+    const [sel, sayi] = s.querySelectorAll('select, input');
+    return { ders: sel.value, soruSayisi: Number(sayi.value) };
+  }).filter(x => x.soruSayisi > 0);
 }
 
 async function olustur() {
-  const govde = {
-    ad: $('s-ad').value, tarih: $('s-tarih').value, tur: yeniTur,
-    sinifIds: [...$('s-siniflar').querySelectorAll('input:checked')].map(i => Number(i.value)),
-  };
-  if (yeniTur === 'yazili') Object.assign(govde, { yanlisKat: 0, ders: $('y-ders').value, kazanimlar: yaziKaz.degerler() });
-  else Object.assign(govde, { yanlisKat: Number($('s-kat').value), dersler: dersleriTopla($('s-dersler')) });
+  const govde = { ad: $('s-ad').value, tarih: $('s-tarih').value, duzey: Number($('s-duzey').value), tur: yeniTur === 'yazili' ? 'yazili' : 'test' };
+  if (yeniTur === 'yazili') Object.assign(govde, { yanlisKat: 0, ders: $('y-ders').value, soruSayisi: $('y-soru').value, kazanimlar: yaziKaz.degerler() });
+  else Object.assign(govde, { amac: yeniTur, yanlisKat: Number($('s-kat').value), dersler: dersleriTopla($('s-dersler')) });
   const r = await api('/api/sinav/olustur', govde);
   if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
   listeYukle();
-  if (yeniTur === 'yazili') {
-    await detayAc(r.veri.id, 'puan');
-    mesaj('Yazılı sınav oluşturuldu. Şimdi öğrencilerin puanlarını girebilirsiniz.', 'tamam');
-  } else {
-    await detayAc(r.veri.id);
-    mesaj('Sınav oluşturuldu. Öğrenci cevaplarını okul yönetimi girecek; girildikçe sonuçlar burada görünür.', 'tamam');
-  }
+  await detayAc(r.veri.id, 'ayarlar');
+  mesaj('Sınav taslak olarak oluşturuldu. Hazır olunca "Sınavı etkinleştir" ile ders öğretmenlerine açın.', 'tamam');
 }
 
 // ---------- Sınav: sekmeler ----------
-// [ad, kip, etiket]. İnceleme kipinde yalnız okunur; düzenleme ayrı kiptedir.
+// [ad, kip, etiket]. İnceleme kipinde yalnız okunur (Hazırlık'ta her ders ayrıca "Düzenle" ile açılır); toplu giriş ve ayarlar ayrı kiptedir.
 function sekmeListesi() {
-  const d = acik, yaz = yazili(), l = [];
+  const yaz = yazili(), l = [];
+  if (!yaz) l.push(['hazirlik', 'incele', 'Hazırlık']);
   l.push(['sonuc', 'incele', 'Özet'], ['ogr', 'incele', 'Öğrenciler']);
-  if (!yaz && (d.sahip || d.dersler.length)) l.push(['analiz', 'incele', 'Madde analizi']);
-  if (d.sahip && !yaz) l.push(['cevap', 'duzen', 'Cevaplar']);
-  if (d.sahip && yaz && !d.yonetim) l.push(['puan', 'duzen', 'Puanlar']);
-  if (!d.yonetim && !(yaz && !d.sahip) && (d.sahip || d.dersler.length)) l.push(['kazanim', 'duzen', 'Kazanımlar']);
-  if ((d.sahip && !(yaz && d.yonetim)) || (!yaz && d.dersler.some(x => x.kazDuzenle))) l.push(['anahtar', 'duzen', d.yonetim ? 'Cevap anahtarı' : yaz ? 'Yayın' : d.sahip ? 'Anahtar ve yayın' : 'Cevap anahtarı']);
+  if (!yaz) l.push(['analiz', 'incele', 'Madde analizi']);
+  if (!yaz && ben.yon) l.push(['cevap', 'duzen', 'Cevaplar']);
+  if (yaz) l.push(['puan', 'duzen', 'Puanlar'], ['kazanim', 'duzen', 'Kazanımlar']);
+  if (ben.yon) l.push(['ayarlar', 'duzen', 'Ayarlar']);
   return l;
 }
 
@@ -257,15 +264,17 @@ function sekmeCiz() {
   kap.classList.toggle('gizli', kap.children.length < 2);
 }
 
-async function detayAc(id, ilkSekme = 'sonuc') {
+async function detayAc(id, ilkSekme) {
   const r = await api('/api/sinav/detay?id=' + id);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   acik = r.veri;
   ben.yon = !!acik.yonetim;
+  hazirlikDuzen = null;
   gorunum('detay');
   $('d-baslik').textContent = acik.sinav.ad;
-  $('d-alt').textContent = `${tarihYaz(acik.sinav.tarih)} · ${acik.siniflar.map(c => c.name).join(', ')} · ${acik.dersler.map(x => x.ders).join(', ')} · ${yazili() ? 'Yazılı' : 'Test'}`;
-  sekmeSec(sekmeListesi().some(x => x[0] === ilkSekme) ? ilkSekme : 'sonuc');
+  $('d-alt').textContent = [tarihYaz(acik.sinav.tarih), acik.sinav.duzey ? acik.sinav.duzey + '. sınıf' : acik.siniflar.map(c => c.name).join(', '), acik.dersler.map(x => x.ders).join(', '), TUR_YAZI(acik.sinav)].join(' · ');
+  const varsayilan = !yazili() && !acik.sinav.cevapVar ? 'hazirlik' : 'sonuc';
+  sekmeSec(sekmeListesi().some(x => x[0] === ilkSekme) ? ilkSekme : varsayilan);
 }
 
 function sekmeSec(ad) {
@@ -274,15 +283,13 @@ function sekmeSec(ad) {
   document.body.classList.remove('karne-acik');
   sekmeCiz();
   mesaj('');
-  ({ sonuc: sonucCiz, ogr: ogrCiz, analiz: analizCiz, cevap: cevapCiz, puan: puanCiz, kazanim: kazanimYonlendir, anahtar: anahtarCiz })[ad]();
+  ({ sonuc: sonucCiz, ogr: ogrCiz, analiz: analizCiz, cevap: cevapCiz, puan: puanCiz, kazanim: yaziKazanimCiz, hazirlik: hazirlikCiz, ayarlar: ayarlarCiz })[ad]();
 }
 
 function modSec(m) {
   const ilk = sekmeListesi().find(x => x[1] === m);
   if (ilk) sekmeSec(ilk[0]);
 }
-
-const kazanimYonlendir = () => (yazili() ? yaziKazanimCiz() : kazanimCiz());
 
 // ---------- Optik okuyucu dosyası ----------
 // CSV: okul_no;ders1 cevapları;ders2 cevapları... (tek cevap sütunu da olur) · Sabit genişlik: ilk N karakter okul no, sonrası cevaplar
@@ -353,7 +360,7 @@ function optikKutusu(d, girisler) {
     for (const k of kayitlar) {
       const satir = harita.get(k.no);
       if (!satir) { sorunlar.push(`Satır ${k.satir}: "${k.no}" numaralı öğrenci bu sınavın sınıflarında yok`); continue; }
-      satir.forEach(([, , gi], j) => { gi.value = k.cevap[j] || ''; gi.dispatchEvent(new Event('input')); });
+      satir.forEach(([, , gi], j) => { if (gi.disabled) return; gi.value = k.cevap[j] || ''; gi.dispatchEvent(new Event('input')); });
       uygulanan++;
       if (k.uyari) sorunlar.push(`Satır ${k.satir} (${satir[0][0].ad}): ${k.uyari}`);
     }
@@ -371,7 +378,12 @@ function optikKutusu(d, girisler) {
   return kutu;
 }
 
-// ---------- Cevaplar (test): öğretmen yalnız görür, yönetim ayrıca düzenler ----------
+// ---------- Cevaplar (test): yalnız yönetim; önce görüntüler, "Cevapları düzenle" ile giriş açılır ----------
+const anahtarEksik = d => d.dersler.filter(x => x.anahtar.includes('?'));
+function anahtarUyari(d) {
+  const e = anahtarEksik(d);
+  return e.length ? el('p', `${e.map(x => x.ders).join(', ')} dersinin cevap anahtarı henüz tamamlanmadı; öğrenci cevapları anahtar bitince girilebilir (Hazırlık sekmesi).`, 'kl-not') : null;
+}
 // Her soru bir hücre: numara, öğrencinin işareti (doğru yeşil, yanlış kırmızı + doğru şık, boş gri)
 function cevapSay(x, c) {
   let dogru = 0, yanlis = 0, bos = 0;
@@ -402,15 +414,13 @@ function cevapCiz() {
   kutu.replaceChildren();
   const d = acik;
   if (ben.yon && d.duzenleniyor) return cevapDuzenle();
+  const uyari = anahtarUyari(d);
+  if (uyari) kutu.append(uyari);
   const ust = el('div', undefined, 'cv-ust');
-  ust.append(el('p', ben.yon
-    ? 'Öğrencilerin işaretlediği cevaplar. Hata varsa "Cevapları düzenle" ile düzeltin; değişiklikler kaydetmeden önce onay ister.'
-    : 'Öğrencilerin işaretlediği cevapları kontrol edebilirsiniz. Yeşil doğru, kırmızı yanlış (altında doğru şık), gri boş. Cevapları yalnızca okul yönetimi girer ve değiştirir; hata görürseniz yönetime bildirin.', 'alt'));
-  if (ben.yon) {
-    const duz = el('button', 'Cevapları düzenle', 'ikincil kucuk'); duz.type = 'button';
-    duz.addEventListener('click', () => { d.duzenleniyor = true; cevapCiz(); });
-    ust.append(duz);
-  }
+  ust.append(el('p', 'Öğrencilerin işaretlediği cevaplar. Yeşil doğru, kırmızı yanlış (altında doğru şık), gri boş. Optik okuyucu çıktısını, Excel dosyasını ya da elle girişi "Cevapları düzenle" ile yaparsınız.', 'alt'));
+  const duz = el('button', 'Cevapları düzenle', 'ikincil kucuk'); duz.type = 'button';
+  duz.addEventListener('click', () => { d.duzenleniyor = true; cevapCiz(); });
+  ust.append(duz);
   kutu.append(ust);
   const liste = el('div', undefined, 'sc-liste');
   for (const g of d.ogrenciler) {
@@ -441,6 +451,8 @@ function cevapDuzenle() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
   const d = acik;
+  const uyari = anahtarUyari(d);
+  if (uyari) kutu.append(uyari);
   kutu.append(el('p', `Her öğrenci için A-E harflerini yazın, boş soru için "-" kullanın. ${KAT_YAZI(d.sinav.yanlisKat)}. Yalnızca değiştirdiğiniz kayıtlar kaydedilir.`, 'alt'));
 
   const topluKutu = el('details', '', 'toplu');
@@ -473,6 +485,7 @@ function cevapDuzenle() {
       const say = el('em');
       const gi = el('input', undefined, 'cevap-giris'); gi.value = g.cevaplar[x.id] || '';
       gi.maxLength = x.soruSayisi; gi.autocomplete = 'off'; gi.spellcheck = false;
+      gi.disabled = x.anahtar.includes('?');
       gi.setAttribute('aria-label', `${g.ad} ${x.ders}`);
       satir.push([g, x, gi]);
       const sayYaz = () => {
@@ -497,7 +510,7 @@ function cevapDuzenle() {
     if (satirlar.length > girisler.length) return mesaj(`Satır sayısı (${satirlar.length}) öğrenci sayısından (${girisler.length}) fazla.`, 'hata');
     satirlar.forEach((s, i) => {
       let konum = 0;
-      for (const [, x, gi] of girisler[i]) { gi.value = s.slice(konum, konum + x.soruSayisi); gi.dispatchEvent(new Event('input')); konum += x.soruSayisi; }
+      for (const [, x, gi] of girisler[i]) { if (!gi.disabled) { gi.value = s.slice(konum, konum + x.soruSayisi); gi.dispatchEvent(new Event('input')); } konum += x.soruSayisi; }
     });
     mesaj(`${satirlar.length} satır uygulandı. Kaydetmeyi unutmayın.`, 'tamam');
   });
@@ -527,7 +540,7 @@ function puanCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
   const d = acik;
-  kutu.append(el('p', 'Her öğrencinin aldığı puanı (0-100) yazın. Sınava girmeyen öğrencinin kutusunu boş bırakın.', 'alt'));
+  kutu.append(el('p', `Her öğrencinin aldığı puanı (0-100) yazın. Sınava girmeyen öğrencinin kutusunu boş bırakın.${ben.yon ? '' : ' Yalnızca ders verdiğiniz sınıflar listelenir.'}`, 'alt'));
   const liste = el('div', undefined, 'pz-liste');
   const girisler = [];
   const sayac = el('span', undefined, 'mad-ince');
@@ -576,7 +589,8 @@ const sonucAl = kazanim => api('/api/sinav/sonuc?id=' + acik.sinav.id + (kazanim
 
 function yayinDurumu() {
   const yd = el('div', undefined, 'ak-yayin' + (acik.sinav.yayin ? ' acik' : ''));
-  yd.append(el('span', undefined, 'ak-nokta'), el('span', acik.sinav.yayin ? 'Sonuçlar öğrenci ve velilere yayında.' : 'Sonuçlar henüz yayınlanmadı; öğrenci ve veli görmez.'));
+  yd.append(el('span', undefined, 'ak-nokta'), el('span', acik.sinav.amac === 'acilis' ? 'Açılış sınavı: sonuçlar yalnız okulda kalır; öğrenci ve veli görmez.'
+    : acik.sinav.yayin ? 'Sonuçlar öğrenci ve velilere yayında.' : 'Sonuçlar henüz yayınlanmadı; öğrenci ve veli görmez.'));
   return yd;
 }
 
@@ -589,27 +603,22 @@ async function sonucCiz() {
   const v = r.veri;
   const girenler = v.ogrenciler.filter(g => g.ortalama !== null);
   const puanlar = girenler.map(g => g.ortalama);
-  const genelOrt = v.genel ? v.genel.ortalama : ortalamaAl(puanlar);
-  const katilim = v.genel ? v.genel : { giren: v.giren, beklenen: v.beklenen };
+  const genelOrt = ortalamaAl(puanlar);
+  const katilim = { giren: v.giren, beklenen: v.beklenen };
 
-  if (acik.sahip) kutu.append(yayinDurumu());
-  if (v.kisitli) {
-    kutu.append(el('p', girenler.length || v.dersler.length
-      ? `Genel bilgi tüm dersleri kapsar; öğrenci ve soru ayrıntısı yalnızca ${v.dersler.map(d => d.ders).join(', ')} dersi için gösterilir.`
-      : 'Bu sınavda dersiniz yok; yalnızca genel bilgi görünür.', 'kl-not'));
-  }
+  if (ben.yon) kutu.append(yayinDurumu());
+  if (v.kisitli) kutu.append(el('p', `Yalnızca ders verdiğiniz sınıfların öğrencileri ve ${v.dersler.map(d => d.ders).join(', ')} dersi gösterilir.`, 'kl-not'));
 
   const ozet = el('section', undefined, 'sr-ozet');
   const ust = el('div', undefined, 'sr-ust');
   const sol = el('div');
-  sol.append(el('small', v.kisitli ? 'Sınıf genel ortalaması' : 'Sınıf ortalaması'), el('strong', genelOrt === null ? '–' : genelOrt.toFixed(1), 'sr-buyuk'));
+  sol.append(el('small', v.kisitli ? 'Sınıflarınızın ortalaması' : 'Genel ortalama'), el('strong', genelOrt === null ? '–' : genelOrt.toFixed(1), 'sr-buyuk'));
   ust.append(sol, el('span', `${katilim.giren}/${katilim.beklenen} öğrenci girdi`, 'sr-katilim'));
   ozet.append(ust);
 
   if (puanlar.length) {
     const istat = el('div', undefined, 'sr-istat');
     const hucre = (ad, say) => { const h = el('div'); h.append(el('b', say), el('small', ad)); istat.append(h); };
-    if (v.kisitli) hucre('Dersinizin ortalaması', ortalamaAl(puanlar).toFixed(1));
     hucre('En yüksek', Math.max(...puanlar).toFixed(1));
     hucre('En düşük', Math.min(...puanlar).toFixed(1));
     ozet.append(istat);
@@ -634,7 +643,7 @@ async function sonucCiz() {
       }
       ozet.append(kap);
     }
-  } else ozet.append(el('p', yazili() ? 'Henüz puan girilmedi. "Düzenle" bölümünden öğrenci puanlarını girin.' : 'Henüz öğrenci cevabı girilmedi; cevapları okul yönetimi girer.', 'alt'));
+  } else ozet.append(el('p', yazili() ? 'Henüz puan girilmedi. "Düzenle" bölümündeki Puanlar sekmesinden girin.' : 'Henüz öğrenci cevabı girilmedi; cevapları okul yönetimi girer.', 'alt'));
   kutu.append(ozet);
 
   if (v.sinav.kapsam && v.sinav.kapsam.length) {
@@ -782,7 +791,7 @@ async function analizCiz() {
         kart.append(ust, cubuk, alt);
         kutu.append(kart);
       }
-    } else kutu.append(el('p', 'Bu derste soru-kazanım eşlemesi yapılmamış; "Düzenle" bölümündeki "Kazanımlar" sekmesinden girin.', 'alt'));
+    } else kutu.append(el('p', 'Bu derste soru-kazanım eşlemesi yapılmamış; Hazırlık sekmesinden girilir.', 'alt'));
   }
 }
 
@@ -790,7 +799,7 @@ async function analizCiz() {
 const islemeYazi = i => (i ? ({ islenmedi: 'Ders işlenmedi', devamsiz: 'Derse katılmadı', katildi: 'İşlendi, katıldı', bilinmiyor: 'İşlendi' })[i.durum] : '');
 const DURUM_RENK = { Edinildi: '#1a7f37', Kısmen: '#b45309', Eksik: '#c62828' };
 
-// Bir öğrencinin raporu. secim: { sinif, cevap, eksik, edin } · cevaplar: ders id -> cevap dizisi (yalnız sınav sahibi/yönetim görür)
+// Bir öğrencinin raporu. secim: { sinif, cevap, eksik, edin } · cevaplar: ders id -> cevap dizisi (yalnız yönetim görür)
 function raporGovdesi(rapor, v, g, secim, cevaplar) {
   rapor.replaceChildren();
   const kurum = el('div', undefined, 'rp-kurum');
@@ -871,9 +880,9 @@ async function raporEkrani(idler) {
   const v = r.veri;
   const ogrenciler = idler.map(id => v.ogrenciler.find(x => x.ogrenciId === id)).filter(Boolean);
   if (!ogrenciler.length) return mesaj('Öğrenci bulunamadı', 'hata');
-  // Soru soru cevap dökümü: sınav sahibi ve yönetim görür
+  // Soru soru cevap dökümü: yalnız yönetim görür
   const cevapHarita = new Map();
-  if (acik.sahip && !yazili()) {
+  if (ben.yon && !yazili()) {
     const anahtar = {}, iptal = {};
     for (const x of acik.dersler) { anahtar[x.id] = x.anahtar; iptal[x.id] = x.iptal; }
     for (const g of acik.ogrenciler) cevapHarita.set(g.ogrenciId, { ...g.cevaplar, anahtar, iptal });
@@ -920,100 +929,184 @@ async function raporEkrani(idler) {
   window.scrollTo({ top: 0 });
 }
 
-// ---------- Kazanımlar (test): her sorunun ölçtüğü kazanım ----------
-async function kazanimCiz() {
+// ---------- Hazırlık (test): her sorunun cevap anahtarı ve kazanımı ----------
+// Dersi veren tüm öğretmenler ve yönetim görür; değişiklik her dersin kendi "Düzenle" düğmesiyle ayrı formda yapılır, sonunda "Onayla".
+const tarihSaat = ms => {
+  const d = new Date(ms);
+  return `${d.toLocaleDateString('tr-TR')} ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+// Kazanım arama: MEB programından seçim ya da elle yazma; bir sonuç listesi tüm sorularla paylaşılır
+function kazanimArama(dersAd, programDers, sinifNo) {
+  const sel = el('select'); sel.setAttribute('aria-label', 'Kazanım programı dersi');
+  const hepsi = el('option', 'Tüm dersler'); hepsi.value = ''; sel.append(hepsi);
+  for (const ad of programDers) { const o = el('option', ad); o.value = ad; sel.append(o); }
+  if (programDers.includes(dersAd)) sel.value = dersAd;
+  // MEB programında bazı dersler belli sınıflardan başlar (örn. Bilişim 5. sınıftan); sınıf süzgeci kapatılabilir
+  const sinifSel = el('select'); sinifSel.setAttribute('aria-label', 'Kazanım sınıf düzeyi');
+  if (sinifNo) { const o = el('option', `${sinifNo}. sınıf kazanımları`); o.value = sinifNo; sinifSel.append(o); }
+  const tum = el('option', 'Tüm sınıflar'); tum.value = ''; sinifSel.append(tum);
+  const arac = el('div', undefined, 'kz-arac');
+  arac.append(sel, sinifSel);
+  const liste = el('div', '', 'kazanim-liste gizli');
+  let aktif = null, zaman = null, sayac = 0;
+  const kapat = () => { liste.classList.add('gizli'); aktif = null; };
+  const ara = async () => {
+    if (!aktif) return;
+    const benim = ++sayac, girdi = aktif;
+    const q = girdi.value.trim();
+    girdi.closest('.kz-soru').after(liste);
+    if (!sel.value && q.length < 2) {
+      liste.replaceChildren(el('p', 'Tüm programlarda aramak için en az 2 harf yazın veya yukarıdan ders seçin.', 'alt'));
+      return liste.classList.remove('gizli');
+    }
+    const p = new URLSearchParams({ q, sinif: sinifSel.value });
+    if (sel.value) p.set('ders', sel.value);
+    const k = await api('/api/kazanim?' + p);
+    if (benim !== sayac || aktif !== girdi) return;
+    liste.replaceChildren();
+    if (!k.ok) return liste.classList.add('gizli');
+    for (const x of k.veri.kazanimlar) {
+      const b = el('button', '', 'kazanim-oge'); b.type = 'button';
+      b.append(el('strong', x.kod || 'Kod yok'), document.createTextNode(' ' + x.metin));
+      b.addEventListener('click', () => { girdi.value = ((x.kod ? x.kod + ' – ' : '') + x.metin).slice(0, 300); kapat(); });
+      liste.append(b);
+    }
+    if (!k.veri.kazanimlar.length) liste.append(el('p', 'Sonuç yok. "Tüm sınıflar" veya "Tüm dersler" seçip arayın ya da kazanımı elle yazın.', 'alt'));
+    liste.classList.remove('gizli');
+  };
+  sel.addEventListener('change', ara); sinifSel.addEventListener('change', ara);
+  const baglan = gi => {
+    gi.addEventListener('input', () => { aktif = gi; clearTimeout(zaman); zaman = setTimeout(ara, 250); });
+    gi.addEventListener('focus', () => { aktif = gi; ara(); });
+    gi.addEventListener('keydown', e => {
+      if (e.key === 'Escape') kapat();
+      if (e.key === 'Enter') e.preventDefault();
+    });
+  };
+  return { arac, liste, baglan, kapat };
+}
+
+async function hazirlikCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
-  const r = await api('/api/sinav/kazanimlar?id=' + acik.sinav.id);
+  const r = await api('/api/sinav/hazirlik?id=' + acik.sinav.id);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  const programDers = await programDersleri();
-  const sinifNo = sinifDuzeyi(r.veri.siniflar);
-  kutu.append(el('p', 'Her soru için ölçtüğü kazanımı seçin veya yazın. Öğrenci soruyu doğru yaparsa bu kazanımı edinmiş sayılır; öğrenci raporunda ve sınıf analizinde görünür. Her dersin kazanımlarını yalnızca o dersi veren öğretmen girer; diğerleri salt okunur görür.', 'alt'));
-  for (const d of r.veri.dersler) {
-    kutu.append(el('h3', d.ders + (d.duzenle ? '' : ' (salt okunur)'), 'baslik3'));
-    if (!d.duzenle) kutu.append(el('p', `${d.ders} kazanımlarını bu dersin öğretmeni girer.`, 'alt'));
-    const sel = el('select'); sel.setAttribute('aria-label', 'Kazanım programı dersi');
-    const hepsi = el('option', 'Tüm dersler'); hepsi.value = ''; sel.append(hepsi);
-    for (const ad of programDers) { const o = el('option', ad); o.value = ad; sel.append(o); }
-    if (programDers.includes(d.ders)) sel.value = d.ders;
-    // MEB programında bazı dersler belli sınıflardan başlar (örn. Bilişim 5. sınıftan); sınıf süzgeci kapatılabilir
-    const sinifSel = el('select'); sinifSel.setAttribute('aria-label', 'Kazanım sınıf düzeyi');
-    if (sinifNo) { const o = el('option', `${sinifNo}. sınıf kazanımları`); o.value = sinifNo; sinifSel.append(o); }
-    const tum = el('option', 'Tüm sınıflar'); tum.value = ''; sinifSel.append(tum);
-    const liste = el('div', '', 'kazanim-liste gizli');
-    let aktif = null, zaman = null, sayac = 0;
-    const ara = async () => {
-      if (!aktif) return;
-      const benim = ++sayac, girdi = aktif;
-      const q = girdi.value.trim();
-      girdi.closest('.kz-soru').after(liste);
-      if (!sel.value && q.length < 2) {
-        liste.replaceChildren(el('p', 'Tüm programlarda aramak için en az 2 harf yazın veya yukarıdan ders seçin.', 'alt'));
-        return liste.classList.remove('gizli');
-      }
-      const p = new URLSearchParams({ q, sinif: sinifSel.value });
-      if (sel.value) p.set('ders', sel.value);
-      const k = await api('/api/kazanim?' + p);
-      if (benim !== sayac || aktif !== girdi) return;
-      liste.replaceChildren();
-      if (!k.ok) return liste.classList.add('gizli');
-      for (const x of k.veri.kazanimlar) {
-        const b = el('button', '', 'kazanim-oge'); b.type = 'button';
-        b.append(el('strong', x.kod || 'Kod yok'), document.createTextNode(' ' + x.metin));
-        b.addEventListener('click', () => { girdi.value = ((x.kod ? x.kod + ' – ' : '') + x.metin).slice(0, 300); liste.classList.add('gizli'); aktif = null; });
-        liste.append(b);
-      }
-      if (!k.veri.kazanimlar.length) liste.append(el('p', 'Sonuç yok. "Tüm sınıflar" veya "Tüm dersler" seçip arayın ya da kazanımı elle yazın.', 'alt'));
-      liste.classList.remove('gizli');
-    };
-    sel.addEventListener('change', ara); sinifSel.addEventListener('change', ara);
-    if (d.duzenle) {
-      const arac = el('div', undefined, 'kz-arac');
-      arac.append(sel, sinifSel);
-      kutu.append(el('label', 'Kazanım programı'), arac);
-    }
-    const sorular = el('div', undefined, 'kz-liste');
-    const girdiler = [];
-    for (const q of d.sorular) {
-      const kart = el('div', undefined, 'mad-kart kz-soru' + (q.iptal ? ' iptal' : ''));
-      const no = el('span', String(q.no), 'mad-no'); no.style.setProperty('--c', q.iptal ? '#c9c2b2' : '#5878a8');
-      const ust = el('div', undefined, 'kz-ust');
-      ust.append(no, el('strong', `Doğru şık ${q.dogruSik}` + (q.iptal ? ' · iptal' : '')));
-      if (q.kim) ust.append(el('span', q.kim, 'mad-ince'));
-      const gi = el('textarea'); gi.rows = 2; gi.value = q.kazanim; gi.maxLength = 300; gi.autocomplete = 'off'; gi.spellcheck = false;
-      gi.setAttribute('aria-label', `${d.ders} soru ${q.no} kazanımı`);
-      if (!d.duzenle) gi.readOnly = true;
-      else {
-        gi.addEventListener('input', () => { aktif = gi; clearTimeout(zaman); zaman = setTimeout(ara, 250); });
-        gi.addEventListener('focus', () => { aktif = gi; ara(); });
-        gi.addEventListener('keydown', e => {
-          if (e.key === 'Escape') { liste.classList.add('gizli'); aktif = null; }
-          if (e.key === 'Enter') e.preventDefault();
-        });
-      }
-      const kazSatir = el('div', undefined, 'kaz-satir'); kazSatir.append(gi);
-      if (d.duzenle && q.no > 1) {
-        const ayni = el('button', '↑', 'kaz-ayni'); ayni.type = 'button'; ayni.title = 'Üsttekiyle aynı'; ayni.setAttribute('aria-label', 'Üsttekiyle aynı');
-        ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].value; liste.classList.add('gizli'); });
-        kazSatir.append(ayni);
-      }
-      kart.append(ust, kazSatir);
-      girdiler.push(gi);
-      sorular.append(kart);
-    }
-    kutu.append(sorular);
-    if (d.duzenle) {
-      const kaydet = el('button', `${d.ders} kazanımlarını kaydet`); kaydet.type = 'button';
-      kaydet.addEventListener('click', async () => {
-        liste.classList.add('gizli');
-        const s = await api('/api/sinav/kazanimlar', { id: acik.sinav.id, dersId: d.id, sorular: girdiler.map((gi, i) => ({ no: i + 1, kazanim: gi.value })) });
-        if (!s.ok) return mesaj(s.veri.hata || 'Kaydedilemedi', 'hata');
-        await kazanimCiz();
-        mesaj(`${d.ders} kazanımları kaydedildi.`, 'tamam');
-      });
-      kutu.append(kaydet);
-    }
+  const v = r.veri;
+  await programDersleri();
+  if (!v.dersler.length) return kutu.append(el('p', 'Bu sınavda dersiniz yok.', 'alt'));
+  if (ben.yon && v.durum !== 'aktif') kutu.append(el('p', 'Sınav taslak: öğretmenler henüz göremez. Soru sayılarını gözden geçirip Ayarlar bölümünden etkinleştirin.', 'kl-not'));
+  kutu.append(el('p', ben.yon
+    ? 'Her dersin öğretmenleri soru soru cevap anahtarını ve kazanımı girip onaylar; siz de düzeltebilirsiniz. Cevap anahtarı tamamlanmadan öğrenci cevapları girilemez.'
+    : 'Dersinizin öğretmenleri bu bölümü ortak doldurur. Her soru için doğru şıkkı ve ölçtüğü kazanımı girip "Onayla"ya basın; yönetim dersin hazır olduğunu görür. Onaydan sonra da "Düzenle" ile değiştirebilirsiniz.', 'alt'));
+  for (const d of v.dersler) kutu.append(hazirlikDuzen === d.id ? hazirlikForm(d, v) : hazirlikKart(d));
+}
+
+// Salt okunur kart: durum, ilerleme ve sorular
+function hazirlikKart(d) {
+  const kart = el('section', undefined, 'hz-kart');
+  const ust = el('div', undefined, 'hz-ust');
+  const durum = d.onay ? ['Onaylandı', 'onay'] : d.tamam ? ['Onay bekliyor', 'bekle'] : ['Eksik', 'eksik'];
+  ust.append(el('strong', d.ders), el('span', durum[0], 'hz-durum ' + durum[1]));
+  kart.append(ust, el('p', `${d.soruSayisi} soru · cevap anahtarı ${d.sik}/${d.soruSayisi} · kazanım ${d.kazanim}/${d.gerekli}`, 'mad-ince'));
+  if (d.onay) kart.append(el('p', `Onaylayan: ${d.onayAd || '–'}${d.onayTarih ? ' · ' + tarihSaat(d.onayTarih) : ''}`, 'mad-ince'));
+  const ayrinti = el('details', undefined, 'hz-ayrinti');
+  ayrinti.append(el('summary', 'Soruları göster'));
+  const liste = el('ol', undefined, 'hz-liste');
+  for (const q of d.sorular) {
+    const li = el('li', undefined, q.iptal ? 'iptal' : '');
+    li.append(el('b', String(q.no)), el('span', q.sik || '–', 'hz-sik' + (q.sik ? '' : ' yok')));
+    const yazi = el('span', q.kazanim || (q.iptal ? 'İptal edilen soru' : 'Kazanım girilmedi'), q.kazanim ? '' : 'mad-ince');
+    li.append(yazi);
+    if (q.iptal && q.kazanim) li.append(el('em', 'iptal'));
+    liste.append(li);
   }
+  ayrinti.append(liste);
+  kart.append(ayrinti);
+  const arac = el('div', undefined, 'dugme-satir');
+  const duz = el('button', 'Düzenle', 'ikincil kucuk'); duz.type = 'button';
+  duz.addEventListener('click', () => { hazirlikDuzen = d.id; hazirlikCiz(); });
+  arac.append(duz);
+  if (d.tamam && !d.onay) {
+    const onay = el('button', 'Onayla', 'kucuk'); onay.type = 'button';
+    onay.addEventListener('click', async () => {
+      const s = await api('/api/sinav/onay', { id: acik.sinav.id, dersId: d.id, onay: true });
+      if (!s.ok) return mesaj(s.veri.hata || 'Onaylanamadı', 'hata');
+      await hazirlikCiz();
+      mesaj(`${d.ders} hazırlığı onaylandı; yönetim hazır olduğunu görür.`, 'tamam');
+    });
+    arac.append(onay);
+  }
+  kart.append(arac);
+  return kart;
+}
+
+// Düzenleme formu: bir dersin tüm soruları tek kayıtta Kaydet / Vazgeç ile
+function hazirlikForm(d, v) {
+  const kart = el('section', undefined, 'hz-kart duzen');
+  const ust = el('div', undefined, 'hz-ust');
+  ust.append(el('strong', d.ders + ' · düzenleniyor'), el('span', `${d.soruSayisi} soru`, 'mad-ince'));
+  kart.append(ust);
+  if (!ben.yon) kart.append(el('p', 'Kaydederseniz onay kalkar; tamamlayınca yeniden "Onayla"ya basın. İptal edilen soru tüm öğrencilere doğru sayılır.', 'alt'));
+
+  // Cevap anahtarını tek seferde yaz: ABCDE… ("-" boş bırakır)
+  const hizli = el('input', undefined, 'cevap-giris'); hizli.maxLength = d.soruSayisi; hizli.autocomplete = 'off'; hizli.spellcheck = false;
+  hizli.placeholder = 'Örn. ABCDABCDAB…'; hizli.setAttribute('aria-label', 'Cevap anahtarını tek seferde yaz');
+  hizli.value = d.sorular.map(q => q.sik || '-').join('').replace(/-+$/, '');
+  kart.append(el('label', 'Cevap anahtarı (hızlı giriş)'), hizli);
+
+  const { arac, liste, baglan } = kazanimArama(d.ders, (kazProgramDersleri || []), String(v.duzey || ''));
+  kart.append(el('label', 'Kazanım programı'), arac);
+  const sorular = el('div', undefined, 'kz-liste');
+  const girdiler = [];
+  for (const q of d.sorular) {
+    const k = el('div', undefined, 'mad-kart kz-soru');
+    const no = el('span', String(q.no), 'mad-no'); no.style.setProperty('--c', '#5878a8');
+    const sik = el('select'); sik.setAttribute('aria-label', `Soru ${q.no} doğru şık`);
+    for (const h of ['', ...'ABCDE']) { const o = el('option', h || 'Şık'); o.value = h; sik.append(o); }
+    sik.value = q.sik;
+    const ip = el('input'); ip.type = 'checkbox'; ip.checked = q.iptal;
+    const ipEt = el('label', undefined, 'kz-iptal'); ipEt.append(ip, document.createTextNode('İptal'));
+    const ustSatir = el('div', undefined, 'kz-ust');
+    ustSatir.append(no, sik, ipEt);
+    if (q.kim) ustSatir.append(el('span', q.kim, 'mad-ince'));
+    const gi = el('textarea'); gi.rows = 2; gi.placeholder = 'Kazanım — yazın ya da programdan seçin'; gi.value = q.kazanim; gi.maxLength = 300; gi.autocomplete = 'off'; gi.spellcheck = false;
+    gi.setAttribute('aria-label', `${d.ders} soru ${q.no} kazanımı`);
+    baglan(gi);
+    const kazSatir = el('div', undefined, 'kaz-satir'); kazSatir.append(gi);
+    if (q.no > 1) {
+      const ayni = el('button', '↑', 'kaz-ayni'); ayni.type = 'button'; ayni.title = 'Üsttekiyle aynı'; ayni.setAttribute('aria-label', 'Üsttekiyle aynı');
+      ayni.addEventListener('click', () => { gi.value = girdiler[q.no - 2].gi.value; liste.classList.add('gizli'); });
+      kazSatir.append(ayni);
+    }
+    k.append(ustSatir, kazSatir);
+    girdiler.push({ q, sik, ip, gi });
+    sorular.append(k);
+  }
+  hizli.addEventListener('input', () => {
+    hizli.value = hizli.value.toLocaleUpperCase('en').replace(/[^A-E-]/g, '');
+    girdiler.forEach((g, i) => { g.sik.value = hizli.value[i] && hizli.value[i] !== '-' ? hizli.value[i] : ''; });
+  });
+  for (const g of girdiler) g.sik.addEventListener('change', () => { hizli.value = girdiler.map(x => x.sik.value || '-').join('').replace(/-+$/, ''); });
+  kart.append(sorular);
+
+  const cubuk = el('div', undefined, 'kaydet-cubuk');
+  const kaydet = el('button', 'Kaydet', 'birincil'); kaydet.type = 'button';
+  const vazgec = el('button', 'Vazgeç', 'ikincil'); vazgec.type = 'button';
+  vazgec.addEventListener('click', () => { hazirlikDuzen = null; hazirlikCiz(); });
+  kaydet.addEventListener('click', async () => {
+    const s = await api('/api/sinav/sorular', {
+      id: acik.sinav.id, dersId: d.id,
+      sorular: girdiler.map(g => ({ no: g.q.no, sik: g.sik.value, iptal: g.ip.checked, kazanim: g.gi.value })),
+    });
+    if (!s.ok) return mesaj(s.veri.hata || 'Kaydedilemedi', 'hata');
+    hazirlikDuzen = null;
+    await hazirlikCiz();
+    mesaj(ben.yon ? `${d.ders} kaydedildi.` : `${d.ders} kaydedildi. Eksiksizse "Onayla"ya basın.`, 'tamam');
+  });
+  cubuk.append(kaydet, vazgec);
+  kart.append(cubuk);
+  return kart;
 }
 
 // Kazanımlar (yazılı): sınavın bütünü için kazanım listesi; soru eşlemesi yok
@@ -1037,79 +1130,90 @@ async function yaziKazanimCiz() {
   kutu.append(cubuk);
 }
 
-// ---------- Anahtar ve yayın ----------
-// Her dersin anahtarını ve iptallerini yalnızca o dersi veren öğretmen değiştirir; yönetim ve diğer branşlar salt okunur görür.
-// Yayın ve silme yalnızca sınavı oluşturan öğretmendedir
-function anahtarCiz() {
+// ---------- Ayarlar (yönetim): etkinleştirme, bilgiler, yayın, silme ----------
+function ayarlarCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
-  const d = acik;
-  const yaz = yazili();
+  const d = acik, s = d.sinav, yaz = yazili();
+  const aktif = s.durum === 'aktif';
 
-  if (d.sahip && !ben.yon) kutu.append(yayinDurumu());
-  let duzenlenebilir = false;
-  if (!yaz) {
-    const katDegisir = d.sahip && !ben.yon;
-    duzenlenebilir = d.dersler.some(x => x.kazDuzenle);
-    kutu.append(el('p', duzenlenebilir
-      ? 'Yalnızca kendi dersinizin anahtarını düzeltebilirsiniz; düzeltirseniz o dersin sonuçları yeniden hesaplanır. İptal edilen soru tüm öğrencilere doğru sayılır.'
-      : 'Cevap anahtarını ilgili dersin öğretmeni değiştirir. Hata görürseniz o öğretmene bildirin.', 'alt'));
-    const sel = el('select'); sel.setAttribute('aria-label', 'Yanlış katsayısı');
-    for (const k of [0, 4, 3, 2]) { const o = el('option', KAT_YAZI(k)); o.value = k; sel.append(o); }
-    sel.value = String(d.sinav.yanlisKat);
-    sel.disabled = !katDegisir;
-    const puanKart = el('div', undefined, 'ak-kart');
-    puanKart.append(el('label', 'Yanlış doğruyu götürür mü?'), sel);
-    kutu.append(puanKart);
-    const alanlar = [];
-    for (const x of d.dersler) {
-      const kart = el('div', undefined, 'ak-kart');
-      const ust = el('div', undefined, 'ak-ust');
-      ust.append(el('strong', x.ders), el('span', x.kazDuzenle ? `${x.soruSayisi} soru` : `${x.soruSayisi} soru · salt okunur`, 'mad-ince'));
-      const ank = el('input', undefined, 'cevap-giris'); ank.value = x.anahtar; ank.maxLength = x.soruSayisi; ank.setAttribute('aria-label', 'Cevap anahtarı ' + x.ders);
-      const ip = el('input'); ip.value = x.iptal.join(', '); ip.placeholder = x.kazDuzenle ? 'İptal edilen soru numaraları, örn. 7, 12' : 'İptal edilen soru yok'; ip.setAttribute('aria-label', 'İptal edilen sorular ' + x.ders);
-      ank.readOnly = ip.readOnly = !x.kazDuzenle;
-      kart.append(ust, el('label', 'Cevap anahtarı'), ank, el('label', 'İptal edilen sorular'), ip);
-      kutu.append(kart);
-      if (x.kazDuzenle) alanlar.push([x, ank, ip]);
-    }
-    if (alanlar.length) {
-      const kaydet = el('button', 'Kaydet ve yeniden hesapla'); kaydet.type = 'button';
-      kaydet.addEventListener('click', async () => {
-        if (!confirm('Cevap anahtarı değişirse bu dersin tüm öğrenci sonuçları yeniden hesaplanır. Onaylıyor musunuz?')) return;
-        const r = await api('/api/sinav/anahtar', {
-          id: d.sinav.id, yanlisKat: Number(sel.value),
-          dersler: alanlar.map(([x, ank, ip]) => ({ id: x.id, anahtar: ank.value, iptal: ip.value.split(/[\s,;]+/).filter(Boolean).map(Number) })),
-        });
-        if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
-        await detayAc(d.sinav.id, 'anahtar');
-        mesaj('Anahtar güncellendi, sonuçlar yeniden hesaplandı.', 'tamam');
-      });
-      kutu.append(el('div', '', 'dugme-satir'));
-      kutu.lastChild.append(kaydet);
-    }
-  }
-  if (ben.yon || !d.sahip) return;
-
-  const yayin = el('button', d.sinav.yayin ? 'Yayından kaldır' : 'Sonuçları yayınla', 'ikincil'); yayin.type = 'button';
-  yayin.addEventListener('click', async () => {
-    const yeni = !d.sinav.yayin;
-    if (yeni && !confirm('Sonuçlar öğrenci ve velilere görünecek. Yayınlansın mı?')) return;
-    const r = await api('/api/sinav/yayin', { id: d.sinav.id, yayin: yeni });
+  const durum = el('div', undefined, 'ak-kart');
+  durum.append(el('label', 'Durum'));
+  durum.append(el('p', aktif
+    ? (yaz ? 'Etkin: dersin öğretmenleri kendi sınıflarının puanlarını girebilir.' : 'Etkin: ders öğretmenleri soru kazanımlarını ve cevap anahtarını girebilir.')
+    : 'Taslak: yalnızca yönetim görür. Soru sayılarını gözden geçirip etkinleştirin; öğretmenler o zaman sınavı görür.', 'alt'));
+  const dugme = el('button', aktif ? 'Taslağa al' : 'Sınavı etkinleştir', aktif ? 'ikincil kucuk' : 'kucuk'); dugme.type = 'button';
+  dugme.addEventListener('click', async () => {
+    if (!aktif && !confirm('Sınav ders öğretmenlerine açılacak. Etkinleştirilsin mi?')) return;
+    const r = await api('/api/sinav/aktif', { id: s.id, aktif: !aktif });
     if (!r.ok) return mesaj(r.veri.hata || 'Güncellenemedi', 'hata');
-    await detayAc(d.sinav.id, 'anahtar');
-    mesaj(yeni ? 'Sonuçlar yayınlandı.' : 'Sonuçlar yayından kaldırıldı.', 'tamam');
+    await detayAc(s.id, 'ayarlar');
+    mesaj(aktif ? 'Sınav taslağa alındı; öğretmenler artık görmez.' : 'Sınav etkinleştirildi; ders öğretmenleri görebilir.', 'tamam');
   });
+  durum.append(dugme);
+  kutu.append(durum);
+
+  const bilgi = el('div', undefined, 'ak-kart');
+  bilgi.append(el('label', 'Sınav adı'));
+  const ad = el('input'); ad.maxLength = 80; ad.value = s.ad; ad.setAttribute('aria-label', 'Sınav adı');
+  bilgi.append(ad, el('label', 'Tarih'));
+  const tarih = el('input'); tarih.type = 'date'; tarih.value = s.tarih; tarih.setAttribute('aria-label', 'Tarih');
+  bilgi.append(tarih);
+  let kat = null;
+  if (!yaz) {
+    bilgi.append(el('label', 'Yanlış doğruyu götürür mü?'));
+    kat = el('select'); kat.setAttribute('aria-label', 'Yanlış katsayısı');
+    for (const k of [0, 4, 3, 2]) { const o = el('option', KAT_YAZI(k)); o.value = k; kat.append(o); }
+    kat.value = String(s.yanlisKat);
+    bilgi.append(kat);
+  }
+  const sayilar = d.dersler.map(x => {
+    bilgi.append(el('label', yaz ? 'Soru sayısı (isteğe bağlı)' : `${x.ders} soru sayısı`));
+    const gi = el('input'); gi.type = 'number'; gi.min = yaz ? 0 : 1; gi.max = 200; gi.value = x.soruSayisi || ''; gi.setAttribute('aria-label', x.ders + ' soru sayısı');
+    bilgi.append(gi);
+    return [x, gi];
+  });
+  if (!yaz) bilgi.append(el('p', 'Soru sayısı değişirse o dersin onayı kalkar. Öğrenci cevapları girildikten sonra soru sayısı değiştirilemez.', 'mad-ince'));
+  const kaydet = el('button', 'Değişiklikleri kaydet', 'kucuk'); kaydet.type = 'button';
+  kaydet.addEventListener('click', async () => {
+    const r = await api('/api/sinav/guncelle', {
+      id: s.id, ad: ad.value, tarih: tarih.value, yanlisKat: kat ? Number(kat.value) : 0,
+      dersler: sayilar.map(([x, gi]) => ({ id: x.id, soruSayisi: gi.value })),
+    });
+    if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+    await detayAc(s.id, 'ayarlar');
+    mesaj('Sınav bilgileri güncellendi.', 'tamam');
+  });
+  bilgi.append(kaydet);
+  kutu.append(bilgi);
+
+  if (s.amac !== 'acilis') {
+    const yay = el('div', undefined, 'ak-kart');
+    yay.append(el('label', 'Sonuçların yayını'), yayinDurumu());
+    const yd = el('button', s.yayin ? 'Yayından kaldır' : 'Sonuçları yayınla', 'ikincil kucuk'); yd.type = 'button';
+    yd.disabled = !aktif && !s.yayin;
+    yd.addEventListener('click', async () => {
+      const yeni = !s.yayin;
+      if (yeni && !confirm('Sonuçlar öğrenci ve velilere görünecek. Yayınlansın mı?')) return;
+      const r = await api('/api/sinav/yayin', { id: s.id, yayin: yeni });
+      if (!r.ok) return mesaj(r.veri.hata || 'Güncellenemedi', 'hata');
+      await detayAc(s.id, 'ayarlar');
+      mesaj(yeni ? 'Sonuçlar yayınlandı.' : 'Sonuçlar yayından kaldırıldı.', 'tamam');
+    });
+    yay.append(yd);
+    kutu.append(yay);
+  } else kutu.append(yayinDurumu());
+
   const sil = el('button', 'Sınavı sil', 'ikincil tehlike'); sil.type = 'button';
   sil.addEventListener('click', async () => {
-    if (!confirm('Bu sınav ve girilen tüm cevaplar/puanlar silinecek. Emin misiniz?')) return;
-    const r = await api('/api/sinav/sil', { id: d.sinav.id });
+    if (!confirm('Bu sınav ve girilen tüm cevaplar, puanlar ve kazanımlar silinecek. Emin misiniz?')) return;
+    const r = await api('/api/sinav/sil', { id: s.id });
     if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
     gorunum('liste'); await listeYukle();
     mesaj('Sınav silindi.', 'tamam');
   });
   const satir = el('div', '', 'dugme-satir');
-  satir.append(yayin, sil);
+  satir.append(sil);
   kutu.append(satir);
 }
 

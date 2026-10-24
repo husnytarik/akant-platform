@@ -29,9 +29,11 @@
       <button id="yeni-geri" type="button" class="ikincil kucuk geri-dugme">&larr; Sınavlar</button>
       <h2 class="baslik2">Yeni sınav</h2>
       <div class="tur-sec" id="s-tur" role="group" aria-label="Sınav türü">
-        <button type="button" data-tur="test" aria-pressed="true"><b>Test</b><small>Optik, cevap anahtarlı</small></button>
-        <button type="button" data-tur="yazili" aria-pressed="false"><b>Yazılı</b><small>Puanları tek tek girilir</small></button>
+        <button type="button" data-tur="deneme" aria-pressed="true"><b>Deneme</b><small>Optik, tüm şubeler</small></button>
+        <button type="button" data-tur="acilis" aria-pressed="false"><b>Açılış</b><small>Yalnız okul görür</small></button>
+        <button type="button" data-tur="yazili" aria-pressed="false"><b>Yazılı</b><small>Puan girilir</small></button>
       </div>
+      <p id="tur-not" class="alt"></p>
       <label for="s-ad">Sınav adı</label>
       <input id="s-ad" maxlength="80" placeholder="Örn. 1. Dönem 1. Yazılı">
       <div class="form-satir">
@@ -46,25 +48,28 @@
           </select>
         </div>
       </div>
-      <h3 class="baslik3">Sınıflar</h3>
-      <div id="s-siniflar" class="sinav-secim"></div>
+      <label for="s-duzey">Sınıf düzeyi</label>
+      <select id="s-duzey"></select>
+      <p id="s-sube" class="alt"></p>
 
       <div id="blok-test">
-        <h3 class="baslik3">Dersler ve cevap anahtarı</h3>
+        <h3 class="baslik3">Dersler ve soru sayıları</h3>
         <div id="s-dersler"></div>
         <button id="ders-ekle" type="button" class="ikincil">+ Ders ekle</button>
-        <p class="alt">Öğrenci cevaplarını okul yönetimi girer; siz sonuçları ve cevapları görüntülersiniz.</p>
+        <p class="alt">Cevap anahtarını ve soru kazanımlarını ilgili dersin öğretmenleri, sınavı etkinleştirdiğinizde girer. Öğrenci cevaplarını siz girersiniz.</p>
       </div>
       <div id="blok-yazili" class="gizli">
         <h3 class="baslik3">Ders</h3>
         <select id="y-ders" aria-label="Ders"></select>
+        <label for="y-soru">Soru sayısı <small class="alt">(isteğe bağlı)</small></label>
+        <input id="y-soru" type="number" min="0" max="200" inputmode="numeric">
         <h3 class="baslik3">Sınavın kazanımları <small class="alt">(isteğe bağlı)</small></h3>
         <div id="y-kaz"></div>
-        <p class="alt">Öğrencilerin puanlarını sınavı oluşturduktan sonra tek tek girersiniz.</p>
+        <p class="alt">Puanları dersin öğretmenleri kendi sınıfları için girer. Kazanımı sonradan da ekleyebilirsiniz.</p>
       </div>
 
       <div class="dugme-satir">
-        <button id="s-kaydet" type="button">Sınavı oluştur</button>
+        <button id="s-kaydet" type="button">Taslak oluştur</button>
         <button id="s-vazgec" type="button" class="ikincil">Vazgeç</button>
       </div>
     </section>

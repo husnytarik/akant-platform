@@ -416,6 +416,20 @@ if (!sutunlar('sinavlar').some(c => c.name === 'tur')) {
   // 'test': optik/cevap anahtarlı sınav · 'yazili': öğretmenin öğrenci puanlarını tek tek girdiği yazılı sınav
   db.exec("ALTER TABLE sinavlar ADD COLUMN tur TEXT NOT NULL DEFAULT 'test'");
 }
+if (!sutunlar('sinavlar').some(c => c.name === 'duzey')) {
+  // Sınavı yönetim açar: duzey = sınıf düzeyi (5-8, tüm şubeler), durum = taslak | aktif (aktifken ders öğretmenleri girer),
+  // amac = deneme | acilis (açılış sınavı sonuçları yalnız okulda kalır)
+  db.exec('ALTER TABLE sinavlar ADD COLUMN duzey INTEGER');
+  db.exec("ALTER TABLE sinavlar ADD COLUMN durum TEXT NOT NULL DEFAULT 'aktif'");
+  db.exec("ALTER TABLE sinavlar ADD COLUMN amac TEXT NOT NULL DEFAULT 'deneme'");
+  // Dersin soru/anahtar/kazanım kısmını ders öğretmeni onaylar; eski kayıtlar onaylı sayılır
+  db.exec('ALTER TABLE sinav_dersler ADD COLUMN onay INTEGER NOT NULL DEFAULT 1');
+  db.exec('ALTER TABLE sinav_dersler ADD COLUMN onaylayan INTEGER REFERENCES memberships(id)');
+  db.exec('ALTER TABLE sinav_dersler ADD COLUMN onay_tarih INTEGER');
+  for (const s of db.prepare('SELECT s.id, MIN(c.name) AS sinif FROM sinavlar s JOIN sinav_siniflar ss ON ss.sinav_id = s.id JOIN classes c ON c.id = ss.class_id GROUP BY s.id').all()) {
+    db.prepare('UPDATE sinavlar SET duzey = ? WHERE id = ?').run(parseInt(s.sinif, 10) || null, s.id);
+  }
+}
 // Yazılı sınav: öğrencinin puanı (0-100) ve sınavın bütününün ölçtüğü kazanımlar (soru eşlemesi yok)
 db.exec(`
 CREATE TABLE IF NOT EXISTS sinav_puanlar (

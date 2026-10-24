@@ -2212,3 +2212,42 @@ main .kazanim-oge { padding: 11px 14px; }
 main .kz-soru textarea { padding: 10px 14px; }
 main .kz-soru textarea[readonly] { padding: 0; border: 0; background: transparent; box-shadow: none; min-height: 0; }
 main .ak-kart input[readonly] { border-color: transparent; background: transparent; padding-left: 0; color: var(--soluk); }
+
+/* Sınav: yönetim türleri, hazırlık kartları */
+.tur-sec { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tur-sec button { padding: 10px 10px; border-radius: 14px; }
+.tur-sec button small { font-size: .7rem; line-height: 1.25; }
+#tur-not { margin: -4px 0 14px; }
+main #s-dersler .sinav-ders > button { grid-row: 2; }
+main #s-dersler .sinav-ders { margin-bottom: 8px; }
+main .hz-kart { padding: 14px; margin: 0 0 12px; border: 1px solid #ece6d8; border-radius: 18px; background: #fff; box-shadow: var(--kart-golge); }
+main .hz-kart.duzen { border-color: var(--ana, #0b2545); }
+main .hz-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+main .hz-ust strong { font-family: var(--serif); font-size: 1.02rem; font-weight: 600; color: var(--murekkep); }
+main .hz-durum { flex: none; padding: 2px 10px; border-radius: 999px; font-size: .74rem; font-weight: 600; background: #f4f0e6; color: var(--soluk, #8a867d); }
+main .hz-durum.onay { background: #e4f3e9; color: #1b7a3a; }
+main .hz-durum.bekle { background: #e5edf8; color: #2f5d9e; }
+main .hz-durum.eksik { background: #fdf1d8; color: #9a6400; }
+main .hz-kart .mad-ince { margin: 2px 0; }
+main .hz-ayrinti { margin: 8px 0 4px; }
+main .hz-ayrinti summary { cursor: pointer; font-size: .86rem; color: var(--soluk, #8a867d); padding: 4px 0; }
+main .hz-liste { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+main .hz-liste li { display: grid; grid-template-columns: 26px 26px 1fr; gap: 8px; align-items: baseline; font-size: .86rem; line-height: 1.35; padding-top: 6px; border-top: 1px solid #f1ece0; }
+main .hz-liste li:first-child { border-top: 0; padding-top: 0; }
+main .hz-liste li b { color: var(--soluk, #8a867d); font-weight: 600; }
+main .hz-liste li.iptal { opacity: .6; }
+main .hz-liste li em { grid-column: 3; font-style: normal; font-size: .74rem; color: #9a6400; }
+main .hz-sik { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--ana, #0b2545) 10%, #fff); color: var(--ana, #0b2545); font-weight: 700; font-size: .8rem; }
+main .hz-sik.yok { background: #f4f0e6; color: #b5ad9a; font-weight: 400; }
+main .hz-kart .dugme-satir { margin-top: 10px; }
+main .hz-kart .kaydet-cubuk { margin-top: 10px; }
+main .kz-ust select { width: auto; min-width: 74px; margin: 0; padding: 6px 10px; font-size: .9rem; }
+main .kz-iptal { display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; color: var(--soluk, #8a867d); margin: 0; }
+main .kz-iptal input { width: auto; min-height: 0; margin: 0; }
+
+/* Yeni sınav: ders satırı tek sıra (ders | soru sayısı | kaldır) */
+main #s-dersler .sinav-ders { grid-template-columns: minmax(0, 1fr) 92px 40px; gap: 8px; padding: 10px; }
+main #s-dersler .sinav-ders select { grid-column: 1; grid-row: 1; }
+main #s-dersler .sinav-ders > input[type=number] { grid-column: 2; grid-row: 1; }
+main #s-dersler .sinav-ders > button { grid-column: 3; grid-row: 1; justify-self: stretch; align-self: center; margin: 0; padding: 0; font-size: .9rem; }
+main #s-dersler .sinav-ders { margin: 0; }
