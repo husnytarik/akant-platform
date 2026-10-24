@@ -138,8 +138,12 @@ function raporCiz(kap, v, secili, { duzenle, sil } = {}) {
   kap.replaceChildren();
   const r = el('article', undefined, 'gz-rapor');
   const ust = el('div', undefined, 'gz-rapor-ust');
-  ust.append(el('p', 'AKANT KOLEJİ · Öğrenci gelişim raporu', 'gz-kurum'), el('h2', v.ogrenci.ad, 'kl-buyuk'),
+  const kimlik = el('div', undefined, 'gz-kimlik');
+  const kimlikYazi = el('div');
+  kimlikYazi.append(el('h2', v.ogrenci.ad, 'kl-buyuk'),
     el('p', `${v.ogrenci.sinif}${v.ogrenci.okulNo ? ' · No ' + v.ogrenci.okulNo : ''} · Düzenlenme: ${tarihYaz(v.bugun)}`, 'kl-not'));
+  kimlik.append(avatarYap(v.ogrenci.ad, v.ogrenci.foto, 'buyuk'), kimlikYazi);
+  ust.append(el('p', 'AKANT KOLEJİ · Öğrenci gelişim raporu', 'gz-kurum'), kimlik);
   r.append(ust);
 
   const donemler = v.donemler.filter(d => secili.has(d.id));

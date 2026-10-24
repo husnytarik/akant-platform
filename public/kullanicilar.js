@@ -34,6 +34,47 @@ function hucre(...cocuklar) {
   return td;
 }
 
+// Ad hücresi: avatar, ad ve fotoğraf yükleme / kaldırma
+function kimlikHucresi(u) {
+  const kap = document.createElement('div');
+  kap.className = 'kul-kimlik';
+  const yazi = document.createElement('div');
+  const ad = document.createElement('strong');
+  ad.textContent = u.ad;
+  const girdi = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', hidden: true });
+  const sec = document.createElement('button');
+  sec.type = 'button'; sec.className = 'ikincil kucuk'; sec.textContent = u.foto ? 'Fotoğrafı değiştir' : 'Fotoğraf ekle';
+  sec.addEventListener('click', () => girdi.click());
+  girdi.addEventListener('change', async () => {
+    const d = girdi.files[0];
+    girdi.value = '';
+    if (!d) return;
+    sec.disabled = true;
+    let govde;
+    try { govde = await fotoKucult(d); } catch { sec.disabled = false; return mesaj('Bu fotoğraf okunamadı, başka bir fotoğraf deneyin', 'hata'); }
+    const r = await fetch('/api/foto?id=' + u.id, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: govde });
+    if (r.status === 401) { location.href = '/'; return; }
+    if (!r.ok) { sec.disabled = false; return mesaj((await r.json().catch(() => ({}))).hata || 'Fotoğraf yüklenemedi', 'hata'); }
+    mesaj('Fotoğraf güncellendi.', 'tamam');
+    yukle();
+  });
+  const dugmeler = document.createElement('div');
+  dugmeler.className = 'kul-foto-dugme';
+  dugmeler.append(sec, girdi);
+  if (u.foto) {
+    const sil = document.createElement('button');
+    sil.type = 'button'; sil.className = 'ikincil kucuk'; sil.textContent = 'Kaldır';
+    sil.addEventListener('click', async () => {
+      const r = await api('/api/foto-sil?id=' + u.id, {});
+      if (!r.ok) mesaj(r.veri.hata || 'Hata', 'hata'); else { mesaj('Fotoğraf kaldırıldı.', 'tamam'); yukle(); }
+    });
+    dugmeler.append(sil);
+  }
+  yazi.append(ad, dugmeler);
+  kap.append(avatarYap(u.ad, u.foto, 'orta'), yazi);
+  return kap;
+}
+
 async function yukle() {
   const { ok, veri } = await api('/api/yonetim/kullanicilar');
   if (!ok) { location.href = '/panel'; return; }
@@ -81,7 +122,7 @@ async function yukle() {
     });
 
     tr.append(
-      hucre(u.ad),
+      hucre(kimlikHucresi(u)),
       hucre(`${u.kimlikTuru} ${u.kimlik}`),
       hucre(u.telefon),
       hucre(uyelikKutusu),

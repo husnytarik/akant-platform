@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { db, tcGecerliMi, seed, okulNoDoldur } from './db.js';
+import { db, tcGecerliMi, seed, okulNoDoldur, FOTO_SQL } from './db.js';
+import { fotoApi } from './foto.js';
 import { dersProgramiApi } from './ders-programi.js';
 import { kurulumApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
@@ -181,7 +182,7 @@ async function api(req, res, url) {
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     const { unvan, renk } = profilBilgisi({ id: o.membership_id, role: o.role });
     const coklu = profilListesi(o.user_id).length > 1;
-    const foto = db.prepare('SELECT foto FROM users WHERE id = ?').get(o.user_id)?.foto || null;
+    const foto = db.prepare(`SELECT ${FOTO_SQL} AS foto FROM users u WHERE u.id = ?`).get(o.user_id)?.foto || null;
     return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto });
   }
 
@@ -307,6 +308,12 @@ async function api(req, res, url) {
     if (await gelisimApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname === '/api/foto' || url.pathname === '/api/foto-sil') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await fotoApi({ req, res, url, o, json, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/odev/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -382,7 +389,7 @@ async function yonetimApi(req, res, url) {
   }
 
   if (req.method === 'GET' && yol === '/api/yonetim/kullanicilar') {
-    const kullanicilar = db.prepare('SELECT id, tc_no, passport_no, phone, full_name FROM users ORDER BY full_name').all();
+    const kullanicilar = db.prepare(`SELECT u.id, u.tc_no, u.passport_no, u.phone, u.full_name, ${FOTO_SQL} AS foto FROM users u ORDER BY u.full_name`).all();
     const uyelikler = db.prepare(`SELECT m.id, m.user_id, m.role, m.status, m.branch_id, b.name AS branch
                                   FROM memberships m LEFT JOIN branches b ON b.id = m.branch_id`).all();
     const maske = (s, bas, son) => s ? s.slice(0, bas) + '•'.repeat(Math.max(s.length - bas - son, 0)) + s.slice(-son) : '';
@@ -390,6 +397,7 @@ async function yonetimApi(req, res, url) {
       kullanicilar: kullanicilar.map(u => ({
         id: u.id,
         ad: u.full_name,
+        foto: u.foto,
         kimlik: maske(u.tc_no || u.passport_no, 3, 2),
         kimlikTuru: u.tc_no ? 'T.C.' : 'Pasaport',
         telefon: maske(u.phone, 3, 2),

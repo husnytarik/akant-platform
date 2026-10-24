@@ -1,4 +1,4 @@
-import { db } from './db.js';
+import { db, FOTO_SQL } from './db.js';
 import { dersStilleri, stilEkle } from './stil.js';
 
 // Mentor (sınıf) öğretmeni: sorumlu olduğu sınıfların öğrencileri ve tek tek profilleri.
@@ -15,7 +15,7 @@ export async function ogrencilerimApi({ req, res, url, o, json }) {
   if (req.method === 'GET' && yol === '/api/ogrencilerim') {
     const siniflar = db.prepare('SELECT id, name AS ad, level AS kademe FROM classes WHERE homeroom_membership_id = ? ORDER BY name').all(o.membership_id);
     const ogr = db.prepare(`
-      SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${DEVAM}
+      SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${FOTO_SQL} AS foto, ${DEVAM}
       FROM class_students cs JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
       LEFT JOIN yoklama y ON y.class_id = cs.class_id AND y.cancelled = 0 AND y.completed_at IS NOT NULL
       LEFT JOIN yoklama_kayit k ON k.yoklama_id = y.id AND k.student_membership_id = m.id
@@ -27,7 +27,7 @@ export async function ogrencilerimApi({ req, res, url, o, json }) {
   if (req.method === 'GET' && yol === '/api/ogrencilerim/profil') {
     const id = Number(url.searchParams.get('id'));
     const o1 = db.prepare(`
-      SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, c.name AS sinif, c.id AS sinifId
+      SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${FOTO_SQL} AS foto, c.name AS sinif, c.id AS sinifId
       FROM class_students cs JOIN classes c ON c.id = cs.class_id
       JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
       WHERE m.id = ? AND c.homeroom_membership_id = ?`).get(id, o.membership_id);
@@ -46,7 +46,7 @@ export async function ogrencilerimApi({ req, res, url, o, json }) {
       FROM yoklama_kayit k JOIN yoklama y ON y.id = k.yoklama_id LEFT JOIN assignments a ON a.id = y.assignment_id LEFT JOIN courses co ON co.id = a.course_id
       WHERE k.student_membership_id = ? AND k.status != 'geldi' AND y.cancelled = 0 AND y.completed_at IS NOT NULL
       ORDER BY y.date DESC, y.period DESC LIMIT 12`).all(id);
-    json(res, 200, { ogrenci: { id: o1.id, ad: o1.ad, okulNo: o1.okulNo, sinif: o1.sinif }, veliler, devam, dersler: dersler.map(d => stilEkle(d, dersStilleri())), son });
+    json(res, 200, { ogrenci: { id: o1.id, ad: o1.ad, okulNo: o1.okulNo, foto: o1.foto, sinif: o1.sinif }, veliler, devam, dersler: dersler.map(d => stilEkle(d, dersStilleri())), son });
     return true;
   }
   return false;

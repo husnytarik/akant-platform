@@ -432,6 +432,13 @@ if (!sutunlar('users').some(c => c.name === 'foto')) {
   // Profil fotoğrafı: public/ altındaki yol (örn. /foto/ad.jpg)
   db.exec('ALTER TABLE users ADD COLUMN foto TEXT');
 }
+// Yüklenen profil fotoğrafları (users.foto yoksa bunlar kullanılır); istemci küçültüp gönderir
+db.exec(`CREATE TABLE IF NOT EXISTS kullanici_foto (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  mime TEXT NOT NULL, veri BLOB NOT NULL, guncelleme INTEGER NOT NULL
+)`);
+// Kullanıcının fotoğraf adresi: önce users.foto, sonra yüklenen fotoğraf (sürüm numarası önbelleği yeniler)
+export const FOTO_SQL = `COALESCE(u.foto, (SELECT '/api/foto?id=' || u.id || '&v=' || kf.guncelleme FROM kullanici_foto kf WHERE kf.user_id = u.id))`;
 if (!sutunlar('odevler').some(c => c.name === 'kazanim')) {
   db.exec('ALTER TABLE odevler ADD COLUMN kazanim TEXT');
 }

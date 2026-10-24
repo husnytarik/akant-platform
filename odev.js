@@ -1,4 +1,4 @@
-import { db } from './db.js';
+import { db, FOTO_SQL } from './db.js';
 
 // Ödev takibi: ödev verildi → öğrenci "yaptım" der (fotoğraf ekleyebilir, soru sorabilir) → öğretmen doğrular.
 // Ekranda görünen adlar yalnızca burada durur; mantık kodlara (verildi, yapildi, ...) bağlıdır.
@@ -71,7 +71,7 @@ const durumSatiri = (odevId, ogrenciId) => db.prepare('SELECT * FROM odev_duruml
 
 function detay(e) {
   const { odev, ogrenciId, rol } = e;
-  const ogrenci = db.prepare('SELECT u.full_name AS ad FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?').get(ogrenciId);
+  const ogrenci = db.prepare(`SELECT u.full_name AS ad, ${FOTO_SQL} AS foto FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = ?`).get(ogrenciId);
   const d = durumSatiri(odev.id, ogrenciId);
   const dosyalar = db.prepare("SELECT id, boyut, created_at AS zaman FROM odev_dosyalari WHERE odev_id = ? AND student_membership_id = ? AND amac = 'teslim' ORDER BY id").all(odev.id, ogrenciId);
   const karsi = rol === 'ogretmen' ? 'ogrenci' : 'ogretmen';
@@ -90,7 +90,7 @@ function detay(e) {
   return {
     durumlar: DURUMLAR, rol, salt: rol === 'veli', bugun: bugun(),
     odev: { id: odev.id, baslik: odev.baslik, aciklama: odev.aciklama, kazanim: odev.kazanim, sonTarih: odev.sonTarih, ders: odev.ders, sinif: odev.sinif, ogretmen: odev.ogretmen },
-    ogrenci: { id: ogrenciId, ad: ogrenci.ad },
+    ogrenci: { id: ogrenciId, ad: ogrenci.ad, foto: ogrenci.foto },
     durum: { kod: d?.durum || 'verildi', ogrenciNotu: d?.ogrenci_notu || '', ogretmenNotu: d?.ogretmen_notu || '', isaret: d?.isaret_zamani || null, dogrulama: d?.dogrulama_zamani || null },
     dosyalar, mesajlar: cikti,
   };
@@ -131,13 +131,13 @@ export async function odevApi({ req, res, url, o, json, govde, denetle }) {
     const odev = odevId && odevBul(odevId);
     if (!odev || odev.ogretmenId !== o.membership_id) return hata(404, 'Ödev bulunamadı');
     const sayilar = db.prepare(`SELECT ${SAYI_SORGUSU} FROM odevler od JOIN assignments a ON a.id = od.assignment_id WHERE od.id = ?`).get(odevId);
-    const ogrenciler = db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, d.durum, d.ogrenci_notu AS ogrenciNotu,
+    const ogrenciler = db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${FOTO_SQL} AS foto, d.durum, d.ogrenci_notu AS ogrenciNotu,
         (SELECT COUNT(*) FROM odev_dosyalari f WHERE f.odev_id = ? AND f.student_membership_id = m.id AND f.amac = 'teslim') AS dosya,
         (SELECT mm.yazan_rol = 'ogrenci' FROM odev_mesajlari mm WHERE mm.odev_id = ? AND mm.student_membership_id = m.id ORDER BY mm.id DESC LIMIT 1) AS soru
       FROM class_students cs JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
       LEFT JOIN odev_durumlari d ON d.odev_id = ? AND d.student_membership_id = m.id
       WHERE cs.class_id = ? AND m.status = 'aktif' ORDER BY u.full_name`).all(odevId, odevId, odevId, odev.sinifId)
-      .map(r => ({ id: r.id, ad: r.ad, okulNo: r.okulNo, durum: r.durum || 'verildi', ogrenciNotu: r.ogrenciNotu || '', dosya: r.dosya, soru: !!r.soru }));
+      .map(r => ({ id: r.id, ad: r.ad, okulNo: r.okulNo, foto: r.foto, durum: r.durum || 'verildi', ogrenciNotu: r.ogrenciNotu || '', dosya: r.dosya, soru: !!r.soru }));
     json(res, 200, {
       bugun: bugun(), durumlar: DURUMLAR, sayilar,
       odev: { id: odev.id, baslik: odev.baslik, aciklama: odev.aciklama, kazanim: odev.kazanim, sonTarih: odev.sonTarih, gorunur: odev.gorunur, ders: odev.ders, sinif: odev.sinif },

@@ -27,7 +27,7 @@ function listeCiz() {
     orta.append(el('strong', o.ad), el('span', o.okulNo ? 'No ' + o.okulNo : 'No yok'));
     const sag = el('div', undefined, 'ogr-devam' + (o.gelmedi >= 5 ? ' dusuk' : ''));
     sag.append(el('strong', `%${yuzde(o)}`), el('span', `${o.gelmedi} gelmedi`));
-    b.append(el('span', bas(o.ad), 'ogr-avatar'), orta, sag);
+    b.append(avatarYap(o.ad, o.foto), orta, sag);
     b.addEventListener('click', () => ac(o.id));
     k.appendChild(b);
   }
@@ -42,6 +42,7 @@ async function ac(id) {
   profil = r.veri;
   const p = r.veri.ogrenci;
   $('p-baslik').textContent = p.ad;
+  $('p-foto').replaceChildren(avatarYap(p.ad, p.foto, 'buyuk'));
   $('p-alt').textContent = `${p.sinif}${p.okulNo ? ' · No ' + p.okulNo : ''}`;
   $('profil').classList.remove('gizli');
   sekmeAc('genel');

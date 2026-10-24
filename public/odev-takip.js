@@ -10,28 +10,50 @@ async function yukle() {
   ana();
 }
 
+// Süzgeç düğmeleri (Onay bekleyenler / Tümü); seçim sayfa açık kaldıkça korunur
+const suzgec = { liste: null, ogrenci: null };
+function hapSatiri(secenekler, secili, degis) {
+  const k = el('div', undefined, 'sekmeler ot-hap');
+  for (const [kod, ad] of secenekler) {
+    const b = el('button', ad); b.type = 'button';
+    b.setAttribute('aria-pressed', String(kod === secili));
+    b.addEventListener('click', () => degis(kod));
+    k.append(b);
+  }
+  return k;
+}
+
+function ilerleme(dogrulandi, toplam) {
+  const k = el('div', undefined, 'ot-ilerleme');
+  const cubuk = el('span', undefined, 'ot-cubuk');
+  const dolgu = el('i');
+  dolgu.style.width = (toplam ? Math.round(100 * dogrulandi / toplam) : 0) + '%';
+  cubuk.append(dolgu);
+  k.append(cubuk, el('small', `${dogrulandi}/${toplam} doğrulandı`));
+  return k;
+}
+
 function ana() {
   ekranAc(kok);
   const { odevler, bugun } = liste;
   if (!odevler.length) return kok.append(el('p', 'Henüz ödev vermediniz. Ödevler Derslerim ekranında dersi bitirirken eklenir.', 'bos-not'));
   const bekleyenler = odevler.filter(x => x.bekleyen);
-  kok.append(el('p', bekleyenler.length ? `${bekleyenler.reduce((t, x) => t + x.yapildi, 0)} ödev onayınızı, ${bekleyenler.reduce((t, x) => t + x.soru, 0)} soru yanıtınızı bekliyor.` : 'Bekleyen onay ya da soru yok.', 'kl-not'));
-  for (const x of odevler) {
-    const kart = el('button', undefined, 'odev-kart od-tikla' + (x.sonTarih < bugun ? ' gecmis' : ''));
+  if (suzgec.liste === null) suzgec.liste = bekleyenler.length ? 'bekleyen' : 'tum';
+  kok.append(hapSatiri([['bekleyen', `İşlem bekleyen (${bekleyenler.length})`], ['tum', `Tüm ödevler (${odevler.length})`]], suzgec.liste, kod => { suzgec.liste = kod; ana(); }));
+  const gorunen = suzgec.liste === 'bekleyen' ? bekleyenler : odevler;
+  if (!gorunen.length) kok.append(el('p', 'Bekleyen onay ya da soru yok.', 'bos-not'));
+  for (const x of gorunen) {
+    const kart = el('button', undefined, 'ot-kart' + (x.sonTarih < bugun ? ' gecmis' : ''));
     kart.type = 'button';
-    const [, a, g] = x.sonTarih.split('-');
-    const rozet = el('div', undefined, 'tarih-rozet');
-    rozet.append(el('strong', String(Number(g))), el('span', AYLAR[Number(a) - 1]));
-    const orta = el('div', undefined, 'etut-orta');
-    orta.append(el('strong', x.baslik), el('span', `${x.sinif} · ${x.ders}`, 'alt'));
-    const etiketler = el('div', undefined, 'kl-chipler');
-    etiketler.append(chip(`${x.dogrulandi}/${x.toplam} doğrulandı`, x.toplam && x.dogrulandi === x.toplam ? 'tamam' : ''));
-    if (x.yapildi) etiketler.append(chip(`${x.yapildi} onay bekliyor`, 'vurgu'));
-    if (x.duzeltme) etiketler.append(chip(`${x.duzeltme} düzeltmede`));
-    if (x.yapilamadi) etiketler.append(chip(`${x.yapilamadi} yapamadı`, 'dolu'));
-    if (x.soru) etiketler.append(chip(`${x.soru} soru`, 'vurgu'));
-    orta.append(etiketler);
-    kart.append(rozet, orta, el('span', '›', 'kl-git'));
+    const ust = el('div', undefined, 'ot-ust');
+    ust.append(el('span', `${x.sinif} · ${x.ders}`, 'ot-sinif'), el('span', x.sonTarih < bugun ? 'Süresi doldu · ' + tarihYaz(x.sonTarih) : 'Son ' + tarihYaz(x.sonTarih), 'ot-tarih'));
+    kart.append(ust, el('strong', x.baslik, 'ot-baslik'), ilerleme(x.dogrulandi, x.toplam));
+    const alt = el('div', undefined, 'ot-alt');
+    if (x.yapildi) alt.append(el('span', `${x.yapildi} onay bekliyor`, 'ot-bekle'));
+    if (x.soru) alt.append(el('span', `${x.soru} soru`, 'ot-bekle'));
+    const sessiz = [x.duzeltme && `${x.duzeltme} düzeltmede`, x.yapilamadi && `${x.yapilamadi} yapamadı`].filter(Boolean).join(' · ');
+    if (sessiz) alt.append(el('span', sessiz, 'ot-sessiz'));
+    if (alt.children.length) kart.append(alt);
     kart.addEventListener('click', () => takip(x.id));
     kok.append(kart);
   }
@@ -51,13 +73,14 @@ async function takip(odevId, metin) {
   kok.append(ust);
   if (odev.aciklama) kok.append(el('p', odev.aciklama, 'odev-aciklama'));
 
-  const ozet = el('div', undefined, 'kl-chipler');
-  ozet.append(chip(`${sayilar.dogrulandi}/${sayilar.toplam} ${durumlar.dogrulandi.ad.toLowerCase()}`, sayilar.toplam && sayilar.dogrulandi === sayilar.toplam ? 'tamam' : ''));
-  if (sayilar.yapildi) ozet.append(chip(`${sayilar.yapildi} onay bekliyor`, 'vurgu'));
-  kok.append(ozet);
-
+  // Özet: bekleyen sayısı, ilerleme ve toplu doğrulama tek kartta
+  const ozet = el('section', undefined, 'ot-ozet');
+  const bilgi = el('div', undefined, 'ot-ozet-bilgi');
+  if (sayilar.yapildi) bilgi.append(el('strong', String(sayilar.yapildi)), el('span', 'öğrenci onayınızı bekliyor'));
+  else bilgi.append(el('span', sayilar.toplam && sayilar.dogrulandi === sayilar.toplam ? 'Tüm öğrenciler doğrulandı' : 'Onay bekleyen öğrenci yok', 'ot-ozet-yok'));
+  ozet.append(bilgi, ilerleme(sayilar.dogrulandi, sayilar.toplam));
   if (sayilar.yapildi) {
-    const t = el('button', `“${durumlar.yapildi.ad}” diyen ${sayilar.yapildi} öğrenciyi doğrula`, 'birincil kucuk od-toplu');
+    const t = el('button', `Hepsini doğrula (${sayilar.yapildi})`, 'birincil od-toplu');
     t.type = 'button';
     t.addEventListener('click', async () => {
       t.disabled = true;
@@ -65,17 +88,28 @@ async function takip(odevId, metin) {
       if (!s.ok) { t.disabled = false; return mesaj(s.veri.hata || 'Doğrulanamadı', 'hata'); }
       await takip(odevId, `${s.veri.adet} öğrenci doğrulandı`);
     });
-    kok.append(t);
+    ozet.append(t);
   }
+  kok.append(ozet);
 
-  const kart = el('article', undefined, 'kl-kart');
-  for (const o of ogrenciler) {
+  // Öğrenciler: onay bekleyenler ve soru soranlar üstte
+  const bekler = o => o.durum === 'yapildi' || o.soru;
+  if (suzgec.ogrenci === null || suzgec.odev !== odevId) { suzgec.odev = odevId; suzgec.ogrenci = ogrenciler.some(bekler) ? 'bekleyen' : 'tum'; }
+  const goster = suzgec.ogrenci === 'bekleyen' ? ogrenciler.filter(bekler) : ogrenciler;
+  const sirali = [...goster].sort((a, b) => bekler(b) - bekler(a));
+  kok.append(hapSatiri([['bekleyen', `İşlem bekleyen (${ogrenciler.filter(bekler).length})`], ['tum', `Tüm öğrenciler (${ogrenciler.length})`]], suzgec.ogrenci, kod => { suzgec.ogrenci = kod; takip(odevId); }));
+  const kart = el('article', undefined, 'kl-kart ot-ogrenciler');
+  if (!sirali.length) kart.append(el('p', 'Bu süzgeçte öğrenci yok.', 'bos-not'));
+  for (const o of sirali) {
     const satir = el('button', undefined, 'gz-ogrenci');
     satir.type = 'button';
-    const ad = el('span', o.ad);
+    const ad = el('span', undefined, 'gz-ad');
+    const yazi = el('span', undefined, 'gz-yazi');
+    yazi.append(el('b', o.ad));
+    const alt = [o.soru && 'Soru sordu', o.dosya && `${o.dosya} fotoğraf`].filter(Boolean).join(' · ');
+    if (alt) yazi.append(el('small', alt));
+    ad.append(avatarYap(o.ad, o.foto, 'kucuk'), yazi);
     const sag = el('span', undefined, 'kl-chipler');
-    if (o.soru) sag.append(chip('Soru', 'vurgu'));
-    if (o.dosya) sag.append(chip(`${o.dosya} 📷`));
     sag.append(durumChip(durumlar, o.durum));
     satir.append(ad, sag, el('span', '›', 'kl-git'));
     satir.addEventListener('click', () => ogrenciAc(odevId, o));

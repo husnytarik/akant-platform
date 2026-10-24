@@ -4,8 +4,8 @@
     const r = await fetch('/api/ben');
     if (!r.ok) return;
     const k = await r.json();
-    if (k.renk) document.documentElement.style.setProperty('--ana', k.renk);
-    else document.documentElement.style.removeProperty('--ana');
+    if (k.renk) document.documentElement.style.setProperty('--bant', k.renk);
+    else document.documentElement.style.removeProperty('--bant');
     try { localStorage.setItem('ana-renk', k.renk || ''); } catch {}
   } catch {}
 })();

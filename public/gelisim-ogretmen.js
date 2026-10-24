@@ -74,7 +74,8 @@ function ana() {
     for (const o of s.ogrenciler) {
       const satir = el('button', undefined, 'gz-ogrenci');
       satir.type = 'button';
-      const ad = el('span', o.ad);
+      const ad = el('span', undefined, 'gz-ad');
+      ad.append(avatarYap(o.ad, o.foto, 'kucuk'), el('b', o.ad));
       const durum = !o.girilen ? chip('Girilmedi') : toplam && o.girilen >= toplam ? chip('Tamam', 'tamam') : chip(`${o.girilen}/${toplam}`, 'vurgu');
       satir.append(ad, durum, el('span', '›', 'kl-git'));
       satir.addEventListener('click', () => ogrenciAc(o, s));
@@ -95,8 +96,10 @@ async function ogrenciAc(o, sinif, mesajMetin) {
   kok.append(geriDugme('Öğrenciler', async () => { await yukle(veri.donemId); }));
 
   const baslik = el('div', undefined, 'kl-ust');
-  const b = el('div');
-  b.append(el('h2', o.ad, 'kl-buyuk'), el('p', `${sinif.ad}${o.okulNo ? ' · No ' + o.okulNo : ''}`, 'kl-not'));
+  const b = el('div', undefined, 'ot-kim');
+  const yazi = el('div');
+  yazi.append(el('h2', o.ad, 'kl-buyuk'), el('p', `${sinif.ad}${o.okulNo ? ' · No ' + o.okulNo : ''}`, 'kl-not'));
+  b.append(avatarYap(o.ad, o.foto, 'orta'), yazi);
   const raporDugme = el('button', 'Rapor / Yazdır', 'ikincil kucuk'); raporDugme.type = 'button';
   raporDugme.addEventListener('click', () => raporAcOgretmen(o, sinif));
   baslik.append(b, raporDugme);

@@ -146,10 +146,17 @@ async function odevEkrani(kok, { odevId, ogrenciId, geri, geriMetin, degisti }) 
   kok.append(geriDugme(geriMetin, geri));
 
   // Ödev bilgisi
+  if (v.rol === 'ogretmen') {
+    const kim = el('div', undefined, 'ot-kim');
+    const yazi = el('div');
+    yazi.append(el('strong', v.ogrenci.ad), el('small', odev.sinif));
+    kim.append(avatarYap(v.ogrenci.ad, v.ogrenci.foto, 'orta'), yazi);
+    kok.append(kim);
+  }
   const ust = el('div', undefined, 'kl-ust');
   const b = el('div');
   b.append(el('h2', odev.baslik, 'kl-buyuk'), el('p', `${odev.ders}${odev.ogretmen ? ' · ' + odev.ogretmen : ''}`, 'kl-not'));
-  if (v.rol !== 'ogrenci') b.append(el('p', `${v.ogrenci.ad} · ${odev.sinif}`, 'kl-not'));
+  if (v.rol === 'veli') b.append(el('p', `${v.ogrenci.ad} · ${odev.sinif}`, 'kl-not'));
   ust.append(b);
   kok.append(ust);
   const son = el('p', `Son tarih: ${tarihYaz(odev.sonTarih)}${odev.sonTarih < v.bugun ? ' (geçti)' : odev.sonTarih === v.bugun ? ' (bugün)' : ''}`, 'od-son' + (odev.sonTarih < v.bugun && !dogrulandi ? ' gecti' : ''));
@@ -188,7 +195,7 @@ async function odevEkrani(kok, { odevId, ogrenciId, geri, geriMetin, degisti }) 
 
   if (v.rol === 'ogretmen') {
     const not = Object.assign(el('input'), { type: 'text', maxLength: 300, value: '', placeholder: 'Not (düzeltme için zorunlu)' });
-    const dugmeler = el('div', undefined, 'od-dugmeler');
+    const dugmeler = el('div', undefined, 'od-dugmeler od-ikili');
     const islem = (islemAdi, metin) => () => eylem('/api/odev/dogrula', { odevId, ogrenciId: v.ogrenci.id, islem: islemAdi, not: not.value }, metin);
     if (!dogrulandi) {
       const d = el('button', 'Doğrula', 'birincil kucuk'); d.type = 'button';
@@ -245,7 +252,7 @@ async function odevEkrani(kok, { odevId, ogrenciId, geri, geriMetin, degisti }) 
         ekCiz();
       }));
     };
-    const alt = el('div', undefined, 'od-dugmeler');
+    const alt = el('div', undefined, 'od-dugmeler' + (v.rol === 'ogretmen' ? ' od-tek' : ''));
     if (v.rol === 'ogrenci') alt.append(resimEkleDugmesi('Fotoğraf ekle', async dosya => {
       const s = await resimYukle(odevId, 'soru', dosya);
       if (!s.ok) return mesaj(s.veri.hata || 'Fotoğraf yüklenemedi', 'hata');

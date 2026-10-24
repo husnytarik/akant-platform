@@ -1,4 +1,4 @@
-import { db } from './db.js';
+import { db, FOTO_SQL } from './db.js';
 
 // Gelişim raporu: yönetim başlıkları ve dönemleri (tarih aralığı) belirler; öğretmenler dönem açıkken kendi öğrencileri için
 // başlık başlık yazar; yönetim bir öğrencinin tüm öğretmen yorumlarını, veli toplantısı ve görüşme notlarını tek raporda görür.
@@ -18,12 +18,12 @@ const aktifBasliklar = subeId => db.prepare('SELECT id, ad, aciklama FROM gelisi
 // Öğretmenin öğrencileri: sınıf öğretmeni olduğu ya da bir dersini okuttuğu sınıfların öğrencileri
 const SINIF_FILTRE = `(c.homeroom_membership_id = ? OR EXISTS (SELECT 1 FROM assignments a WHERE a.class_id = c.id AND a.teacher_membership_id = ?))`;
 const ogretmenSiniflari = (uyelikId, subeId) => db.prepare(`SELECT c.id, c.name AS ad FROM classes c WHERE c.branch_id = ? AND ${SINIF_FILTRE} ORDER BY c.name`).all(subeId, uyelikId, uyelikId);
-const ogrencileri = sinifId => db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo FROM class_students cs
+const ogrencileri = sinifId => db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${FOTO_SQL} AS foto FROM class_students cs
   JOIN memberships m ON m.id = cs.student_membership_id JOIN users u ON u.id = m.user_id
   WHERE cs.class_id = ? AND m.status = 'aktif' ORDER BY u.full_name`).all(sinifId);
 const ogretmenOgrencisi = (uyelikId, ogrenciId) => !!db.prepare(`SELECT 1 FROM class_students cs JOIN classes c ON c.id = cs.class_id
   JOIN memberships m ON m.id = cs.student_membership_id WHERE cs.student_membership_id = ? AND m.status = 'aktif' AND ${SINIF_FILTRE}`).get(ogrenciId, uyelikId, uyelikId);
-const ogrenciKarti = (id, subeId) => db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, c.name AS sinif, c.id AS sinifId
+const ogrenciKarti = (id, subeId) => db.prepare(`SELECT m.id, u.full_name AS ad, m.okul_no AS okulNo, ${FOTO_SQL} AS foto, c.name AS sinif, c.id AS sinifId
   FROM memberships m JOIN users u ON u.id = m.user_id JOIN class_students cs ON cs.student_membership_id = m.id JOIN classes c ON c.id = cs.class_id
   WHERE m.id = ? AND m.role = 'ogrenci' AND m.status = 'aktif' AND c.branch_id = ?`).get(id, subeId);
 
@@ -221,7 +221,7 @@ export async function gelisimApi({ req, res, url, o, json, govde, denetle }) {
       gorusmeler: gorusmeler.filter(g => g.donemId === d.id),
     }));
     json(res, 200, {
-      ogrenci: { id: ogr.id, ad: ogr.ad, okulNo: ogr.okulNo, sinif: ogr.sinif }, basliklar, donemler: donemListesi,
+      ogrenci: { id: ogr.id, ad: ogr.ad, okulNo: ogr.okulNo, foto: ogr.foto, sinif: ogr.sinif }, basliklar, donemler: donemListesi,
       donemsizGorusmeler: gorusmeler.filter(g => !g.donemId), tumu: yonetim, bugun: bugun(),
       aktifBasliklar: aktifBasliklar(subeId).map(b => b.id),
     });
