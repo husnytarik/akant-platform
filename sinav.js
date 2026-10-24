@@ -114,16 +114,18 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   const erisim = id => {
     const s = db.prepare('SELECT * FROM sinavlar WHERE id = ?').get(id);
     if (!s) return null;
-    if (yon) return { s, sahip: true, duzenle: new Set(dersleri(id).map(d => d.id)) };
+    // Kazanımı yalnızca o dersin öğretmeni girer; yönetim ve başka branştaki sınav sahibi görür ama yazamaz (kazDuzenle)
+    if (yon) return { s, sahip: true, duzenle: new Set(dersleri(id).map(d => d.id)), kazDuzenle: new Set() };
     const dersAd = db.prepare(`SELECT DISTINCT co.name FROM assignments a JOIN courses co ON co.id = a.course_id
       JOIN sinav_siniflar ss ON ss.class_id = a.class_id WHERE ss.sinav_id = ? AND a.teacher_membership_id = ?`)
       .all(id, o.membership_id).map(r => r.name);
     const sahip = s.teacher_membership_id === o.membership_id;
     const duzenle = new Set(dersleri(id).filter(d => sahip || dersAd.includes(d.ders)).map(d => d.id));
-    if (sahip || duzenle.size) return { s, sahip, duzenle };
+    const kazDuzenle = new Set(dersleri(id).filter(d => dersAd.includes(d.ders)).map(d => d.id));
+    if (sahip || duzenle.size) return { s, sahip, duzenle, kazDuzenle };
     // Yayınlanmış sınavı, sınıfında ders veren ya da sınıf öğretmeni olan herkes genel bilgi olarak görür; ders ayrıntısı yoktur
     const kis = kisit(s);
-    return s.yayin && (kis.dersAd.size || kis.tam.size) ? { s, sahip, duzenle } : null;
+    return s.yayin && (kis.dersAd.size || kis.tam.size) ? { s, sahip, duzenle, kazDuzenle } : null;
   };
   // Öğretmenin bu sınavda ayrıntı görebileceği kapsam: kendi dersleri; sınıf öğretmeniyse o sınıfın tüm dersleri
   const kisit = s => ({
@@ -470,7 +472,8 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     const siniflar = sinavSiniflari(s.id);
     const sinav = { id: s.id, ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, yayin: !!s.yayin, tur: s.tur, kapsam: genelKazanim(s.id) };
     // Ortak öğretmen öğrenci cevaplarını ve sonuçları görmez; yalnızca soru-kazanım eşlemesine erişir
-    if (!sahip) return json(res, 200, { sahip, sinav, siniflar, dersler: dersleri(s.id).filter(d => e.duzenle.has(d.id)), ogrenciler: [] }), true;
+    const dersYetki = d => ({ ...d, kazDuzenle: e.kazDuzenle.has(d.id) });
+    if (!sahip) return json(res, 200, { sahip, sinav, siniflar, dersler: dersleri(s.id).filter(d => e.duzenle.has(d.id)).map(dersYetki), ogrenciler: [] }), true;
     const ogrenciler = sinifOgrencileri(siniflar.map(c => c.id));
     const cevaplar = db.prepare(`SELECT c.sinav_ders_id AS dersId, c.student_membership_id AS ogrenciId, c.cevaplar
       FROM sinav_cevaplar c JOIN sinav_dersler d ON d.id = c.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id);
@@ -480,13 +483,13 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     if (s.tur === 'yazili') for (const p of db.prepare(`SELECT p.student_membership_id AS ogrenciId, p.puan FROM sinav_puanlar p
       JOIN sinav_dersler d ON d.id = p.sinav_ders_id WHERE d.sinav_id = ?`).all(s.id)) puanlar[p.ogrenciId] = p.puan;
     json(res, 200, {
-      sahip, yonetim: yon, sinav, siniflar, dersler: dersleri(s.id),
+      sahip, yonetim: yon, sinav, siniflar, dersler: dersleri(s.id).map(dersYetki),
       ogrenciler: ogrenciler.map(g => ({ ...g, cevaplar: harita[g.ogrenciId] || {}, puan: puanlar[g.ogrenciId] ?? null })),
     });
     return true;
   }
 
-  // Soru-kazanım eşlemesi: sınava erişen her öğretmen okur, yalnızca dersini verdiği bölümü düzenler
+  // Soru-kazanım eşlemesi: sınava erişen okur, her dersin kazanımını yalnızca o dersi veren öğretmen düzenler
   if (req.method === 'GET' && yol === '/api/sinav/kazanimlar') {
     const e = erisim(tamSayi(url.searchParams.get('id'), 1, 1e9));
     if (!e) return hata(404, 'Sınav bulunamadı');
@@ -496,7 +499,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     json(res, 200, {
       siniflar: sinavSiniflari(e.s.id).map(c => c.name),
       dersler: dersleri(e.s.id).filter(d => e.duzenle.has(d.id)).map(d => ({
-        id: d.id, ders: d.ders, duzenle: true,
+        id: d.id, ders: d.ders, duzenle: e.kazDuzenle.has(d.id),
         sorular: Array.from({ length: d.soruSayisi }, (_, i) => {
           const k = kayit.get(d.id + ':' + (i + 1));
           return { no: i + 1, dogruSik: d.anahtar[i], iptal: d.iptal.includes(i + 1), kazanim: k?.kazanim || '', kim: k?.kim || '' };
@@ -511,7 +514,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     const e = erisim(tamSayi(b.id, 1, 1e9));
     if (!e) return hata(404, 'Sınav bulunamadı');
     const dersId = Number(b.dersId);
-    if (!e.duzenle.has(dersId)) return hata(403, 'Bu dersin kazanımlarını düzenleyemezsiniz');
+    if (!e.kazDuzenle.has(dersId)) return hata(403, 'Bu dersin kazanımlarını yalnızca dersi veren öğretmen girebilir');
     const d = dersleri(e.s.id).find(x => x.id === dersId);
     if (!Array.isArray(b.sorular) || b.sorular.length > 200) return hata(400, 'Geçersiz istek');
     const yeni = [];
@@ -534,17 +537,21 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     return true;
   }
 
-  // Cevap anahtarı düzeltme, soru iptali, yanlış katsayısı: sonuçlar cevaplardan hesaplandığı için anında yeniden hesaplanır
+  // Cevap anahtarı düzeltme, soru iptali: her dersin anahtarını yalnızca o dersi veren öğretmen değiştirir (yönetim değiştiremez);
+  // yanlış katsayısı sınavı oluşturan öğretmendedir. Sonuçlar cevaplardan hesaplandığı için anında yeniden hesaplanır
   if (req.method === 'POST' && yol === '/api/sinav/anahtar') {
-    if (!yon) return hata(403, 'Cevap anahtarını yalnızca okul yönetimi değiştirebilir');
     const b = await govde(req);
-    const s = db.prepare("SELECT * FROM sinavlar WHERE id = ? AND tur = 'test'").get(tamSayi(b.id, 1, 1e9));
-    if (!s) return hata(404, 'Sınav bulunamadı');
+    const e = erisim(tamSayi(b.id, 1, 1e9));
+    if (!e) return hata(404, 'Sınav bulunamadı');
+    const s = e.s;
+    if (s.tur !== 'test') return hata(404, 'Sınav bulunamadı');
     const kat = katOku(b.yanlisKat);
     if (kat === null || kat === 1) return hata(400, 'Yanlış katsayısı 0 (yok) veya 2-10 olmalı');
     const mevcut = new Map(dersleri(s.id).map(d => [d.id, d]));
     const girilen = Array.isArray(b.dersler) ? b.dersler : [];
     for (const g of girilen) if (!mevcut.has(Number(g.id))) return hata(400, 'Geçersiz ders');
+    for (const g of girilen) if (!e.kazDuzenle.has(Number(g.id))) return hata(403, 'Bir dersin cevap anahtarını yalnızca o dersi veren öğretmen değiştirebilir');
+    if (kat !== s.yanlis_kat && !(e.sahip && !yon)) return hata(403, 'Yanlış katsayısını yalnızca sınavı oluşturan öğretmen değiştirebilir');
     const yeni = girilen.map(g => {
       const m = mevcut.get(Number(g.id));
       const anahtar = anahtarTemiz(g.anahtar, m.soruSayisi);

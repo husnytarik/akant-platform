@@ -2201,3 +2201,14 @@ main .adim-ust + .gz-baslik { margin-top: 10px; }
 main .adim .gz-baslik h4 { margin: 0 0 3px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--soluk); }
 main .adim .gz-baslik .gz-metin { margin: 0; font-size: .95rem; line-height: 1.5; color: var(--murekkep); }
 main .adim .gz-baslik .gz-yok { color: var(--soluk); font-style: italic; }
+
+/* Sınav kazanımları: program seçicileri, sonuç listesi ve soru kartları aralıklı */
+main .kz-arac { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+main .kz-arac select { flex: 1 1 150px; margin: 0; }
+main .kz-liste { display: flex; flex-direction: column; gap: 10px; }
+main .kazanim-liste { margin: 2px 0 12px; border-color: var(--ince); border-radius: 14px; box-shadow: var(--kart-golge); }
+main .kazanim-liste .alt { margin: 0; padding: 12px 14px; }
+main .kazanim-oge { padding: 11px 14px; }
+main .kz-soru textarea { padding: 10px 14px; }
+main .kz-soru textarea[readonly] { padding: 0; border: 0; background: transparent; box-shadow: none; min-height: 0; }
+main .ak-kart input[readonly] { border-color: transparent; background: transparent; padding-left: 0; color: var(--soluk); }

@@ -237,7 +237,7 @@ function sekmeListesi() {
   if (d.sahip && !yaz) l.push(['cevap', 'duzen', 'Cevaplar']);
   if (d.sahip && yaz && !d.yonetim) l.push(['puan', 'duzen', 'Puanlar']);
   if (!d.yonetim && !(yaz && !d.sahip) && (d.sahip || d.dersler.length)) l.push(['kazanim', 'duzen', 'Kazanımlar']);
-  if (d.sahip && !(yaz && d.yonetim)) l.push(['anahtar', 'duzen', d.yonetim ? 'Anahtar ve iptal' : yaz ? 'Yayın' : 'Anahtar ve yayın']);
+  if ((d.sahip && !(yaz && d.yonetim)) || (!yaz && d.dersler.some(x => x.kazDuzenle))) l.push(['anahtar', 'duzen', d.yonetim ? 'Cevap anahtarı' : yaz ? 'Yayın' : d.sahip ? 'Anahtar ve yayın' : 'Cevap anahtarı']);
   return l;
 }
 
@@ -928,9 +928,10 @@ async function kazanimCiz() {
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   const programDers = await programDersleri();
   const sinifNo = sinifDuzeyi(r.veri.siniflar);
-  kutu.append(el('p', 'Her soru için ölçtüğü kazanımı seçin veya yazın. Öğrenci soruyu doğru yaparsa bu kazanımı edinmiş sayılır; öğrenci raporunda ve sınıf analizinde görünür. Aynı dersi veren öğretmenler bu bölümü birlikte doldurabilir.', 'alt'));
+  kutu.append(el('p', 'Her soru için ölçtüğü kazanımı seçin veya yazın. Öğrenci soruyu doğru yaparsa bu kazanımı edinmiş sayılır; öğrenci raporunda ve sınıf analizinde görünür. Her dersin kazanımlarını yalnızca o dersi veren öğretmen girer; diğerleri salt okunur görür.', 'alt'));
   for (const d of r.veri.dersler) {
     kutu.append(el('h3', d.ders + (d.duzenle ? '' : ' (salt okunur)'), 'baslik3'));
+    if (!d.duzenle) kutu.append(el('p', `${d.ders} kazanımlarını bu dersin öğretmeni girer.`, 'alt'));
     const sel = el('select'); sel.setAttribute('aria-label', 'Kazanım programı dersi');
     const hepsi = el('option', 'Tüm dersler'); hepsi.value = ''; sel.append(hepsi);
     for (const ad of programDers) { const o = el('option', ad); o.value = ad; sel.append(o); }
@@ -966,7 +967,11 @@ async function kazanimCiz() {
       liste.classList.remove('gizli');
     };
     sel.addEventListener('change', ara); sinifSel.addEventListener('change', ara);
-    if (d.duzenle) kutu.append(el('label', 'Kazanım programı'), sel, sinifSel);
+    if (d.duzenle) {
+      const arac = el('div', undefined, 'kz-arac');
+      arac.append(sel, sinifSel);
+      kutu.append(el('label', 'Kazanım programı'), arac);
+    }
     const sorular = el('div', undefined, 'kz-liste');
     const girdiler = [];
     for (const q of d.sorular) {
@@ -1033,22 +1038,26 @@ async function yaziKazanimCiz() {
 }
 
 // ---------- Anahtar ve yayın ----------
-// Öğretmen anahtarı yalnız görür ve sonuçları yayınlar/siler; anahtarı ve iptalleri yönetim değiştirir
+// Her dersin anahtarını ve iptallerini yalnızca o dersi veren öğretmen değiştirir; yönetim ve diğer branşlar salt okunur görür.
+// Yayın ve silme yalnızca sınavı oluşturan öğretmendedir
 function anahtarCiz() {
   const kutu = $('d-icerik');
   kutu.replaceChildren();
   const d = acik;
   const yaz = yazili();
 
-  if (!ben.yon) kutu.append(yayinDurumu());
-
+  if (d.sahip && !ben.yon) kutu.append(yayinDurumu());
+  let duzenlenebilir = false;
   if (!yaz) {
-    if (ben.yon) kutu.append(el('p', 'Anahtarı düzeltirseniz tüm sonuçlar yeniden hesaplanır. İptal edilen soru tüm öğrencilere doğru sayılır.', 'alt'));
-    else kutu.append(el('p', 'Cevap anahtarı ve soru iptalleri yalnızca okul yönetimi tarafından değiştirilebilir. Hata görürseniz yönetime bildirin.', 'alt'));
+    const katDegisir = d.sahip && !ben.yon;
+    duzenlenebilir = d.dersler.some(x => x.kazDuzenle);
+    kutu.append(el('p', duzenlenebilir
+      ? 'Yalnızca kendi dersinizin anahtarını düzeltebilirsiniz; düzeltirseniz o dersin sonuçları yeniden hesaplanır. İptal edilen soru tüm öğrencilere doğru sayılır.'
+      : 'Cevap anahtarını ilgili dersin öğretmeni değiştirir. Hata görürseniz o öğretmene bildirin.', 'alt'));
     const sel = el('select'); sel.setAttribute('aria-label', 'Yanlış katsayısı');
     for (const k of [0, 4, 3, 2]) { const o = el('option', KAT_YAZI(k)); o.value = k; sel.append(o); }
     sel.value = String(d.sinav.yanlisKat);
-    sel.disabled = !ben.yon;
+    sel.disabled = !katDegisir;
     const puanKart = el('div', undefined, 'ak-kart');
     puanKart.append(el('label', 'Yanlış doğruyu götürür mü?'), sel);
     kutu.append(puanKart);
@@ -1056,18 +1065,18 @@ function anahtarCiz() {
     for (const x of d.dersler) {
       const kart = el('div', undefined, 'ak-kart');
       const ust = el('div', undefined, 'ak-ust');
-      ust.append(el('strong', x.ders), el('span', `${x.soruSayisi} soru`, 'mad-ince'));
+      ust.append(el('strong', x.ders), el('span', x.kazDuzenle ? `${x.soruSayisi} soru` : `${x.soruSayisi} soru · salt okunur`, 'mad-ince'));
       const ank = el('input', undefined, 'cevap-giris'); ank.value = x.anahtar; ank.maxLength = x.soruSayisi; ank.setAttribute('aria-label', 'Cevap anahtarı ' + x.ders);
-      const ip = el('input'); ip.value = x.iptal.join(', '); ip.placeholder = ben.yon ? 'İptal edilen soru numaraları, örn. 7, 12' : 'İptal edilen soru yok'; ip.setAttribute('aria-label', 'İptal edilen sorular ' + x.ders);
-      ank.readOnly = ip.readOnly = !ben.yon;
+      const ip = el('input'); ip.value = x.iptal.join(', '); ip.placeholder = x.kazDuzenle ? 'İptal edilen soru numaraları, örn. 7, 12' : 'İptal edilen soru yok'; ip.setAttribute('aria-label', 'İptal edilen sorular ' + x.ders);
+      ank.readOnly = ip.readOnly = !x.kazDuzenle;
       kart.append(ust, el('label', 'Cevap anahtarı'), ank, el('label', 'İptal edilen sorular'), ip);
       kutu.append(kart);
-      alanlar.push([x, ank, ip]);
+      if (x.kazDuzenle) alanlar.push([x, ank, ip]);
     }
-    if (ben.yon) {
+    if (alanlar.length) {
       const kaydet = el('button', 'Kaydet ve yeniden hesapla'); kaydet.type = 'button';
       kaydet.addEventListener('click', async () => {
-        if (!confirm('Cevap anahtarı değişirse tüm öğrencilerin sonuçları yeniden hesaplanır. Onaylıyor musunuz?')) return;
+        if (!confirm('Cevap anahtarı değişirse bu dersin tüm öğrenci sonuçları yeniden hesaplanır. Onaylıyor musunuz?')) return;
         const r = await api('/api/sinav/anahtar', {
           id: d.sinav.id, yanlisKat: Number(sel.value),
           dersler: alanlar.map(([x, ank, ip]) => ({ id: x.id, anahtar: ank.value, iptal: ip.value.split(/[\s,;]+/).filter(Boolean).map(Number) })),
@@ -1080,7 +1089,7 @@ function anahtarCiz() {
       kutu.lastChild.append(kaydet);
     }
   }
-  if (ben.yon) return;
+  if (ben.yon || !d.sahip) return;
 
   const yayin = el('button', d.sinav.yayin ? 'Yayından kaldır' : 'Sonuçları yayınla', 'ikincil'); yayin.type = 'button';
   yayin.addEventListener('click', async () => {
