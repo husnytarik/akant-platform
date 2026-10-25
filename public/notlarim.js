@@ -89,7 +89,7 @@ function sinavKarti(s, acik) {
     if (o.sinavlar.length > 1) {
       const kutu = el('div', undefined, 'nt-gelisim');
       kutu.append(el('h3', 'Ortalama puan', 'mini-baslik'),
-        sutunGrafik([...o.sinavlar].reverse().map(s => ({ etiket: s.ad.replace(/ Sınavı$/, ''), deger: Math.round(s.ortalama), renk: puanRenk(s.ortalama) })), 90));
+        sutunGrafik(o.sinavlar.slice(0, 5).reverse().map(s => ({ etiket: s.ad.replace(/ Sınavı$/, '').replace(/^\d\. Dönem \d\. /, '').replace(/ Yazılısı$/, ''), deger: Math.round(s.ortalama), renk: puanRenk(s.ortalama) })), 90));
       liste.appendChild(kutu);
     }
     o.sinavlar.forEach((s, i) => liste.appendChild(sinavKarti(s, i === 0)));

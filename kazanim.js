@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 // MEB (TYMM) öğretim programlarından çıkarılan kazanım listesi; ilk istekte yüklenir.
 let liste = null;
 // Yalnızca ilkokul ve ortaokul (1-8): ortaöğretim programları dışarıda bırakılır
-const LISE = /ORTA?A?ÖĞRETİM|\(9-12\)|\(10-11\)|\(11-12\)|12\. ?Sınıf|FELSEFE|İSLAM BİLİM|ASTRONOMİ/i;
+const LISE = /ORTA?A?ÖĞRETİM|9-12\)|\(10-11\)|\(11-12\)|12\. ?Sınıf|FELSEFE|İSLAM BİLİM|ASTRONOMİ/i;
 const LISE_DERS = new Set(['Edebiyat', 'Fizik', 'Kimya', 'Biyoloji', 'Coğrafya', 'Tarih']);
 const bas = s => s.toLocaleLowerCase('tr').replace(/(^|\s)(\S)/g, (_, a, b) => a + b.toLocaleUpperCase('tr'));
 // Akant derslerine bağlanmayan programlar kendi adıyla listelenir (Hayat Bilgisi, Arapça, seçmeliler...)
