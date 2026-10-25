@@ -3,39 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Akant Koleji - Kullanıcı Yönetimi</title>
+  <title>Akant Koleji - Kullanıcılar</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/renk.js"></script>
 </head>
 <body>
   <header class="bant alt-bant">
     <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
-    <h1>Kullanıcı ve rol yönetimi</h1>
+    <h1>Yönetim ve öğretmenler</h1>
   </header>
   <main class="kart panel genis">
 
-    <h2 class="baslik2">Yeni kullanıcı</h2>
-    <form id="ekle" class="form-satir">
-      <div><label for="ad">Ad soyad</label><input id="ad" required maxlength="80"></div>
-      <div><label for="kimlik">T.C. / pasaport no</label><input id="kimlik" required maxlength="20"></div>
-      <div><label for="telefon">Telefon</label><input id="telefon" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
-      <div><label for="sube">Şube</label><select id="sube" required></select></div>
-      <div><label for="rol">Rol</label><select id="rol" required></select></div>
-      <div><button class="birincil" type="submit">Ekle</button></div>
-    </form>
+    <div class="sekmeler s2" role="group" aria-label="Kullanıcı türü">
+      <button type="button" data-rol="yonetim" aria-pressed="true">Yönetim</button>
+      <button type="button" data-rol="ogretmen" aria-pressed="false">Öğretmenler</button>
+    </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <h2 class="baslik2">Kullanıcılar</h2>
-    <div class="tablo-sar">
-      <table>
-        <thead><tr><th>Ad soyad</th><th>Kimlik</th><th>Telefon</th><th>Üyelikler</th><th>Üyelik ekle</th></tr></thead>
-        <tbody id="liste"></tbody>
-      </table>
+    <div class="kur-arac kul-suzgec">
+      <select id="f-kampus" aria-label="Kampüs"></select>
+      <select id="f-okul" aria-label="Okul"></select>
     </div>
+
+    <section id="kul-bolum">
+      <div class="kur-ust"><h2 id="kul-baslik" class="baslik2">Yönetim</h2>
+        <div class="kur-ust-dugmeler">
+          <button type="button" id="yazdir" class="ikincil kucuk">Yazdır</button>
+          <button type="button" id="duzen" class="ikincil kucuk">Düzenle</button>
+        </div>
+      </div>
+      <h2 id="yazdir-baslik" class="yazdir-baslik"></h2>
+      <div id="kul-liste" class="kur-liste"></div>
+      <p id="kul-sayi" class="alt"></p>
+
+      <div class="duzen-alan" id="yeni-alan">
+        <h3 class="baslik3">Yeni yönetici</h3>
+        <form id="ekle" class="form-satir">
+          <div><label for="ad">Ad soyad</label><input id="ad" required maxlength="80"></div>
+          <div><label for="kimlik">T.C. / pasaport no</label><input id="kimlik" required maxlength="20"></div>
+          <div><label for="telefon">Telefon</label><input id="telefon" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
+          <div><label for="sube">Okul</label><select id="sube" required></select></div>
+          <div><button class="birincil" type="submit">Yönetici ekle</button></div>
+        </form>
+      </div>
+      <p class="duzen-alan alt" id="ogretmen-not">Yeni öğretmen eklemek için <a href="/kurulum" class="kur-baglanti">Okul kurulumu → Öğretmenler</a> bölümünü kullanın.</p>
+    </section>
   </main>
   <script src="/avatar.js"></script>
   <script src="/kullanicilar.js"></script>
-  <script src="/tablo.js"></script>
   <script src="/bant.js"></script>
 </body>
 </html>

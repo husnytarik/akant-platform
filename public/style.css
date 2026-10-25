@@ -2349,3 +2349,81 @@ main .sn-say em.sn-b::before { background: #c9c3b3; }
 main .sn-alt small { flex: none; overflow: visible; text-overflow: clip; }
 main .sn-say { gap: 7px; }
 main .sn-ders { padding: 12px; }
+
+/* Okul kurulumu: önce liste, "Düzenle" ile form */
+main .sekmeler.s5 button { padding: 12px 9px; font-size: .88rem; }
+main .kur-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+main .kur-ust .baslik2 { margin: 18px 0 8px; }
+main .kur-ust-dugmeler { display: flex; gap: 8px; }
+main .kur-aciklama { margin: 0 0 8px; font-size: .84rem; }
+main .duzen-alan { display: none; }
+main .duzende > .duzen-alan, main .duzende .duzen-alan { display: block; }
+main .duzende .duzen-gizle { display: none; }
+main .duzen-dugme.birincil { padding: 8px 16px; }
+main .kur-kampus { margin: 0 0 18px; }
+main .kur-kampus-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px 8px; border-bottom: 1px solid var(--ince, #ebe5d6); }
+main .kur-kampus-ust strong { font-family: var(--serif, Georgia, serif); font-size: 1.2rem; font-weight: 500; }
+main .kur-okul-satir, main .kur-okul > summary { gap: 12px; }
+main .kur-okul-satir .kur-sol { flex: 1; }
+main .kur-okul { border-bottom: 1px solid var(--ince, #ebe5d6); }
+main .kur-okul > summary { min-height: 60px; padding: 8px 2px; border-radius: 0; background: transparent; margin: 0; border: 0; justify-content: flex-start; }
+main .kur-okul > summary .kur-sol { flex: 1; min-width: 0; }
+main .kur-okul > summary::after { margin-left: auto; }
+main .kur-okul[open] > summary { border-bottom: 0; margin: 0; }
+main .kur-bilgi { display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 12px 58px; font-size: .86rem; }
+main .kur-bilgi > div { display: flex; justify-content: space-between; gap: 14px; }
+main .kur-bilgi span { color: var(--soluk, #8a8577); flex: none; }
+main .kur-bilgi b { font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+main .ogr-avatar.logo { border-radius: 14px; background: #fff; border: 1px solid var(--ince, #ebe5d6); }
+main .ogr-avatar.logo .avatar-foto { object-fit: contain; object-position: center; padding: 3px; box-sizing: border-box; }
+main .kur-ekle { border: 0; background: transparent; color: var(--ana, #5878a8); font: inherit; font-size: .9rem; font-weight: 500; padding: 10px 2px; cursor: pointer; margin: 0; }
+main .kur-panel { margin: 8px 0 12px; padding: 4px 14px 14px; border: 1px solid var(--ince, #ebe5d6); border-radius: 18px; background: #fffdf8; }
+main .kur-panel .baslik3 { margin: 12px 0 6px; }
+main .kur-slot:empty { display: none; }
+main .kur-ekle-form { align-items: end; }
+main .kur-ders-duzen input { flex: 1; min-width: 0; margin: 0; }
+main .kur-ders-duzen { padding-top: 8px; padding-bottom: 8px; }
+main .kur-duzen-yazi { margin-left: auto; color: var(--ana, #5878a8); font-size: .85rem; font-weight: 500; }
+main .kur-kart > summary { gap: 12px; justify-content: flex-start; background: transparent; padding: 0; border-radius: 0; min-height: 48px; }
+main .kur-kart > summary::after { content: none; }
+main .kur-satir > .ogr-avatar { margin-right: 2px; }
+main .kur-satir .kur-sol { flex: 1; }
+main .kur-arac { display: flex; gap: 8px; margin: 4px 0 10px; }
+main .kur-arac .kur-ara { flex: 1; min-width: 0; margin: 0; }
+main .kur-arac select { flex: none; width: 40%; margin: 0; border-radius: 14px; }
+main .kur-tablo-sar { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+main table.kur-tablo { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+main table.kur-tablo th { text-align: left; font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--soluk, #8a8577); padding: 8px 8px 6px 0; border-bottom: 1px solid var(--ince, #ebe5d6); white-space: nowrap; background: transparent; }
+main table.kur-tablo td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--ince, #ebe5d6); vertical-align: top; background: transparent; }
+main table.kur-tablo td select { width: auto; max-width: 150px; margin: 0; padding: 6px 8px; font-size: .84rem; border-radius: 10px; }
+main .kur-veli { display: flex; flex-direction: column; margin-bottom: 4px; }
+main .kur-veli small { color: var(--soluk, #8a8577); font-size: .76rem; white-space: nowrap; }
+main .yazdir-baslik { display: none; }
+@media print {
+  main .duzen-dugme, main .kur-ust-dugmeler, main .kur-arac, main .duzen-alan, main #yazdir, main .kur-ust { display: none !important; }
+  main .yazdir-baslik { display: block; font-size: 1.1rem; text-transform: none; letter-spacing: 0; color: #000; margin: 0 0 12px; }
+  main .kur-tablo-sar { overflow: visible; margin: 0; padding: 0; }
+  main table.kur-tablo { min-width: 0; font-size: 10pt; }
+  main table.kur-tablo th, main table.kur-tablo td { border-bottom: 1px solid #bbb; color: #000; }
+  main table.kur-tablo tr { break-inside: avoid; }
+  main table.kur-tablo td select { appearance: none; border: 0; background: none; padding: 0; }
+  @page { size: A4 landscape; margin: 12mm; }
+}
+main .sekmeler.s5 { gap: 0; padding: 4px 6px; }
+main .sekmeler.s5 button { padding: 12px 8px; font-size: .84rem; }
+
+/* Kullanıcılar: Yönetim / Öğretmen listesi */
+main .sekmeler.s2 button { flex: 1; }
+main .kul-suzgec { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 6px; }
+main .kul-suzgec select { margin: 0; width: 100%; min-width: 0; }
+main .kul-duzen { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 4px 2px; }
+main .kul-uyelik { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: .88rem; }
+main .kul-uyelik.pasif span { color: var(--soluk, #8a8577); }
+main .kul-duzen .mini-form { flex-direction: row; flex-wrap: wrap; }
+main .kul-duzen .mini-form select { width: auto; flex: 1; min-width: 110px; margin: 0; }
+main .kul-duzen .mini-form button { width: auto; }
+@media print {
+  main .kul-suzgec { display: none !important; }
+  main .kur-satir { break-inside: avoid; }
+}
+main .kur-ust-dugmeler button { width: auto; min-height: 32px; padding: 0 14px; font-size: .84rem; border-radius: 10px; }

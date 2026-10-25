@@ -375,6 +375,30 @@ if (!sutunlar('kulup_calismalar').some(c => c.name === 'tamamlandi')) {
 if (!sutunlar('classes').some(c => c.name === 'homeroom_membership_id')) {
   db.exec('ALTER TABLE classes ADD COLUMN homeroom_membership_id INTEGER REFERENCES memberships(id)');
 }
+// Kampüs → okul: şube kayıtları "okul" olarak kullanılır; her okul bir kampüse bağlıdır
+db.exec(`
+CREATE TABLE IF NOT EXISTS kampusler (
+  id      INTEGER PRIMARY KEY,
+  name    TEXT NOT NULL UNIQUE,
+  adres   TEXT NOT NULL DEFAULT '',
+  telefon TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS okul_logo (
+  branch_id  INTEGER PRIMARY KEY REFERENCES branches(id),
+  mime       TEXT NOT NULL,
+  veri       BLOB NOT NULL,
+  guncelleme INTEGER NOT NULL
+);`);
+if (!sutunlar('branches').some(c => c.name === 'campus_id')) {
+  db.exec('ALTER TABLE branches ADD COLUMN campus_id INTEGER REFERENCES kampusler(id)');
+  for (const k of ['tur', 'kurum_kodu', 'telefon', 'eposta', 'adres']) db.exec(`ALTER TABLE branches ADD COLUMN ${k} TEXT NOT NULL DEFAULT ''`);
+}
+export function kampusDuzelt() {
+  if (!db.prepare('SELECT 1 FROM branches WHERE campus_id IS NULL').get()) return;
+  db.prepare("INSERT OR IGNORE INTO kampusler (name) VALUES ('Ana Kampüs')").run();
+  db.prepare("UPDATE branches SET campus_id = (SELECT MIN(id) FROM kampusler) WHERE campus_id IS NULL").run();
+}
+kampusDuzelt();
 if (!sutunlar('etut_katilimcilar').some(c => c.name === 'attendance')) {
   // Etüt yoklaması: NULL = henüz alınmadı
   db.exec("ALTER TABLE etut_katilimcilar ADD COLUMN attendance TEXT CHECK (attendance IN ('geldi','gelmedi','izinli'))");
@@ -544,6 +568,7 @@ function seed() {
 
 if (process.argv.includes('--seed')) {
   const sonuc = seed();
+  kampusDuzelt();
   if (!sonuc) console.log('Veritabanı zaten dolu, demo verisi eklenmedi.');
   else console.table(sonuc);
 }

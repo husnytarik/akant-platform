@@ -4,13 +4,13 @@ import { db } from './db.js';
 // Görüntüleme: yönetim ve öğretmenler hepsini, öğrenci ve veli yalnızca kendisini (ve velisi çocuğunu) görür.
 const SINIR = 1024 * 1024;
 
-function resimTuru(b) {
+export function resimTuru(b) {
   if (b.length > 12 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
   if (b.length > 12 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
   if (b.length > 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
   return null;
 }
-function hamGovde(req, sinir) {
+export function hamGovde(req, sinir) {
   return new Promise((resolve, reject) => {
     const parcalar = [];
     let n = 0;

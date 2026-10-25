@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { db, tcGecerliMi, seed, okulNoDoldur, FOTO_SQL } from './db.js';
 import { fotoApi } from './foto.js';
 import { dersProgramiApi } from './ders-programi.js';
-import { kurulumApi } from './kurulum.js';
+import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
 import { yoklamaApi } from './yoklama.js';
@@ -315,6 +315,12 @@ async function api(req, res, url) {
     if (await fotoApi({ req, res, url, o, json, denetle })) return;
   }
 
+  if (url.pathname === '/api/okul-logo' || url.pathname === '/api/okul-logo-sil') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await okulLogoApi({ req, res, url, o, json, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/odev/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -386,7 +392,10 @@ async function yonetimApi(req, res, url) {
   if (await dersProgramiApi(ortak)) return;
 
   if (req.method === 'GET' && yol === '/api/yonetim/subeler') {
-    return json(res, 200, { subeler: db.prepare('SELECT id, name AS ad FROM branches ORDER BY id').all() });
+    return json(res, 200, {
+      subeler: db.prepare('SELECT id, name AS ad, campus_id AS kampusId FROM branches ORDER BY id').all(),
+      kampusler: db.prepare('SELECT id, name AS ad FROM kampusler ORDER BY id').all(),
+    });
   }
 
   if (req.method === 'GET' && yol === '/api/yonetim/kullanicilar') {

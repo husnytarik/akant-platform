@@ -1,6 +1,9 @@
 const $ = id => document.getElementById(id);
 let v = null;          // sunucudan gelen tüm kurulum verisi
 let seciliSinifId = null;
+const duzen = { okul: false, dersler: false, ogretmenler: false, siniflar: false, ogrenciler: false };
+let panel = null;      // Açık kampüs / okul formu: { tur, id, kampusId }
+let dersDuzen = null;  // Adı değiştirilen ders
 
 function mesaj(metin, tur = '') {
   $('mesaj').textContent = metin;
@@ -41,33 +44,6 @@ function el(tag, metin, sinif) {
   return e;
 }
 
-// Boş kalan tablo ve listelerde yer tutucu yazı göster
-const BOS_METIN = {
-  'ogretmen-liste': 'Henüz öğretmen kaydı yok.', 'ogrenci-liste': 'Henüz öğrenci kaydı yok.', 'sinif-liste': 'Henüz sınıf açılmadı.',
-  'd-ders-liste': 'Bu sınıfa henüz ders eklenmedi.', 'd-ogrenci-liste': 'Bu sınıfta henüz öğrenci yok.',
-};
-function bosYazilar() {
-  for (const [id, metin] of Object.entries(BOS_METIN)) {
-    const kap = $(id);
-    if (!kap || kap.children.length) continue;
-    kap.appendChild(el('p', metin, 'bos-not'));
-  }
-  const dl = $('ders-liste');
-  if (!dl.children.length) dl.appendChild(el('p', 'Henüz ders açılmadı.', 'bos-not'));
-}
-
-// Liste satırı: solda ad ve alt bilgi, sağda işlem (seçici ya da düğme)
-function listeSatiri(kap, ad, alt, sag, sinif = '') {
-  const s = el('div', undefined, 'kur-satir ' + sinif);
-  const sol = el('div', undefined, 'kur-sol');
-  sol.append(el('strong', ad));
-  if (alt) sol.append(el('small', alt));
-  s.appendChild(sol);
-  if (sag) s.appendChild(sag);
-  kap.appendChild(s);
-  return s;
-}
-
 function dugme(metin, tikla, sinif = 'ikincil kucuk') {
   const b = el('button', metin, sinif);
   b.type = 'button';
@@ -75,31 +51,266 @@ function dugme(metin, tikla, sinif = 'ikincil kucuk') {
   return b;
 }
 
+function bosNot(kap, metin) { kap.appendChild(el('p', metin, 'bos-not')); }
+
+// Liste satırı: solda ad ve alt bilgi, sağda işlem (seçici ya da düğme)
+function listeSatiri(kap, ad, alt, sag, sinif = '', onde) {
+  const s = el('div', undefined, 'kur-satir ' + sinif);
+  const sol = el('div', undefined, 'kur-sol');
+  sol.append(el('strong', ad));
+  if (alt) sol.append(el('small', alt));
+  if (onde) s.appendChild(onde);
+  s.appendChild(sol);
+  if (sag) s.appendChild(sag);
+  kap.appendChild(s);
+  return s;
+}
+
 const ogretmenAd = id => v.ogretmenler.find(o => o.uyelikId === id)?.ad;
 const aktifOgretmenler = subeId => v.ogretmenler.filter(o => o.durum === 'aktif' && o.subeId === subeId);
+const okulAd = id => v.subeler.find(s => s.id === id)?.ad || '';
+const okulEtiket = s => v.kampusler.length > 1 ? `${s.ad} · ${v.kampusler.find(k => k.id === s.kampusId)?.ad || ''}` : s.ad;
+const telYaz = t => t && /^\d{10}$/.test(t) ? `0${t.slice(0, 3)} ${t.slice(3, 6)} ${t.slice(6, 8)} ${t.slice(8)}` : (t || '');
+const siniflarOkul = subeId => v.siniflar.filter(s => s.subeId === subeId);
 
 async function yukle() {
   const r = await api('/api/yonetim/kurulum');
   v = r.veri;
+  cizOkul();
   cizDersler();
   cizOgretmenler();
   cizOgrenciler();
   cizSiniflar();
 }
 
-// ---- 1. Dersler ----
+// ---- Düzenle / Bitti ----
+for (const b of document.querySelectorAll('.duzen-dugme')) {
+  b.addEventListener('click', () => {
+    const bolum = b.dataset.bolum;
+    duzen[bolum] = !duzen[bolum];
+    b.textContent = duzen[bolum] ? 'Bitti' : 'Düzenle';
+    b.classList.toggle('birincil', duzen[bolum]);
+    b.classList.toggle('ikincil', !duzen[bolum]);
+    $('s-' + bolum).classList.toggle('duzende', duzen[bolum]);
+    if (!duzen[bolum]) { if (bolum === 'okul') panel = null; if (bolum === 'dersler') dersDuzen = null; }
+    mesaj('');
+    cizOkul(); cizDersler(); cizOgretmenler(); cizOgrenciler(); cizSiniflar();
+  });
+}
+
+// ---- 1. Okul: kampüsler ve okullar ----
+const slotlar = new Map();
+const slot = anahtar => { const s = el('div', undefined, 'kur-slot'); slotlar.set(anahtar, s); return s; };
+
+function logoAvatar(s) {
+  return avatarYap(s.ad, s.logo ? `/api/okul-logo?id=${s.id}&v=${s.logo}` : null, 'orta logo');
+}
+
+function okulBilgileri(s) {
+  const b = el('div', undefined, 'kur-bilgi');
+  const alanlar = [['Okul türü', s.tur], ['Kurum kodu', s.kurumKodu], ['Telefon', telYaz(s.telefon)], ['E-posta', s.eposta], ['Adres', s.adres]];
+  for (const [ad, deger] of alanlar) if (deger) { const r = el('div'); r.append(el('span', ad), el('b', deger)); b.append(r); }
+  if (!b.children.length) b.append(el('small', 'Ayrıntı girilmedi.', 'mad-ince'));
+  return b;
+}
+
+function cizOkul() {
+  // Açık formları, liste temizlenmeden önce güvenli yere al
+  $('s-okul').append($('kampus-panel'), $('okul-panel'));
+  slotlar.clear();
+  const kutu = $('okul-liste');
+  kutu.replaceChildren();
+  const d = duzen.okul;
+  for (const k of v.kampusler) {
+    const blok = el('div', undefined, 'kur-kampus');
+    const ust = el('div', undefined, 'kur-kampus-ust');
+    const sol = el('div', undefined, 'kur-sol');
+    sol.append(el('strong', k.ad), el('small', [k.adres, telYaz(k.telefon)].filter(Boolean).join(' · ') || `${k.okulSayisi} okul`));
+    ust.append(sol);
+    if (d) ust.append(dugme('Düzenle', () => panelAc({ tur: 'kampus', id: k.id })));
+    blok.append(ust, slot('k' + k.id));
+    for (const s of v.subeler.filter(x => x.kampusId === k.id)) {
+      const ozet = [s.tur, `${s.sinifSayisi} sınıf`, `${s.ogrenciSayisi} öğrenci`, `${s.ogretmenSayisi} öğretmen`].filter(Boolean).join(' · ');
+      if (d) {
+        listeSatiri(blok, s.ad, ozet, dugme('Düzenle', () => panelAc({ tur: 'okul', id: s.id, kampusId: k.id })), 'kur-okul-satir', logoAvatar(s));
+        blok.append(slot('o' + s.id));
+      } else {
+        const det = el('details', undefined, 'kur-okul');
+        const sm = el('summary');
+        const yazi = el('div', undefined, 'kur-sol');
+        yazi.append(el('strong', s.ad), el('small', ozet));
+        sm.append(logoAvatar(s), yazi);
+        det.append(sm, okulBilgileri(s));
+        blok.append(det);
+      }
+    }
+    if (!v.subeler.some(x => x.kampusId === k.id)) blok.append(el('p', 'Bu kampüse henüz okul eklenmedi.', 'bos-not'));
+    if (d) blok.append(dugme('+ Okul ekle', () => panelAc({ tur: 'okul', id: null, kampusId: k.id }), 'kur-ekle'), slot('yo' + k.id));
+    kutu.append(blok);
+  }
+  if (!v.kampusler.length) bosNot(kutu, 'Henüz kampüs tanımlanmadı. Düzenle’ye basıp kampüs ekleyin.');
+  kutu.append(slot('yeni-kampus'));
+  if (panel) panelYerlestir();
+}
+
+function panelAc(p) {
+  panel = p;
+  mesaj('');
+  const f = p.tur === 'kampus' ? v.kampusler.find(k => k.id === p.id) : v.subeler.find(s => s.id === p.id);
+  if (p.tur === 'kampus') {
+    $('kampus-baslik').textContent = p.id ? 'Kampüsü düzenle' : 'Yeni kampüs';
+    $('k-ad').value = f?.ad || ''; $('k-adres').value = f?.adres || ''; $('k-tel').value = f?.telefon || '';
+    $('k-sil').classList.toggle('gizli', !p.id);
+  } else {
+    $('okul-baslik').textContent = p.id ? 'Okulu düzenle' : 'Yeni okul';
+    doldur($('ok-kampus'), v.kampusler, k => k.id, k => k.ad);
+    doldur($('ok-tur'), ['', ...v.kademeler, 'Karma'], t => t, t => t || 'Seçilmedi');
+    $('ok-ad').value = f?.ad || ''; $('ok-kampus').value = String(f?.kampusId || p.kampusId);
+    $('ok-tur').value = f?.tur || ''; $('ok-kod').value = f?.kurumKodu || ''; $('ok-tel').value = f?.telefon || '';
+    $('ok-eposta').value = f?.eposta || ''; $('ok-adres').value = f?.adres || ''; $('ok-logo').value = '';
+    $('ok-logo-sil').classList.toggle('gizli', !f?.logo);
+    $('ok-sil').classList.toggle('gizli', !p.id);
+  }
+  panelYerlestir();
+  (p.tur === 'kampus' ? $('k-ad') : $('ok-ad')).focus();
+}
+
+function panelYerlestir() {
+  const kampus = panel.tur === 'kampus';
+  $('kampus-panel').classList.toggle('gizli', !kampus);
+  $('okul-panel').classList.toggle('gizli', kampus);
+  const anahtar = kampus ? (panel.id ? 'k' + panel.id : 'yeni-kampus') : (panel.id ? 'o' + panel.id : 'yo' + panel.kampusId);
+  slotlar.get(anahtar)?.append(kampus ? $('kampus-panel') : $('okul-panel'));
+}
+
+function panelKapat() {
+  panel = null;
+  $('kampus-panel').classList.add('gizli');
+  $('okul-panel').classList.add('gizli');
+}
+
+$('kampus-ekle').addEventListener('click', () => panelAc({ tur: 'kampus', id: null }));
+$('k-vazgec').addEventListener('click', () => { panelKapat(); });
+$('ok-vazgec').addEventListener('click', () => { panelKapat(); });
+
+$('kampus-panel').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = panel;
+  const r = await api('/api/yonetim/kampus-kaydet', { id: p.id, ad: $('k-ad').value, adres: $('k-adres').value, telefon: $('k-tel').value });
+  if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+  panel = null;
+  mesaj('Kampüs kaydedildi.', 'tamam');
+  await yukle();
+});
+
+$('k-sil').addEventListener('click', async () => {
+  const k = v.kampusler.find(x => x.id === panel?.id);
+  if (!k || !confirm(`${k.ad} kampüsü silinsin mi?`)) return;
+  const r = await api('/api/yonetim/kampus-sil', { id: k.id });
+  if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
+  panel = null;
+  mesaj('Kampüs silindi.', 'tamam');
+  await yukle();
+});
+
+// Logoyu en uzun kenarı 512 px olacak şekilde küçültür; oranı ve saydamlığı korur (PNG)
+async function logoKucult(dosya) {
+  const bmp = await createImageBitmap(dosya);
+  const oran = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+  const tuval = document.createElement('canvas');
+  tuval.width = Math.round(bmp.width * oran);
+  tuval.height = Math.round(bmp.height * oran);
+  tuval.getContext('2d').drawImage(bmp, 0, 0, tuval.width, tuval.height);
+  bmp.close?.();
+  return await new Promise((ok, hata) => tuval.toBlob(b => b ? ok(b) : hata(new Error('küçültülemedi')), 'image/png'));
+}
+
+$('okul-panel').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = panel;
+  const r = await api('/api/yonetim/okul-kaydet', {
+    id: p.id, ad: $('ok-ad').value, kampusId: $('ok-kampus').value, tur: $('ok-tur').value, kurumKodu: $('ok-kod').value,
+    telefon: $('ok-tel').value, eposta: $('ok-eposta').value, adres: $('ok-adres').value,
+  });
+  if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+  const dosya = $('ok-logo').files[0];
+  if (dosya) {
+    let govde;
+    try { govde = await logoKucult(dosya); } catch { mesaj('Okul kaydedildi ama logo okunamadı; başka bir görsel deneyin.', 'hata'); panel = null; return yukle(); }
+    const y = await fetch('/api/okul-logo?id=' + r.veri.id, { method: 'POST', headers: { 'Content-Type': govde.type }, body: govde });
+    if (!y.ok) { mesaj((await y.json().catch(() => ({}))).hata || 'Logo yüklenemedi', 'hata'); panel = null; return yukle(); }
+  }
+  panel = null;
+  mesaj('Okul kaydedildi.', 'tamam');
+  await yukle();
+});
+
+$('ok-logo-sil').addEventListener('click', async () => {
+  const id = panel?.id;
+  if (!id || !confirm('Okul logosu kaldırılsın mı?')) return;
+  const r = await api('/api/okul-logo-sil?id=' + id, {});
+  if (!r.ok) return mesaj(r.veri.hata || 'Kaldırılamadı', 'hata');
+  mesaj('Logo kaldırıldı.', 'tamam');
+  await yukle();
+});
+
+$('ok-sil').addEventListener('click', async () => {
+  const s = v.subeler.find(x => x.id === panel?.id);
+  if (!s || !confirm(`${s.ad} silinsin mi?`)) return;
+  const r = await api('/api/yonetim/okul-sil', { id: s.id });
+  if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
+  panel = null;
+  mesaj('Okul silindi.', 'tamam');
+  await yukle();
+});
+
+// ---- 2. Dersler ----
 function cizDersler() {
   const kutu = $('ders-liste');
   kutu.replaceChildren();
-  for (const d of v.dersler) kutu.appendChild(el('span', d.ad, 'cip'));
+  for (const d of v.dersler) {
+    const sinif = v.atamalar.filter(a => a.dersId === d.id).length;
+    const ogr = v.ogretmenler.filter(o => o.dersIds.includes(d.id)).length;
+    const sistem = d.ad === 'Kulüp';
+    if (duzen.dersler && dersDuzen === d.id) {
+      const f = el('form', undefined, 'kur-satir kur-ders-duzen');
+      const g = el('input'); g.value = d.ad; g.required = true; g.maxLength = 60; g.setAttribute('aria-label', 'Ders adı');
+      const sag = el('div', undefined, 'kur-sag');
+      const kaydet = el('button', 'Kaydet', 'birincil kucuk'); kaydet.type = 'submit';
+      sag.append(kaydet, dugme('Vazgeç', () => { dersDuzen = null; cizDersler(); }));
+      f.append(g, sag);
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const r = await api('/api/yonetim/ders-duzenle', { id: d.id, ad: g.value });
+        if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+        dersDuzen = null;
+        mesaj('Ders adı güncellendi.', 'tamam');
+        await yukle();
+      });
+      kutu.append(f);
+      const sil = dugme('Dersi sil', async () => {
+        if (!confirm(`${d.ad} dersi silinsin mi?`)) return;
+        const r = await api('/api/yonetim/ders-sil', { id: d.id });
+        if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
+        dersDuzen = null;
+        mesaj('Ders silindi.', 'tamam');
+        await yukle();
+      }, 'kur-sil');
+      kutu.append(sil);
+      continue;
+    }
+    const sag = duzen.dersler && !sistem ? dugme('Düzenle', () => { dersDuzen = d.id; cizDersler(); }) : null;
+    listeSatiri(kutu, d.ad, sistem ? 'Sistem dersi' : `${sinif} sınıf · ${ogr} öğretmen`, sag);
+  }
+  if (!v.dersler.length) bosNot(kutu, 'Henüz ders açılmadı.');
 }
 
 $('ders-form').addEventListener('submit', async e => {
   e.preventDefault();
-  if (await yap('/api/yonetim/ders-ekle', { ad: $('ders-ad').value }, 'Ders açıldı.')) $('ders-ad').value = '';
+  if (await yap('/api/yonetim/ders-ekle', { ad: $('ders-ad').value }, 'Ders eklendi.')) $('ders-ad').value = '';
 });
 
-// ---- 2. Öğretmenler ----
+// ---- 3. Öğretmenler ----
 function dersOnayKutulari(kapsayici, secili, adPrefix) {
   kapsayici.replaceChildren();
   for (const d of v.dersler) {
@@ -117,21 +328,24 @@ const isaretliDersler = kapsayici =>
   [...kapsayici.querySelectorAll('input:checked')].map(c => Number(c.value));
 
 function cizOgretmenler() {
-  doldur($('o-sube'), v.subeler, s => s.id, s => s.ad);
+  doldur($('o-sube'), v.subeler, s => s.id, okulEtiket);
   // Kayıt formunda işaretli seçimleri koru
   const onceki = isaretliDersler($('o-dersler'));
   dersOnayKutulari($('o-dersler'), onceki, 'yeni');
 
   const tb = $('ogretmen-liste');
   tb.replaceChildren();
+  let grup = null;
   for (const o of v.ogretmenler) {
-    const detay = document.createElement('details');
-    detay.className = 'kur-kart';
+    if (v.subeler.length > 1 && o.sube !== grup) { grup = o.sube; tb.appendChild(el('h3', grup || 'Okulsuz', 'kur-grup')); }
     const ders = o.dersIds.length ? v.dersler.filter(d => o.dersIds.includes(d.id)).map(d => d.ad).join(', ') : 'Ders tanımlı değil';
+    const alt = `${o.durum === 'aktif' ? '' : 'Pasif · '}${ders}`;
+    if (!duzen.ogretmenler) { listeSatiri(tb, o.ad, alt, null, '', avatarYap(o.ad, o.foto, 'kucuk')); continue; }
+    const detay = el('details', undefined, 'kur-kart');
     const ozet = el('summary');
     const sol = el('div', undefined, 'kur-sol');
-    sol.append(el('strong', o.ad), el('small', `${o.sube || ''}${o.durum === 'aktif' ? '' : ' · Pasif'} · ${ders}`));
-    ozet.appendChild(sol);
+    sol.append(el('strong', o.ad), el('small', alt));
+    ozet.append(avatarYap(o.ad, o.foto, 'kucuk'), sol, el('span', 'Düzenle', 'kur-duzen-yazi'));
     const kutu = el('div', undefined, 'onay-liste');
     dersOnayKutulari(kutu, o.dersIds, 'o' + o.uyelikId);
     const kaydet = dugme('Kaydet', () =>
@@ -140,7 +354,7 @@ function cizOgretmenler() {
     detay.append(ozet, kutu, kaydet);
     tb.appendChild(detay);
   }
-  bosYazilar();
+  if (!v.ogretmenler.length) bosNot(tb, 'Henüz öğretmen kaydı yok.');
 }
 
 $('ogretmen-form').addEventListener('submit', async e => {
@@ -152,48 +366,6 @@ $('ogretmen-form').addEventListener('submit', async e => {
   if (ok) $('ogretmen-form').reset();
 });
 
-// ---- 3. Öğrenciler ----
-function ogrenciSinifSecenekleri() {
-  const subeId = Number($('g-sube').value);
-  doldur($('g-sinif'), v.siniflar.filter(s => s.subeId === subeId), s => s.id, s => `${s.kademe} · ${s.ad}`, 'Sınıfsız');
-}
-
-function cizOgrenciler() {
-  doldur($('g-sube'), v.subeler, s => s.id, s => s.ad);
-  ogrenciSinifSecenekleri();
-
-  const tb = $('ogrenci-liste');
-  tb.replaceChildren();
-  const ara = $('ogrenci-ara').value.trim().toLocaleLowerCase('tr');
-  const gorunen = v.ogrenciler.filter(o => !ara || o.ad.toLocaleLowerCase('tr').includes(ara) || String(o.okulNo || '').includes(ara));
-  for (const o of gorunen.slice(0, 80)) {
-    const sel = document.createElement('select');
-    sel.setAttribute('aria-label', o.ad + ' sınıfı');
-    doldur(sel, v.siniflar.filter(s => s.subeId === o.subeId), s => s.id, s => `${s.kademe} · ${s.ad}`, 'Sınıfsız');
-    sel.value = o.sinifId ? String(o.sinifId) : '';
-    sel.disabled = o.durum !== 'aktif';
-    sel.addEventListener('change', () =>
-      yap('/api/yonetim/ogrenci-sinif', { ogrenciUyelikId: o.uyelikId, sinifId: sel.value === '' ? null : Number(sel.value) },
-        'Öğrencinin sınıfı güncellendi.'));
-    listeSatiri(tb, o.ad, `${o.okulNo ? 'No ' + o.okulNo + ' · ' : ''}${o.sube || ''}${o.durum === 'aktif' ? '' : ' · Pasif'}`, sel);
-  }
-  if (gorunen.length > 80) tb.appendChild(el('p', `${gorunen.length - 80} öğrenci daha var; aramayı daraltın.`, 'bos-not'));
-  bosYazilar();
-}
-
-$('ogrenci-ara').addEventListener('input', cizOgrenciler);
-
-$('g-sube').addEventListener('change', ogrenciSinifSecenekleri);
-
-$('ogrenci-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const ok = await yap('/api/yonetim/ogrenci-kayit', {
-    ad: $('g-ad').value, kimlik: $('g-kimlik').value, telefon: $('g-tel').value, okulNo: $('g-no').value,
-    subeId: $('g-sube').value, sinifId: $('g-sinif').value === '' ? null : $('g-sinif').value,
-  }, 'Öğrenci kaydedildi.');
-  if (ok) $('ogrenci-form').reset();
-});
-
 // ---- 4. Sınıflar ----
 function sinifOgretmenSecenekleri() {
   const subeId = Number($('s-sube').value);
@@ -201,7 +373,7 @@ function sinifOgretmenSecenekleri() {
 }
 
 function cizSiniflar() {
-  doldur($('s-sube'), v.subeler, s => s.id, s => s.ad);
+  doldur($('s-sube'), v.subeler, s => s.id, okulEtiket);
   doldur($('s-kademe'), v.kademeler, k => k, k => k);
   sinifOgretmenSecenekleri();
 
@@ -219,7 +391,7 @@ function cizSiniflar() {
     satir.addEventListener('click', ac);
     satir.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ac(); } });
   }
-  bosYazilar();
+  if (!v.siniflar.length) bosNot(tb, 'Henüz sınıf açılmadı.');
   cizDetay();
 }
 
@@ -238,12 +410,37 @@ $('sinif-form').addEventListener('submit', async e => {
   await yukle();
 });
 
+// Sınıfın salt okunur görünümü
+function sinifOku(sinif) {
+  const k = $('d-oku');
+  k.replaceChildren();
+  const bilgi = el('div', undefined, 'kur-bilgi');
+  const r = el('div');
+  r.append(el('span', 'Sınıf öğretmeni'), el('b', ogretmenAd(sinif.sinifOgretmenUyelikId) || 'Belirlenmedi'));
+  bilgi.append(r);
+  k.append(bilgi, el('a', 'Ders programını gör →', 'kur-baglanti'));
+  k.lastChild.href = '/ders-programi';
+  const atamalar = v.atamalar.filter(a => a.sinifId === sinif.id);
+  k.append(el('h3', `Dersler (${atamalar.length})`, 'baslik3'));
+  const dl = el('div', undefined, 'kur-liste');
+  for (const a of atamalar) listeSatiri(dl, a.ders, `${ogretmenAd(a.ogretmenUyelikId) || 'Öğretmen atanmadı'} · haftada ${a.haftalikSaat} saat`);
+  if (!atamalar.length) bosNot(dl, 'Bu sınıfa henüz ders eklenmedi.');
+  k.append(dl);
+  const ogrenciler = v.ogrenciler.filter(o => o.sinifId === sinif.id);
+  k.append(el('h3', `Öğrenciler (${ogrenciler.length})`, 'baslik3'));
+  const ol = el('div', undefined, 'kur-liste');
+  for (const o of ogrenciler) listeSatiri(ol, o.ad, o.okulNo ? 'No ' + o.okulNo : '', null, '', avatarYap(o.ad, o.foto, 'kucuk'));
+  if (!ogrenciler.length) bosNot(ol, 'Bu sınıfta henüz öğrenci yok.');
+  k.append(ol);
+}
+
 function cizDetay() {
   const sinif = v.siniflar.find(s => s.id === seciliSinifId);
   $('detay-icerik').classList.toggle('gizli', !sinif);
   $('detay-bos').classList.toggle('gizli', !!sinif);
-  if (!sinif) { $('detay-baslik').textContent = 'Sınıf detayı'; bosYazilar(); return; }
+  if (!sinif) { $('detay-baslik').textContent = 'Sınıf detayı'; return; }
   $('detay-baslik').textContent = `${sinif.sube} · ${sinif.kademe} · ${sinif.ad}`;
+  sinifOku(sinif);
 
   // Sınıf öğretmeni
   const ogr = aktifOgretmenler(sinif.subeId);
@@ -279,6 +476,7 @@ function cizDetay() {
     sag.append(sel, kaldir);
     listeSatiri(tb, a.ders, `Haftada ${a.haftalikSaat} saat · programda ${a.kullanilan}/${a.haftalikSaat}`, sag, 'kur-ders');
   }
+  if (!atamalar.length) bosNot(tb, 'Bu sınıfa henüz ders eklenmedi.');
 
   const eklenmemis = v.dersler.filter(d => !atamalar.some(a => a.dersId === d.id));
   doldur($('d-ders'), eklenmemis, d => d.id, d => d.ad);
@@ -294,9 +492,9 @@ function cizDetay() {
     cikar.setAttribute('aria-label', o.ad + ' sınıftan çıkar');
     listeSatiri(ob, o.ad, o.okulNo ? 'No ' + o.okulNo : '', cikar, 'kur-ogr');
   }
+  if (!ogrenciler.length) bosNot(ob, 'Bu sınıfta henüz öğrenci yok.');
   const adaylar = v.ogrenciler.filter(o => o.durum === 'aktif' && !o.sinifId && o.subeId === sinif.subeId);
   doldur($('d-ogrenci'), adaylar, o => o.uyelikId, o => o.ad, adaylar.length ? 'Öğrenci seçin' : 'Sınıfsız öğrenci yok');
-  bosYazilar();
 }
 
 $('d-sil').addEventListener('click', async () => {
@@ -319,11 +517,89 @@ $('d-ogrenci-form').addEventListener('submit', async e => {
     'Öğrenci sınıfa eklendi.');
 });
 
+// ---- 5. Öğrenciler: liste (yazdırılabilir) ----
+function veliHucresi(liste) {
+  const td = el('td');
+  if (!liste.length) { td.append(el('span', '—', 'mad-ince')); return td; }
+  for (const x of liste) {
+    const k = el('div', undefined, 'kur-veli');
+    k.append(el('span', x.ad), el('small', telYaz(x.telefon)));
+    td.append(k);
+  }
+  return td;
+}
+
+function ogrenciSinifSecenekleri() {
+  const subeId = Number($('g-sube').value);
+  doldur($('g-sinif'), siniflarOkul(subeId), s => s.id, s => `${s.kademe} · ${s.ad}`, 'Sınıfsız');
+}
+
+function cizOgrenciler() {
+  doldur($('g-sube'), v.subeler, s => s.id, okulEtiket);
+  ogrenciSinifSecenekleri();
+
+  // Sınıf süzgeci
+  const filtre = $('ogrenci-filtre');
+  const onceki = filtre.value;
+  filtre.replaceChildren(new Option('Tüm sınıflar', ''), new Option('Sınıfsız', 'yok'));
+  for (const s of v.siniflar) filtre.appendChild(new Option(v.subeler.length > 1 ? `${s.sube} · ${s.ad}` : s.ad, String(s.id)));
+  filtre.value = [...filtre.options].some(o => o.value === onceki) ? onceki : '';
+
+  const ara = $('ogrenci-ara').value.trim().toLocaleLowerCase('tr');
+  const bol = ad => { const p = ad.trim().split(/\s+/); return p.length > 1 ? [p.slice(0, -1).join(' '), p.at(-1)] : [ad, '']; };
+  const gorunen = v.ogrenciler
+    .filter(o => !ara || o.ad.toLocaleLowerCase('tr').includes(ara) || String(o.okulNo || '').includes(ara))
+    .filter(o => !filtre.value || (filtre.value === 'yok' ? !o.sinifId : String(o.sinifId) === filtre.value))
+    .map(o => ({ o, ad: bol(o.ad)[0], soyad: bol(o.ad)[1] }))
+    .sort((a, b) => a.soyad.localeCompare(b.soyad, 'tr') || a.ad.localeCompare(b.ad, 'tr'));
+
+  const tb = $('ogrenci-liste');
+  tb.replaceChildren();
+  for (const { o, ad, soyad } of gorunen) {
+    const tr = el('tr');
+    let sinifHucre;
+    if (duzen.ogrenciler) {
+      const sel = document.createElement('select');
+      sel.setAttribute('aria-label', o.ad + ' sınıfı');
+      doldur(sel, siniflarOkul(o.subeId), s => s.id, s => `${s.kademe} · ${s.ad}`, 'Sınıfsız');
+      sel.value = o.sinifId ? String(o.sinifId) : '';
+      sel.disabled = o.durum !== 'aktif';
+      sel.addEventListener('change', () =>
+        yap('/api/yonetim/ogrenci-sinif', { ogrenciUyelikId: o.uyelikId, sinifId: sel.value === '' ? null : Number(sel.value) },
+          'Öğrencinin sınıfı güncellendi.'));
+      sinifHucre = el('td'); sinifHucre.append(sel);
+    } else {
+      sinifHucre = el('td', v.siniflar.find(s => s.id === o.sinifId)?.ad || '—');
+    }
+    const adHucre = el('td', ad);
+    if (o.durum !== 'aktif') adHucre.append(el('small', ' · pasif', 'mad-ince'));
+    tr.append(adHucre, el('td', soyad), el('td', o.okulNo || '—'), sinifHucre, veliHucresi(o.veliler.slice(0, 1)), veliHucresi(o.veliler.slice(1)));
+    tb.append(tr);
+  }
+  if (!gorunen.length) { const tr = el('tr'), td = el('td', 'Gösterilecek öğrenci yok.', 'bos-hucre'); td.colSpan = 6; tr.append(td); tb.append(tr); }
+  $('ogrenci-sayi').textContent = `${gorunen.length} öğrenci`;
+  $('yazdir-baslik').textContent = `Öğrenci listesi${filtre.value ? ' — ' + filtre.options[filtre.selectedIndex].text : ''} · ${new Date().toLocaleDateString('tr-TR')}`;
+}
+
+$('ogrenci-ara').addEventListener('input', cizOgrenciler);
+$('ogrenci-filtre').addEventListener('change', cizOgrenciler);
+$('yazdir').addEventListener('click', () => window.print());
+$('g-sube').addEventListener('change', ogrenciSinifSecenekleri);
+
+$('ogrenci-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const ok = await yap('/api/yonetim/ogrenci-kayit', {
+    ad: $('g-ad').value, kimlik: $('g-kimlik').value, telefon: $('g-tel').value, okulNo: $('g-no').value,
+    subeId: $('g-sube').value, sinifId: $('g-sinif').value === '' ? null : $('g-sinif').value,
+  }, 'Öğrenci kaydedildi.');
+  if (ok) $('ogrenci-form').reset();
+});
+
 // ---- Sekmeler ----
 document.querySelectorAll('.sekmeler button').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.sekmeler button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    for (const id of ['dersler', 'ogretmenler', 'ogrenciler', 'siniflar']) {
+    for (const id of ['okul', 'dersler', 'ogretmenler', 'siniflar', 'ogrenciler']) {
       $('s-' + id).classList.toggle('gizli', id !== b.dataset.sekme);
     }
     mesaj('');
