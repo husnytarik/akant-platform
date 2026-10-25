@@ -14,32 +14,92 @@
   </header>
   <main class="kart panel genis prg-sayfa">
 
-    <div class="sekmeler" role="group" aria-label="Bölümler">
-      <button type="button" data-sekme="program" aria-pressed="true">Sınıf programı</button>
-      <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmen programı</button>
+    <div class="sekmeler s3" role="group" aria-label="Bölümler">
+      <button type="button" data-sekme="sinif" aria-pressed="true">Sınıflar</button>
+      <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmenler</button>
+      <button type="button" data-sekme="gorev" aria-pressed="false">Nöbet ve görev</button>
     </div>
-
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <section id="s-program">
-      <label for="program-sinif">Sınıf</label>
-      <select id="program-sinif"></select>
-
-      <div class="prg-arac">
-        <button type="button" id="oto" class="birincil">Otomatik doldur</button>
-        <button type="button" id="temizle" class="ikincil">Temizle</button>
+    <!-- Sınıf programı -->
+    <section id="s-sinif">
+      <div class="kur-arac prg-secici"><select id="program-sinif" aria-label="Sınıf"></select></div>
+      <div class="kur-ust"><h2 id="sinif-baslik" class="baslik2">Sınıf programı</h2>
+        <div class="kur-ust-dugmeler">
+          <button type="button" class="ikincil kucuk yazdir-dugme">Yazdır</button>
+          <button type="button" class="ikincil kucuk duzen-dugme" data-bolum="sinif">Düzenle</button>
+        </div>
       </div>
+      <h2 id="sinif-yazdir" class="yazdir-baslik"></h2>
 
-      <p class="prg-ipucu">Aşağıdan bir ders seçin, sonra programda dersi koymak istediğiniz saate dokunun. Dolu hücreye aynı dersle dokunmak onu kaldırır.</p>
-      <div id="fircalar" class="prg-fircalar" role="group" aria-label="Dersler"></div>
-      <div id="program-grid" class="prg-grid"></div>
-      <p class="prg-not"><span class="prg-nokta mesgul"></span> Öğretmen o saatte başka sınıfta</p>
+      <div id="sinif-tablo" class="duzen-gizle"></div>
+
+      <div class="duzen-alan">
+        <div class="prg-arac">
+          <button type="button" id="oto" class="birincil">Otomatik doldur</button>
+          <button type="button" id="temizle" class="ikincil">Temizle</button>
+        </div>
+        <p class="prg-ipucu">Aşağıdan bir ders seçin, sonra programda koymak istediğiniz saate dokunun. Dolu hücreye aynı dersle dokunmak onu kaldırır.</p>
+        <div id="fircalar" class="prg-fircalar" role="group" aria-label="Dersler"></div>
+        <div id="program-grid" class="prg-grid"></div>
+        <p class="prg-not"><span class="prg-nokta mesgul"></span> Öğretmen o saatte başka sınıfta, müsait değil ya da görevde</p>
+      </div>
     </section>
 
+    <!-- Öğretmen programı -->
     <section id="s-ogretmen" class="gizli">
-      <label for="ogretmen-sec">Öğretmen</label>
-      <select id="ogretmen-sec"></select>
-      <div id="ogretmen-grid" class="prg-grid"></div>
+      <div class="kur-arac prg-secici"><select id="ogretmen-sec" aria-label="Öğretmen"></select></div>
+      <div class="kur-ust"><h2 id="ogretmen-baslik" class="baslik2">Öğretmen programı</h2>
+        <div class="kur-ust-dugmeler">
+          <button type="button" class="ikincil kucuk yazdir-dugme">Yazdır</button>
+          <button type="button" class="ikincil kucuk duzen-dugme" data-bolum="ogretmen">Düzenle</button>
+        </div>
+      </div>
+      <h2 id="ogretmen-yazdir" class="yazdir-baslik"></h2>
+      <div id="ogretmen-ozet" class="prg-ozet"></div>
+
+      <div id="ogretmen-tablo" class="duzen-gizle"></div>
+
+      <div class="duzen-alan">
+        <p class="prg-ipucu">Öğretmenin çalışmadığı (müsait olmadığı) saatlere dokunarak işaretleyin. Ders ve görev saatleri değiştirilemez.</p>
+        <div id="musait-grid" class="prg-grid"></div>
+        <div class="prg-yuk">
+          <label for="azami">Haftalık en çok ders saati</label>
+          <input id="azami" type="number" min="1" max="80" inputmode="numeric" placeholder="Örn. 25">
+        </div>
+        <div class="kaydet-cubuk"><button type="button" id="musait-vazgec" class="ikincil">Vazgeç</button><button type="button" id="musait-kaydet" class="birincil">Kaydet</button></div>
+      </div>
+      <div class="prg-aciklama" id="ogretmen-aciklama"></div>
+    </section>
+
+    <!-- Nöbet ve görevlendirme -->
+    <section id="s-gorev" class="gizli">
+      <div class="kur-arac prg-secici"><select id="gorev-suz" aria-label="Öğretmen"></select></div>
+      <div class="kur-ust"><h2 class="baslik2">Nöbet ve görevlendirme</h2>
+        <div class="kur-ust-dugmeler">
+          <button type="button" class="ikincil kucuk yazdir-dugme">Yazdır</button>
+          <button type="button" class="ikincil kucuk duzen-dugme" data-bolum="gorev">Düzenle</button>
+        </div>
+      </div>
+      <h2 class="yazdir-baslik">Nöbet ve görevlendirme listesi</h2>
+      <div id="gorev-liste" class="kur-liste"></div>
+
+      <div class="duzen-alan">
+        <form id="gorev-form" class="prg-form">
+          <h3 id="gorev-baslik" class="baslik3">Yeni nöbet / görev</h3>
+          <div class="form-satir">
+            <div><label for="g-ogretmen">Öğretmen</label><select id="g-ogretmen" required></select></div>
+            <div><label for="g-tur">Tür</label><select id="g-tur"><option value="nobet">Nöbet</option><option value="gorev">Görevlendirme</option></select></div>
+            <div><label for="g-ad">Ad</label><input id="g-ad" required maxlength="60" placeholder="Bahçe nöbeti, Kantin, Sınav gözetmenliği…"></div>
+            <div><label for="g-yer">Yer (isteğe bağlı)</label><input id="g-yer" maxlength="60"></div>
+            <div><label for="g-tekrar">Ne zaman</label><select id="g-tekrar"><option value="haftalik">Her hafta aynı gün</option><option value="tek">Yalnızca belirli bir tarih</option></select></div>
+            <div id="g-gun-kap"><label for="g-gun">Gün</label><select id="g-gun"></select></div>
+            <div id="g-tarih-kap" class="gizli"><label for="g-tarih">Tarih</label><input id="g-tarih" type="date"></div>
+          </div>
+          <p class="prg-etiket">Ders saatleri</p><div id="g-saatler" class="prg-saat-sec"></div>
+          <div class="kaydet-cubuk"><button type="button" id="g-vazgec" class="ikincil">Vazgeç</button><button type="submit" class="birincil">Kaydet</button></div>
+        </form>
+      </div>
     </section>
   </main>
   <script src="/ders-programi.js"></script>

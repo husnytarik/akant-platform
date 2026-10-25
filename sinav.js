@@ -192,7 +192,7 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
         if (kazanimli) kazanim[d.id] = kazanimDurum(kaz.get(d.id), d.anahtar, d.iptal, c).map(k => ({ ...k, isleme: islemeDurumu(islenen, g.sinifId, d.ders, g.ogrenciId, k.kazanim) }));
         topPuan += r.puan; say++;
       }
-      return { ogrenciId: g.ogrenciId, okulNo: g.okulNo, ad: g.ad, sinif: g.sinif, dersler: dersSonuc, ...(kazanimli ? { kazanim } : {}), ortalama: say ? Math.round(topPuan / say * 10) / 10 : null,
+      return { ogrenciId: g.ogrenciId, okulNo: g.okulNo, ad: g.ad, sinif: g.sinif, sinifId: g.sinifId, dersler: dersSonuc, ...(kazanimli ? { kazanim } : {}), ortalama: say ? Math.round(topPuan / say * 10) / 10 : null,
         kume: dersler.filter(d => gorur(d, g.sinifId)).map(d => d.id).join() };
     });
     const girenler = satirlar.filter(r => r.ortalama !== null).sort((a, b) => b.ortalama - a.ortalama);
@@ -249,6 +249,60 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     };
   };
 
+  // Sıralama: sıra yalnız sınava giren (ortalaması olan) öğrenciler arasında verilir; eşit ortalama aynı sırayı alır (1, 2, 2, 4).
+  // Sınıf = kendi sınıfı, okul = aynı okulda aynı düzey, tüm okullar = ad, tarih, düzey ve türü aynı olan diğer okul/kampüs sınavları da dahil
+  const ozetOnbellek = new Map();
+  const ozetOku = s => {
+    if (!ozetOnbellek.has(s.id)) {
+      const r = sonucHesapla(s);
+      ozetOnbellek.set(s.id, { dersAd: new Map(r.dersler.map(d => [d.id, d.ders])), satirlar: r.ogrenciler.filter(g => g.ortalama !== null) });
+    }
+    return ozetOnbellek.get(s.id);
+  };
+  const esOnbellek = new Map();
+  const esSatirlar = s => {
+    if (!esOnbellek.has(s.id)) {
+      const es = s.duzey ? db.prepare(`SELECT x.* FROM sinavlar x JOIN memberships m ON m.id = x.teacher_membership_id
+        WHERE x.id <> ? AND x.name = ? AND x.date = ? AND x.duzey = ? AND x.tur = ? AND x.amac = ? AND x.durum = 'aktif'
+          AND m.branch_id <> (SELECT branch_id FROM memberships WHERE id = ?)`).all(s.id, s.name, s.date, s.duzey, s.tur, s.amac, s.teacher_membership_id) : [];
+      esOnbellek.set(s.id, es.flatMap(x => ozetOku(x).satirlar));
+    }
+    return esOnbellek.get(s.id);
+  };
+  const siraVer = (liste, ortalama) => ({ sira: 1 + liste.filter(x => x.ortalama > ortalama).length, sayi: liste.length });
+  const siralamaBilgisi = (s, ogrenciId) => {
+    const { satirlar } = ozetOku(s);
+    const ben = satirlar.find(x => x.ogrenciId === ogrenciId);
+    if (!ben) return null;
+    const baskalari = esSatirlar(s);
+    return {
+      sinif: siraVer(satirlar.filter(x => x.sinifId === ben.sinifId), ben.ortalama),
+      okul: siraVer(satirlar, ben.ortalama),
+      genel: baskalari.length ? siraVer([...satirlar, ...baskalari], ben.ortalama) : null,
+    };
+  };
+  // Önceki sınava göre değişim: aynı türdeki (deneme / açılış / aynı dersin yazılısı) bir önceki sınav; öğrenci/veli yalnız yayınlanmışı görür
+  const sinavKategori = s => (s.tur === 'yazili' ? 'yazili:' + (dersleri(s.id)[0]?.ders || '') : 'test');
+  const degisimBilgisi = (s, ogrenciId, ortalama, yalnizYayin) => {
+    const adaylar = db.prepare(`SELECT DISTINCT p.* FROM sinavlar p JOIN sinav_siniflar ss ON ss.sinav_id = p.id
+        JOIN class_students cs ON cs.class_id = ss.class_id
+      WHERE cs.student_membership_id = ? AND p.id <> ? AND p.durum = 'aktif' AND p.tur = ? AND p.amac = ?
+        AND (p.date < ? OR (p.date = ? AND p.id < ?)) ${yalnizYayin ? 'AND p.yayin = 1' : ''}
+      ORDER BY p.date DESC, p.id DESC`).all(ogrenciId, s.id, s.tur, s.amac, s.date, s.date, s.id);
+    const kat = sinavKategori(s);
+    for (const p of adaylar) {
+      if (sinavKategori(p) !== kat) continue;
+      const { dersAd, satirlar } = ozetOku(p);
+      const ben = satirlar.find(x => x.ogrenciId === ogrenciId);
+      if (!ben) continue;
+      const fark = Math.round((ortalama - ben.ortalama) * 10) / 10;
+      const dersPuan = {};
+      for (const [id, ad] of dersAd) if (ben.dersler[id]) dersPuan[ad] = ben.dersler[id].puan;
+      return { ad: p.name, tarih: p.date, ortalama: ben.ortalama, fark, oran: ben.ortalama > 0 ? Math.round(fark / ben.ortalama * 1000) / 10 : null, dersPuan };
+    }
+    return null;
+  };
+
   // Bir öğrencinin yayınlanmış sınav sonuçları (öğrenci/veli ve mentor öğretmen görünümü ortak kullanır)
   const yayinliSinavlar = ogrId => db.prepare(`SELECT s.* FROM sinavlar s JOIN sinav_siniflar ss ON ss.sinav_id = s.id
       JOIN class_students cs ON cs.class_id = ss.class_id WHERE cs.student_membership_id = ? AND s.yayin = 1 AND s.amac = 'deneme' AND s.durum = 'aktif'
@@ -256,10 +310,12 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     const r = sonucHesapla(s, true);
     const g = r.ogrenciler.find(x => x.ogrenciId === ogrId);
     if (!g || g.ortalama === null) return null;
+    const degisim = degisimBilgisi(s, ogrId, g.ortalama, true);
     return {
       ad: s.name, tarih: s.date, yanlisKat: s.yanlis_kat, ortalama: g.ortalama, sira: g.sira, giren: r.giren,
       yazili: s.tur === 'yazili', kapsam: genelKazanim(s.id),
-      dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], kazanimlar: g.kazanim[d.id] })),
+      siralama: siralamaBilgisi(s, ogrId), degisim,
+      dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], onceki: degisim?.dersPuan[d.ders] ?? null, kazanimlar: g.kazanim[d.id] })),
     };
   }).filter(Boolean);
 
@@ -701,7 +757,16 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   if (req.method === 'GET' && yol === '/api/sinav/sonuc') {
     const e = erisim(tamSayi(url.searchParams.get('id'), 1, 1e9));
     if (!e) return hata(404, 'Sınav bulunamadı');
-    json(res, 200, sonucHesapla(e.s, url.searchParams.get('kazanim') === '1', yon ? null : kisit(e.s)));
+    const sonuc = sonucHesapla(e.s, url.searchParams.get('kazanim') === '1', yon ? null : kisit(e.s));
+    // Öğretmenin kısıtlı görünümünde ortalama yalnız kendi dersinindir; genel sıra ve değişim o zaman verilmez
+    if (!sonuc.kisitli) {
+      for (const g of sonuc.ogrenciler) {
+        if (g.ortalama === null) continue;
+        g.siralama = siralamaBilgisi(e.s, g.ogrenciId);
+        g.degisim = degisimBilgisi(e.s, g.ogrenciId, g.ortalama, false);
+      }
+    }
+    json(res, 200, sonuc);
     return true;
   }
 

@@ -2427,3 +2427,83 @@ main .kul-duzen .mini-form button { width: auto; }
   main .kur-satir { break-inside: avoid; }
 }
 main .kur-ust-dugmeler button { width: auto; min-height: 32px; padding: 0 14px; font-size: .84rem; border-radius: 10px; }
+
+/* Ders programı: düz, çerçevesiz tablo; liste ve formlar ince çizgilerle */
+main .sekmeler.s3 button { flex: 1; padding: 12px 6px; font-size: .86rem; }
+main .prg-secici { margin: 2px 0 0; }
+main .prg-secici select { width: 100%; margin: 0; }
+main .prg-tablo { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 4px 0 8px; }
+main .prg-tablo th { font-size: .7rem; font-weight: 600; letter-spacing: .04em; color: var(--soluk, #8a8577); padding: 6px 2px; text-align: center; background: transparent; border: 0; }
+main .prg-tablo .uzun { display: none; }
+main .prg-tablo th:first-child, main .prg-tablo .prg-satir-ad { width: 40px; }
+main .prg-tablo .prg-satir-ad { text-align: center; padding: 0; }
+main .prg-tablo .prg-satir-ad strong { display: block; font-family: var(--serif, Georgia, serif); font-size: 1rem; font-weight: 500; line-height: 1.1; color: var(--murekkep, #1f2430); }
+main .prg-tablo .prg-satir-ad small { display: block; font-size: .6rem; font-weight: 400; color: var(--soluk, #8a8577); letter-spacing: 0; }
+main .prg-tablo td { height: 52px; padding: 4px 4px; border: 0; border-top: 1px solid var(--ince, #ebe5d6); vertical-align: middle; text-align: left; background: transparent; hyphens: auto; overflow-wrap: anywhere; }
+main .prg-tablo td strong { display: block; font-size: .72rem; font-weight: 600; line-height: 1.15; }
+main .prg-tablo td small { display: block; font-size: .62rem; line-height: 1.2; color: var(--soluk, #8a8577); }
+main .prg-tablo td.dolu.ders { background: color-mix(in srgb, var(--ders, #475569) 13%, transparent); box-shadow: inset 3px 0 0 var(--ders, #475569); padding-left: 7px; }
+main .prg-tablo td.dolu.ders strong { color: var(--ders, #475569); }
+main .prg-tablo td.nobet { background: rgba(214, 150, 40, .16); box-shadow: inset 3px 0 0 #d69628; padding-left: 7px; }
+main .prg-tablo td.gorev { background: rgba(120, 90, 170, .13); box-shadow: inset 3px 0 0 #7a5aaa; padding-left: 7px; }
+main .prg-tablo td.kapali { background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(138, 133, 119, .22) 5px 6px); }
+main .prg-ozet { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 6px; font-size: .84rem; color: var(--soluk, #8a8577); }
+main .prg-ozet b { color: var(--murekkep, #1f2430); font-weight: 600; }
+main .prg-ozet .asim b { color: #b4412f; }
+main .prg-aciklama { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; font-size: .76rem; color: var(--soluk, #8a8577); }
+main .prg-aciklama span { display: inline-flex; align-items: center; gap: 6px; }
+main .prg-aciklama .nokta { width: 10px; height: 10px; border-radius: 3px; background: #475569; display: inline-block; }
+main .prg-aciklama .nokta.nobet { background: #d69628; }
+main .prg-aciklama .nokta.gorev { background: #7a5aaa; }
+main .prg-aciklama .nokta.kapali { background: repeating-linear-gradient(135deg, #cfc9ba 0 2px, transparent 2px 4px); }
+main .prg-hucre.kapali { background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(138, 133, 119, .3) 5px 7px); border-style: solid; border-color: var(--ince, #ddd5c2); }
+main .prg-hucre.gorev-hucre { border: 0; background: rgba(120, 90, 170, .14); }
+main .prg-hucre.gorev-hucre strong { color: #7a5aaa; font-size: .72rem; }
+main .prg-hucre:disabled { cursor: default; }
+main .prg-yuk { margin: 14px 0 4px; }
+main .prg-yuk input { width: 120px; margin: 0; }
+main .prg-grup { margin: 18px 0 2px; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--soluk, #8a8577); }
+main .prg-satir-dugme { display: none; gap: 6px; }
+main .duzende .prg-satir-dugme { display: flex; }
+main .prg-form { margin: 20px 0 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--ince, #ebe5d6); border-radius: 0; background: transparent; }
+main .prg-etiket { margin: 12px 0 6px; font-size: .84rem; color: var(--soluk, #8a8577); }
+main .prg-saat-sec { display: flex; flex-wrap: wrap; gap: 6px; }
+main .prg-saat-chip { display: flex; flex-direction: column; align-items: center; min-width: 46px; padding: 6px 4px; border: 0; border-radius: 12px; background: #f1ece0; color: var(--murekkep, #1f2430); font: inherit; cursor: pointer; line-height: 1.1; }
+main .prg-saat-chip small { font-size: .6rem; color: var(--soluk, #8a8577); }
+main .prg-saat-chip[aria-pressed=true] { background: var(--ana, #5878a8); color: #fff; }
+main .prg-saat-chip[aria-pressed=true] small { color: rgba(255,255,255,.85); }
+@media (min-width: 640px) {
+  main .prg-tablo .kisa { display: none; }
+  main .prg-tablo .uzun { display: inline; }
+  main .prg-tablo td strong { font-size: .84rem; }
+  main .prg-tablo td small { font-size: .72rem; }
+  main .prg-tablo td { height: 58px; }
+}
+@media print {
+  main .prg-secici { display: none !important; }
+  main .prg-tablo .kisa { display: none; }
+  main .prg-tablo .uzun { display: inline; }
+  main .prg-tablo td { height: 17mm; border-top: 1px solid #bbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  main .prg-tablo td strong { font-size: 10pt; color: #000 !important; }
+  main .prg-tablo td small { font-size: 8.5pt; color: #333; }
+  main .prg-tablo th { color: #000; font-size: 9pt; }
+  main .prg-ozet { color: #000; }
+}
+
+/* Sınav sıralaması: sınıf / okul / tüm okullar ve önceki sınava göre değişim (düz, çizgisiz şerit) */
+.sira-serit { margin: 10px 0 12px; }
+.sira-hucreler { display: flex; gap: 18px; flex-wrap: wrap; }
+.sira-hucreler div { display: grid; gap: 1px; }
+.sira-hucreler strong { font-family: var(--serif); font-size: 1.5rem; font-weight: 500; line-height: 1.1; color: var(--ana); }
+.sira-hucreler span { font-size: .74rem; color: var(--soluk); }
+.sira-degisim { display: grid; gap: 1px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0eadc; }
+.sira-degisim b { font-size: .9rem; }
+.sira-degisim small, .sira-not { font-size: .74rem; color: var(--soluk); }
+.sira-not { display: block; margin-top: 6px; }
+.sira-degisim.art b, em.fark.art { color: #1a7f37; }
+.sira-degisim.dus b, em.fark.dus { color: #c62828; }
+.sira-degisim.esit b, em.fark.esit { color: var(--soluk); }
+em.fark { flex: none; margin: 0 6px; font-style: normal; font-size: .72rem; font-weight: 600; white-space: nowrap; }
+@media print { .sira-hucreler strong, .sira-degisim b { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+em.fark.fark-alt { display: block; margin: 6px 0 0; }
+em.fark.fark-alt::after { content: ' önceki sınava göre'; font-weight: 400; color: var(--soluk); }

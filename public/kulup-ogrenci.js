@@ -59,7 +59,7 @@ function tercihler(v) {
   const ilk = JSON.stringify(secili);
   const durum = Object.fromEntries(v.talepler.map(t => [t.kulupId, t.durum]));
 
-  kok.append(el('p', `Girmek istediğiniz kulüpleri sırayla seçin (en çok ${v.talepSiniri}). Yerleştirmeyi okul yapar; sonuç bu sayfada görünür.`, 'kl-not'));
+  kok.append(el('p', `Girmek istediğiniz kulüpleri sırayla seçin (en çok ${v.talepSiniri}). Dolu görünen kulüpleri de seçebilirsiniz; yerleştirmeyi okul yapar, sonuç bu sayfada görünür.`, 'kl-not'));
   if (!v.kulupler.length) return kok.append(el('p', `${v.sinif} sınıfı için açık kulüp yok.`, 'bos-not'));
 
   const liste = el('div', undefined, 'kl-liste');

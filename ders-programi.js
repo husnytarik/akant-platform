@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { dersStilleri, stilEkle } from './stil.js';
+import { ogretmenMesgulNedeni } from './gorev.js';
 import { DERS_ZAMANLARI, ACIK_GUNLER, gunAcik, ayarlar, ayarDogrula, ayarKaydet } from './okul-ayar.js';
 
 export const KADEMELER = ['Anasınıfı', 'İlkokul', 'Ortaokul', 'Lise'];
@@ -66,7 +67,7 @@ function otomatikYerlestir(sinifId, bastan) {
         for (const g of ACIK_GUNLER) {
           const ayni = dersGun.get(a.id + ':' + g) || 0;
           for (let p = 1; p <= DERS_ZAMANLARI.length; p++) {
-            if (dolu.has(g + ':' + p) || ogrMesgul.get(a.ogr, g, p)) continue;
+            if (dolu.has(g + ':' + p) || ogrMesgul.get(a.ogr, g, p) || ogretmenMesgulNedeni(a.ogr, g, p)) continue;
             // Aynı gün tekrarı pahalı, dolu günler pahalı, geç saatler hafif pahalı;
             // aynı günde ikinci saat ancak bitişikse tercih edilir
             const bitisik = dolu.has(g + ':' + (p - 1)) || dolu.has(g + ':' + (p + 1));
@@ -357,6 +358,8 @@ export async function dersProgramiApi({ req, res, url, o, json, govde, denetle }
     WHERE m.user_id = ? AND s.day = ? AND s.period = ? AND s.class_id != ?`)
     .get(atama.teacher_user_id, gun, saat, sinifId);
   if (cakisma) return hata(409, `Öğretmen bu saatte ${cakisma.sinif} sınıfında derste`);
+  const mesgulNedeni = atama.teacher_user_id && ogretmenMesgulNedeni(atama.teacher_user_id, gun, saat);
+  if (mesgulNedeni) return hata(409, mesgulNedeni);
 
   db.prepare(`INSERT INTO schedule (class_id, day, period, assignment_id) VALUES (?,?,?,?)
               ON CONFLICT (class_id, day, period) DO UPDATE SET assignment_id = excluded.assignment_id`)

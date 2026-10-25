@@ -255,11 +255,14 @@ async function talepler(alan) {
     for (const t of o.talepler) {
       const s = el('div', undefined, 'kl-talep');
       s.append(el('b', `${t.sira}.`), el('span', t.kulup));
+      const dolu = t.uyeSayisi >= t.kontenjan;
+      if (dolu && t.durum === 'bekliyor') s.append(chip(`Dolu ${t.uyeSayisi}/${t.kontenjan}`));
       if (t.durum === 'red') s.append(chip('Yerleşmedi'));
       else if (t.durum === 'kabul') s.append(chip('Yerleşti', 'tamam'));
       else {
         const y = el('button', 'Yerleştir', 'kl-mini');
         y.type = 'button';
+        if (dolu) { y.disabled = true; y.title = 'Kontenjan dolu; önce bu kulüpten bir öğrenci çıkarın ya da kontenjanı artırın'; }
         y.addEventListener('click', async () => {
           y.disabled = true;
           const x = await api('/api/kulup/yerlestir', { ogrenciId: o.uyelikId, kulupId: t.kulupId });

@@ -152,7 +152,8 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
 
   if (yonetim && req.method === 'GET' && yol === '/api/kulup/talepler') {
     const sube = subeId(o);
-    const satirlar = db.prepare(`SELECT t.id, t.student_membership_id AS ogrenciId, t.kulup_id AS kulupId, k.ad AS kulup, t.sira, t.durum
+    const satirlar = db.prepare(`SELECT t.id, t.student_membership_id AS ogrenciId, t.kulup_id AS kulupId, k.ad AS kulup, t.sira, t.durum,
+      k.kontenjan, (SELECT COUNT(*) FROM kulup_uyeler ku WHERE ku.kulup_id = k.id) AS uyeSayisi
       FROM kulup_talepleri t JOIN kulupler k ON k.id = t.kulup_id WHERE k.branch_id = ? ORDER BY t.student_membership_id, t.sira`).all(sube);
     const ogrenciler = new Map();
     for (const t of satirlar) {
@@ -161,7 +162,7 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
         const uye = db.prepare('SELECT k.id, k.ad FROM kulup_uyeler ku JOIN kulupler k ON k.id = ku.kulup_id WHERE ku.student_membership_id = ?').get(t.ogrenciId);
         ogrenciler.set(t.ogrenciId, { ...kart, uye: uye || null, talepler: [] });
       }
-      ogrenciler.get(t.ogrenciId).talepler.push({ id: t.id, kulupId: t.kulupId, kulup: t.kulup, sira: t.sira, durum: t.durum });
+      ogrenciler.get(t.ogrenciId).talepler.push({ id: t.id, kulupId: t.kulupId, kulup: t.kulup, sira: t.sira, durum: t.durum, kontenjan: t.kontenjan, uyeSayisi: t.uyeSayisi });
     }
     // Yerleşmemiş olanlar önce
     json(res, 200, { ogrenciler: [...ogrenciler.values()].sort((a, b) => Number(!!a.uye) - Number(!!b.uye) || String(a.sinif).localeCompare(String(b.sinif), 'tr') || a.ad.localeCompare(b.ad, 'tr')) });

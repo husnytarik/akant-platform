@@ -217,7 +217,7 @@ async function sinavCiz() {
     const puan = el('div', undefined, 'ogs-puan');
     puan.append(el('b', String(s.ortalama)), el('small', `ortalama · ${s.sira}. sıra (${s.giren} öğrenci)`));
     ust.append(kim, puan);
-    kart.append(ust);
+    kart.append(ust, siraSerit(s.siralama, s.degisim));
     for (const d of s.dersler) {
       const h = el('div', undefined, 'ogs-ayr');
       const baslik = el('div', undefined, 'ogs-ayr-ust');

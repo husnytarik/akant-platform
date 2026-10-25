@@ -39,7 +39,7 @@ function sinavKarti(s, acik) {
   const ad = el('div', undefined, 'nt-ad');
   ad.append(el('strong', s.ad), el('small', `${tarihYaz(s.tarih)} · ${s.giren} öğrenci içinde ${s.sira}. sıra`));
   ozet.append(ad, el('span', String(s.ortalama), 'nt-puan'));
-  kart.append(ozet);
+  kart.append(ozet, siraSerit(s.siralama, s.degisim));
 
   const yatay = el('div', undefined, 'yatay');
   for (const d of s.dersler) {
@@ -65,6 +65,8 @@ function sinavKarti(s, acik) {
       alt.append(say, el('small', 'net ' + d.net));
       h.append(alt);
     }
+    const fark = dersFarki(d.onceki, d.puan);
+    if (fark) { fark.classList.add('fark-alt'); h.append(fark); }
     izgara.append(h);
   }
   if (s.kapsam && s.kapsam.length) { kart.append(el('h4', 'Sınavın kazanımları', 'baslik3')); const ul = el('ul', undefined, 'kapsam-liste'); for (const x of s.kapsam) ul.append(el('li', x)); kart.append(ul); }

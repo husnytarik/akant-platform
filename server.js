@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { db, tcGecerliMi, seed, okulNoDoldur, FOTO_SQL } from './db.js';
 import { fotoApi } from './foto.js';
 import { dersProgramiApi } from './ders-programi.js';
+import { gorevApi } from './gorev.js';
 import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
@@ -390,6 +391,7 @@ async function yonetimApi(req, res, url) {
   const ortak = { req, res, url, o, json, govde, denetle };
   if (await kurulumApi(ortak)) return;
   if (await dersProgramiApi(ortak)) return;
+  if (await gorevApi(ortak)) return;
 
   if (req.method === 'GET' && yol === '/api/yonetim/subeler') {
     return json(res, 200, {

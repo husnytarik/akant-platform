@@ -693,7 +693,7 @@ async function ogrCiz() {
       satir.addEventListener('click', () => raporEkrani([g.ogrenciId]));
     }
     const kim = el('span', undefined, 'sr-kim');
-    kim.append(el('strong', g.ad), el('small', `${g.okulNo ? 'No ' + g.okulNo + ' · ' : ''}${g.sinif}`));
+    kim.append(el('strong', g.ad), el('small', `${g.okulNo ? 'No ' + g.okulNo + ' · ' : ''}${g.sinif}${g.siralama ? ` · sınıfta ${g.siralama.sinif.sira}.` : ''}`));
     satir.append(el('span', g.sira ? String(g.sira) : '–', 'sr-sira'), kim);
     if (girdi) {
       if (v.dersler.length > 1) {
@@ -709,6 +709,8 @@ async function ogrCiz() {
       }
       const puan = el('span', String(g.ortalama), 'sr-puan');
       puan.style.setProperty('--r', bandRenk(g.ortalama));
+      const fark = g.degisim ? dersFarki(g.degisim.ortalama, g.ortalama) : null;
+      if (fark) satir.append(fark);
       satir.append(puan);
     } else satir.append(el('span', 'Girmedi', 'sr-girmedi'));
     liste.append(satir);
@@ -719,9 +721,11 @@ async function ogrCiz() {
 // Sonuç tablosu: Türkçe Excel'in açacağı biçimde (noktalı virgül, BOM)
 function csvIndir(v) {
   const hucre = x => { const s = String(x ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const satirlar = [['Sıra', 'Okul no', 'Ad Soyad', 'Sınıf', ...v.dersler.map(d => d.ders + ' puan'), 'Ortalama']];
+  const virgul = x => (x === null || x === undefined ? '' : String(x).replace('.', ','));
+  const satirlar = [['Sıra', 'Okul no', 'Ad Soyad', 'Sınıf', ...v.dersler.map(d => d.ders + ' puan'), 'Ortalama', 'Sınıf sırası', 'Okul sırası', 'Tüm okullar sırası', 'Önceki sınava göre puan farkı', 'Önceki sınava göre %']];
   const sirali = v.ogrenciler.filter(g => g.ortalama !== null).sort((a, b) => a.sira - b.sira || a.ad.localeCompare(b.ad, 'tr'));
-  for (const g of sirali) satirlar.push([g.sira, g.okulNo || '', g.ad, g.sinif, ...v.dersler.map(d => (g.dersler[d.id] ? String(g.dersler[d.id].puan).replace('.', ',') : '')), String(g.ortalama).replace('.', ',')]);
+  for (const g of sirali) satirlar.push([g.sira, g.okulNo || '', g.ad, g.sinif, ...v.dersler.map(d => (g.dersler[d.id] ? virgul(g.dersler[d.id].puan) : '')), virgul(g.ortalama),
+    g.siralama?.sinif.sira ?? '', g.siralama?.okul.sira ?? '', g.siralama?.genel?.sira ?? '', virgul(g.degisim?.fark), virgul(g.degisim?.oran)]);
   const ad = v.sinav.ad.toLocaleLowerCase('tr').replace(/[^a-z0-9ğüşıöç]+/g, '-').replace(/^-|-$/g, '') || 'sinav';
   dosyaIndir(`${ad}-sonuclar.csv`, '﻿' + satirlar.map(s => s.map(hucre).join(';')).join('\r\n') + '\r\n', 'text/csv');
 }
@@ -812,7 +816,7 @@ function raporGovdesi(rapor, v, g, secim, cevaplar) {
   const hucre = (say, ad) => { const h = el('div'); h.append(el('strong', say), el('span', ad)); ozet.append(h); };
   hucre(String(g.ortalama), v.dersler.length > 1 ? 'Ortalama puan' : 'Puan');
   hucre(`${g.sira}.`, `${v.giren} öğrenci içinde`);
-  rapor.append(ozet);
+  rapor.append(ozet, siraSerit(g.siralama, g.degisim));
 
   for (const d of v.dersler) {
     const x = g.dersler[d.id];
