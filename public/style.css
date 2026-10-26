@@ -2507,3 +2507,8 @@ em.fark { flex: none; margin: 0 6px; font-style: normal; font-size: .72rem; font
 @media print { .sira-hucreler strong, .sira-degisim b { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 em.fark.fark-alt { display: block; margin: 6px 0 0; }
 em.fark.fark-alt::after { content: ' önceki sınava göre'; font-weight: 400; color: var(--soluk); }
+
+main .gz-isaretler { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; }
+main .gz-isaret { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; display: inline-grid; place-items: center; font-size: .68rem; font-weight: 700; line-height: 1; color: #fff; }
+main .gz-isaret.acik { background: #d9a21b; }
+main .gz-isaret.gecmis { background: #d64545; }

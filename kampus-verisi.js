@@ -771,6 +771,8 @@ try {
       s.ogrenciler.forEach((ogr, oi) => {
         const duzeyi = ogr.yet.genel > 0.5 ? 0 : ogr.yet.genel < -0.5 ? 2 : 1;
         ogretmenler.forEach((t, ti) => basliklar.forEach((b, bi) => {
+          // Bazı öğrenciler için gözlem yazılmamış kalır (öğretmen ana sayfasındaki "yazılmamış" göstergesi görünsün)
+          if ((t.ad === DEMO.ogretmen.ad ? oi % 2 === 1 : (s.id + oi + ti) % 11 === 0)) return;
           const seviye = rnd() < 0.15 ? sinirla(duzeyi + (rnd() < 0.5 ? -1 : 1), 0, 2) : duzeyi;
           let metin = METINLER[bi][seviye][(oi + ti) % 2];
           const brans = BRANS_CUMLE[t.dersler[0]];

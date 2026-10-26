@@ -98,6 +98,26 @@ async function mufredatTakip() {
   kutu.append(ek);
 }
 
+// Gelişim gözlemleri karesinde küçük gösterge: açık dönemde (sarı) ve geçmiş dönemlerde (kırmızı) gözlemi eksik kalan öğrenci sayısı
+async function gelisimGostergesi() {
+  const r = await fetch('/api/gelisim/bekleyen');
+  if (!r.ok) return;
+  const { donemler } = await r.json();
+  const kare = document.querySelector('[data-modul="gelisim-ogretmen"]');
+  if (!kare || !donemler.length) return;
+  const toplam = durum => donemler.filter(d => d.durum === durum).reduce((t, d) => t + d.eksik, 0);
+  const kutu = el('span', undefined, 'gz-isaretler');
+  for (const [durum, sinif, metin] of [['acik', 'acik', 'bu dönem gözlemi yazılmamış'], ['kapandi', 'gecmis', 'geçmiş dönemde gözlemi yazılmamış']]) {
+    const n = toplam(durum);
+    if (!n) continue;
+    const i = el('span', String(n), 'gz-isaret ' + sinif);
+    i.title = `${n} öğrenci · ${metin}`;
+    i.setAttribute('aria-label', i.title);
+    kutu.append(i);
+  }
+  kare.append(kutu);
+}
+
 // Modül kareleri için çizgi ikonlar
 const IKON_YOL = {
   etut: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -183,6 +203,7 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
     kare.className = 'kare' + (m.yol ? '' : ' soon');
     if (m.yol) kare.href = m.yol;
     kare.title = m.aciklama;
+    kare.dataset.modul = m.id;
     const ic = document.createElement('span');
     ic.className = 'kare-ikon';
     ic.appendChild(modulIkon(m.id));
@@ -191,6 +212,7 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
     grid.appendChild(kare);
   }
   if (!grid.children.length) grid.appendChild(el('p', 'Size açık modül yok.', 'bos-not'));
+  if (k.rol === 'ogretmen') gelisimGostergesi();
 })();
 
 document.getElementById('cikis').addEventListener('click', async () => {

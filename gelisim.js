@@ -197,6 +197,25 @@ export async function gelisimApi({ req, res, url, o, json, govde, denetle }) {
     return true;
   }
 
+  // Öğretmen ana sayfası göstergesi: açık ya da kapanmış dönemlerde gözlemi eksik kalan öğrenci sayısı
+  if (req.method === 'GET' && yol === '/api/gelisim/bekleyen') {
+    if (!ogretmen) return hata(403, 'Bu işlem yalnızca öğretmenler içindir');
+    const baslikSayisi = aktifBasliklar(subeId).length;
+    const ogrenciler = new Set(ogretmenSiniflari(o.membership_id, subeId).flatMap(s => ogrencileri(s.id).map(x => x.id)));
+    const donemler = [];
+    for (const d of donemleri(subeId)) {
+      const durum = donemDurumu(d);
+      if (durum === 'yaklasan' || !baslikSayisi) continue;
+      const girilen = new Map(db.prepare(`SELECT g.student_membership_id AS s, COUNT(*) AS n FROM gelisim_girisleri g JOIN gelisim_basliklari b ON b.id = g.baslik_id
+        WHERE g.donem_id = ? AND g.teacher_membership_id = ? AND b.aktif = 1 GROUP BY g.student_membership_id`).all(d.id, o.membership_id).map(r => [r.s, Number(r.n)]));
+      let eksik = 0;
+      for (const id of ogrenciler) if ((girilen.get(id) || 0) < baslikSayisi) eksik++;
+      if (eksik) donemler.push({ id: d.id, ad: d.ad, durum, eksik });
+    }
+    json(res, 200, { donemler });
+    return true;
+  }
+
   // Bir öğrencinin raporu: yönetim tüm öğretmenlerin yorumlarını, öğretmen yalnızca kendi yazdıklarını görür
   if (req.method === 'GET' && yol === '/api/gelisim/rapor') {
     const ogr = kapsam(Number(url.searchParams.get('ogrenciId')));
