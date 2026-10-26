@@ -216,16 +216,22 @@ function atamaCiz() {
   k.replaceChildren();
   if (!veri.atamalar.length) return k.appendChild(el('p', 'Size atanmış ders yok.', 'bos-not'));
   for (const a of veri.atamalar) {
-    const b = el('button', undefined, 'modul-kart hazir');
+    const b = el('button', undefined, 'lk-satir');
     b.type = 'button';
-    b.append(dersChip(a.kisa, a.renk), el('strong', `${a.sinif} · ${a.ders}`), el('p', `${a.ogrenciSayisi} öğrenci`));
+    b.dataset.ata = a.atamaId;
+    const metin = el('span', undefined, 'lk-metin');
+    metin.append(el('strong', a.sinif), el('small', `${a.ders} · ${a.ogrenciSayisi} öğrenci`));
+    b.append(dersChip(a.kisa, a.renk), metin);
     b.addEventListener('click', () => dersAc(a, false));
     k.appendChild(b);
   }
 }
 
+const atamaIsaretle = id => { for (const b of $('atamalar').children) b.classList.toggle('secili', String(id) === b.dataset.ata); };
+
 function dersBos() {
   ders = null;
+  atamaIsaretle(null);
   $('p-baslik').textContent = 'Ders detayı';
   $('p-alt').textContent = 'Yukarıdan bir ders seçin.';
   $('p-kapat').classList.add('gizli');
@@ -240,6 +246,7 @@ function dersAc(d, programdan) {
   $('p-baslik').replaceChildren(dersChip(d.kisa, d.renk), d.kulupId ? ` Kulüp · ${d.sinif}` : ` ${d.sinif} · ${d.ders}`);
   $('p-alt').textContent = programdan ? `${tarihYaz(tarih)} · ${d.dersSaati}. ders · ${d.aralik}` : 'Öğrenciler, konular ve ödevler';
   $('p-kapat').classList.remove('gizli');
+  atamaIsaretle(d.atamaId);
   $('sekmeler').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.disabled = false;
   zamanCiz();

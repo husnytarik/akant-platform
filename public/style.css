@@ -2539,3 +2539,36 @@ main .bk .bk-liste > a { min-height: 0; border-top: 1px solid var(--ince); }
 main .bk .bk-liste > a:first-child { border-top: 0; }
 main .bk .bk-liste .kh-kart { margin-top: 8px; }
 main .bk .bk-liste .kh-kart:first-child { margin-top: 0; }
+
+/* ===== Ortak şablon: liste kartı (.lk) + ayrıntı paneli (.ders-panel) =====
+   Liste: tek beyaz kart, ince çizgili satırlar, solda rozet, sağda ok.
+   Panel: başlık + küçük kapat, altı çizili sekmeler, içerik çerçevesiz. */
+main .lk { padding: 4px 14px; border-radius: 18px; background: #fff; box-shadow: var(--kart-golge); }
+main .lk-baslik { margin: 0 0 8px 4px; color: var(--soluk); font-size: .8rem; }
+main .lk-satir { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; margin: 0; padding: 8px 0; border: 0; border-top: 1px solid var(--ince); border-radius: 0; background: transparent; box-shadow: none; color: var(--murekkep); font: inherit; text-align: left; cursor: pointer; }
+main .lk-satir:first-child { border-top: 0; }
+main .lk-satir::after { content: ""; flex: none; width: 7px; height: 7px; margin: 0 4px 0 -2px; border-right: 1.6px solid #b9b3a4; border-bottom: 1.6px solid #b9b3a4; transform: rotate(-45deg); }
+main .lk-satir .ders-chip { flex: none; min-width: 40px; height: 36px; padding: 0 8px; border-radius: 11px; box-sizing: border-box; font-size: .8rem; }
+main .lk-metin { flex: 1; min-width: 0; display: grid; gap: 1px; }
+main .lk-metin strong { font-size: 1rem; font-weight: 600; line-height: 1.25; }
+main .lk-metin small { color: var(--soluk); font-size: .78rem; line-height: 1.3; }
+main .lk-satir.secili .lk-metin strong { color: var(--ana); }
+main .lk-satir.secili::after { border-color: var(--ana); transform: rotate(45deg); }
+
+main .ders-panel { margin-top: 14px; padding: 16px; border: 0; border-radius: 18px; background: #fff; box-shadow: var(--kart-golge); }
+main .ders-panel:has(#p-kapat.gizli) { display: none; }
+main .ders-panel-ust { align-items: center; gap: 10px; }
+main .ders-panel h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--serif); font-size: 1.1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--murekkep); }
+main .ders-panel .alt { margin: 2px 0 12px; font-size: .82rem; }
+main .ders-panel #p-kapat { flex: none; width: 32px; min-width: 0; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--ic-zemin); box-shadow: none; font-size: 0; color: var(--soluk); position: relative; }
+main .ders-panel #p-kapat::before { content: "×"; font-size: 1.3rem; line-height: 1; position: absolute; inset: 0; display: grid; place-items: center; }
+main .ders-panel .sekmeler { gap: 18px; margin: 0 0 12px; padding: 0; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; box-shadow: none; overflow-x: auto; }
+main .ders-panel .sekmeler button { flex: none; padding: 10px 0; margin: 0 0 -1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; box-shadow: none; color: var(--soluk); font-size: .9rem; font-weight: 500; }
+main .ders-panel .sekmeler button[aria-pressed="true"] { color: var(--murekkep); border-bottom-color: var(--ana); font-weight: 600; background: transparent; box-shadow: none; }
+main .ders-panel .sekmeler button, main .ders-panel .sekmeler button[aria-pressed="true"] { height: auto; box-shadow: none !important; }
+main .ders-panel .sekmeler button:disabled { opacity: .45; }
+/* Panel içinde kart içinde kart olmasın: konu/ödev kayıtları düz, ince çizgili satırlar */
+main .ders-panel .not-kart { padding: 12px 0; margin: 0; border: 0; border-top: 1px solid var(--ince); border-radius: 0; background: transparent; box-shadow: none; }
+main .ders-panel .baslik3 + .not-kart { border-top: 0; }
+main .ders-panel .not-kart .not-ust strong { font-size: .95rem; }
+main .ders-panel .not-kart p { margin: 4px 0 8px; font-size: .86rem; color: var(--soluk); }
