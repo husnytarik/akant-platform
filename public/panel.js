@@ -23,22 +23,7 @@ async function ogretmenDersleri() {
   const geciken = await g.json();
   document.getElementById('bugun-dersler').classList.remove('gizli');
 
-  const uyari = document.getElementById('geciken');
-  if (geciken.sayi) {
-    uyari.classList.remove('gizli');
-    const ek = el('details');
-    ek.appendChild(el('summary', `${geciken.sayi} tamamlanmamış ders`));
-    const ul = el('div', undefined, 'uyari-liste');
-    for (const d of geciken.dersler) {
-      const a = el('a', `${kisaTarih(d.tarih)} · ${d.dersSaati}. ders · ${d.kulupId ? 'Kulüp · ' : ''}${d.sinif}`);
-      a.href = dersLink(d.tarih, d);
-      ul.appendChild(a);
-    }
-    ek.appendChild(ul);
-    uyari.appendChild(ek);
-  }
-
-  mufredatTakip();
+  bekleyenler(geciken);
 
   const k = document.getElementById('bugun-liste');
   if (liste.hafta_sonu) return k.appendChild(el('p', 'Bugün ders günü değil.', 'bos-not'));
@@ -66,56 +51,79 @@ async function ogretmenDersleri() {
 }
 
 
-// Müfredat takibi: sonraki üniteye geçilmiş ama derslerde hiç girilmemiş kazanımlar (işaretlenmez; ders, konu ya da ödevde girilince listeden düşer)
-async function mufredatTakip() {
-  const r = await fetch('/api/mufredat/takip');
-  if (!r.ok) return;
-  const { siniflar } = await r.json();
-  const kutu = document.getElementById('muf-takip');
-  const kartlar = siniflar.map(s => ({ s, eksik: s.atlananUniteler.flatMap(u => u.eksik) })).filter(x => x.eksik.length);
-  if (!kartlar.length) return;
-  kutu.classList.remove('gizli');
-  const ek = el('details');
-  const ozet = el('summary');
-  ozet.append(el('span', `${kartlar.reduce((t, x) => t + x.eksik.length, 0)} kazanım atlanmış`));
-  ek.append(ozet);
-  const liste = el('div', undefined, 'kh-liste');
-  for (const { s, eksik } of kartlar) {
-    const kart = el('div', undefined, 'kh-kart');
-    const ust = el('div', undefined, 'kh-ust');
-    ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${eksik.length} kazanım`));
-    kart.append(ust);
-    for (const k of eksik) {
-      const satir = el('div', undefined, 'kh-satir');
-      const metin = el('p', undefined, 'kh-kazanim');
-      metin.append(el('strong', k.kod), document.createTextNode(' ' + k.metin));
-      satir.append(metin);
-      kart.append(satir);
-    }
-    liste.append(kart);
-  }
-  ek.append(liste);
-  kutu.append(ek);
+// Bekleyenler: tamamlanmamış dersler, atlanmış kazanımlar ve yazılmamış gelişim gözlemleri tek kartta, aynı satır düzeninde
+const BK_IKON = {
+  ders: 'M12 8v5M12 16.5v.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z',
+  kazanim: 'M4 12a8 8 0 018-8 8 8 0 015.7 2.3L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 01-8 8 8 8 0 01-5.7-2.3L4 15.5M4 20v-4.5h4.5',
+  gelisim: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+};
+
+function bekleyenSatiri(tur, baslik, alt, sayi, govde) {
+  const satir = el(govde ? 'details' : 'a', undefined, 'bk-satir bk-' + tur);
+  const ust = el(govde ? 'summary' : 'span', undefined, 'bk-ust');
+  const ikon = el('span', undefined, 'bk-ikon');
+  ikon.appendChild(svgIkon(BK_IKON[tur]));
+  const metin = el('span', undefined, 'bk-metin');
+  metin.append(el('strong', baslik), el('small', alt));
+  ust.append(ikon, metin, el('b', String(sayi), 'bk-sayi'));
+  if (govde) satir.append(ust, govde);
+  else { satir.href = '/gelisim'; satir.append(ust); }
+  return satir;
 }
 
-// Gelişim gözlemleri karesinde küçük gösterge: açık dönemde (sarı) ve geçmiş dönemlerde (kırmızı) gözlemi eksik kalan öğrenci sayısı
-async function gelisimGostergesi() {
-  const r = await fetch('/api/gelisim/bekleyen');
-  if (!r.ok) return;
-  const { donemler } = await r.json();
-  const kare = document.querySelector('[data-modul="gelisim-ogretmen"]');
-  if (!kare || !donemler.length) return;
-  const toplam = durum => donemler.filter(d => d.durum === durum).reduce((t, d) => t + d.eksik, 0);
-  const kutu = el('span', undefined, 'gz-isaretler');
-  for (const [durum, sinif, metin] of [['acik', 'acik', 'bu dönem gözlemi yazılmamış'], ['kapandi', 'gecmis', 'geçmiş dönemde gözlemi yazılmamış']]) {
-    const n = toplam(durum);
-    if (!n) continue;
-    const i = el('span', String(n), 'gz-isaret ' + sinif);
-    i.title = `${n} öğrenci · ${metin}`;
-    i.setAttribute('aria-label', i.title);
-    kutu.append(i);
+async function bekleyenler(geciken) {
+  const [m, g] = await Promise.all([fetch('/api/mufredat/takip'), fetch('/api/gelisim/bekleyen')]);
+  const satirlar = [];
+
+  if (geciken.sayi) {
+    const liste = el('div', undefined, 'bk-liste');
+    for (const d of geciken.dersler) {
+      const a = el('a', `${kisaTarih(d.tarih)} · ${d.dersSaati}. ders · ${d.kulupId ? 'Kulüp · ' : ''}${d.sinif}`);
+      a.href = dersLink(d.tarih, d);
+      liste.appendChild(a);
+    }
+    satirlar.push(bekleyenSatiri('ders', 'Tamamlanmamış ders', 'Dersi bitirmeyi unuttuklarınız', geciken.sayi, liste));
   }
-  kare.append(kutu);
+
+  // Müfredat takibi: sonraki üniteye geçilmiş ama derslerde hiç girilmemiş kazanımlar (ders, konu ya da ödevde girilince listeden düşer)
+  if (m.ok) {
+    const { siniflar } = await m.json();
+    const kartlar = siniflar.map(s => ({ s, eksik: s.atlananUniteler.flatMap(u => u.eksik) })).filter(x => x.eksik.length);
+    if (kartlar.length) {
+      const liste = el('div', undefined, 'bk-liste');
+      for (const { s, eksik } of kartlar) {
+        const kart = el('div', undefined, 'kh-kart');
+        const ust = el('div', undefined, 'kh-ust');
+        ust.append(el('b', `${s.sinif} · ${s.ders}`), el('span', `${eksik.length} kazanım`));
+        kart.append(ust);
+        for (const k of eksik) {
+          const satir = el('div', undefined, 'kh-satir');
+          const metin = el('p', undefined, 'kh-kazanim');
+          metin.append(el('strong', k.kod), document.createTextNode(' ' + k.metin));
+          satir.append(metin);
+          kart.append(satir);
+        }
+        liste.append(kart);
+      }
+      satirlar.push(bekleyenSatiri('kazanim', 'Atlanmış kazanım', 'Sonraki üniteye geçildi, işlenmedi', kartlar.reduce((t, x) => t + x.eksik.length, 0), liste));
+    }
+  }
+
+  // Gelişim gözlemi: açık dönemde ve geçmiş dönemlerde gözlemi yazılmamış öğrenci sayısı
+  if (g.ok) {
+    const { donemler } = await g.json();
+    const toplam = durum => donemler.filter(d => d.durum === durum).reduce((t, d) => t + d.eksik, 0);
+    const acik = toplam('acik'), gecmis = toplam('kapandi');
+    if (acik + gecmis) {
+      const alt = [acik && `${acik} bu dönem`, gecmis && `${gecmis} geçmiş dönem`].filter(Boolean).join(' · ');
+      satirlar.push(bekleyenSatiri('gelisim', 'Gelişim gözlemi yazılmamış', alt, acik + gecmis));
+    }
+  }
+
+  if (!satirlar.length) return;
+  const kutu = document.getElementById('bekleyenler');
+  kutu.append(...satirlar);
+  kutu.classList.remove('gizli');
 }
 
 // Modül kareleri için çizgi ikonlar
@@ -147,6 +155,10 @@ IKON_YOL['gelisim-yonetim'] = IKON_YOL['gelisim-ogretmen'] = 'M3 17l6-6 4 4 8-8M
 IKON_YOL['etut-ogrenci'] = IKON_YOL['etut-veli'] = IKON_YOL.etut;
 
 function modulIkon(id) {
+  return svgIkon(IKON_YOL[id] || 'M12 3l2.5 6 6.5.5-5 4.2 1.7 6.3L12 16.8 6.3 20l1.7-6.3-5-4.2L9.5 9z');
+}
+
+function svgIkon(yol) {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -156,7 +168,7 @@ function modulIkon(id) {
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   const path = document.createElementNS(ns, 'path');
-  path.setAttribute('d', IKON_YOL[id] || 'M12 3l2.5 6 6.5.5-5 4.2 1.7 6.3L12 16.8 6.3 20l1.7-6.3-5-4.2L9.5 9z');
+  path.setAttribute('d', yol);
   svg.appendChild(path);
   return svg;
 }
@@ -212,7 +224,6 @@ const ROL_ADI = { yonetim: 'Yönetim', ogretmen: 'Öğretmen', ogrenci: 'Öğren
     grid.appendChild(kare);
   }
   if (!grid.children.length) grid.appendChild(el('p', 'Size açık modül yok.', 'bos-not'));
-  if (k.rol === 'ogretmen') gelisimGostergesi();
 })();
 
 document.getElementById('cikis').addEventListener('click', async () => {

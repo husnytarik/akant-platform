@@ -2508,7 +2508,34 @@ em.fark { flex: none; margin: 0 6px; font-style: normal; font-size: .72rem; font
 em.fark.fark-alt { display: block; margin: 6px 0 0; }
 em.fark.fark-alt::after { content: ' önceki sınava göre'; font-weight: 400; color: var(--soluk); }
 
-main .gz-isaretler { position: absolute; top: -7px; right: 12px; display: inline-flex; gap: 4px; align-items: center; }
-main .gz-isaret { min-width: 20px; height: 20px; padding: 0 6px; box-shadow: 0 0 0 2px #faf8f4; box-sizing: border-box; border-radius: 999px; display: inline-grid; place-items: center; font-size: .68rem; font-weight: 700; line-height: 1; color: #fff; }
-main .gz-isaret.acik { background: #d9a21b; }
-main .gz-isaret.gecmis { background: #d64545; }
+/* Bekleyenler: tek kart, aynı satır düzeni (tamamlanmamış ders · atlanmış kazanım · gelişim gözlemi) */
+main .bk { margin: 8px 0 0; padding: 4px 14px; border-radius: 18px; background: #fff; box-shadow: var(--kart-golge); }
+main .bk-satir { display: block; color: inherit; text-decoration: none; border-top: 1px solid var(--ince); }
+main .bk-satir:first-child { border-top: 0; }
+main .bk-ust { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; cursor: pointer; list-style: none; }
+main .bk-ust::-webkit-details-marker { display: none; }
+main .bk-ust::after { content: ""; flex: none; width: 7px; height: 7px; margin: 0 4px 0 -2px; border-right: 1.6px solid #b9b3a4; border-bottom: 1.6px solid #b9b3a4; transform: rotate(-45deg); transition: transform .15s; }
+main details.bk-satir[open] > .bk-ust::after { transform: rotate(45deg); }
+main .bk-ikon { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; background: var(--bk-zemin); color: var(--bk-renk); }
+main .bk-ikon svg { width: 19px; height: 19px; }
+main .bk-metin { flex: 1; min-width: 0; display: grid; gap: 1px; }
+main .bk-metin strong { font-size: .92rem; font-weight: 600; line-height: 1.25; }
+main .bk-metin small { color: var(--soluk); font-size: .76rem; line-height: 1.3; }
+main .bk-sayi { flex: none; min-width: 28px; height: 24px; padding: 0 9px; box-sizing: border-box; display: inline-grid; place-items: center; border-radius: 999px; background: var(--bk-renk); color: #fff; font-size: .8rem; font-weight: 700; line-height: 1; }
+main .bk-ders { --bk-renk: #d64545; --bk-zemin: #fcebe9; }
+main .bk-kazanim { --bk-renk: #d9a21b; --bk-zemin: #fbf1d6; }
+main .bk-gelisim { --bk-renk: var(--ana); --bk-zemin: color-mix(in srgb, var(--ana) 14%, #fff); }
+main .bk-liste { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+main .bk-liste > a { display: block; padding: 10px 0; font-size: .9rem; color: var(--murekkep); text-decoration: none; border-top: 1px solid var(--ince); }
+main .bk-liste > a:first-child { border-top: 0; }
+main .bk-liste .kh-kart { background: var(--ic-zemin); border: 0; }
+main .bk details.bk-satir { margin: 0; padding: 0; background: transparent !important; border: 0; border-radius: 0; box-shadow: none; }
+main .bk .bk-satir { border-top: 1px solid var(--ince) !important; }
+main .bk .bk-satir:first-child { border-top: 0 !important; }
+main .bk .bk-ust { margin: 0; background: transparent !important; border: 0; border-radius: 0; box-shadow: none; color: var(--murekkep); font-weight: 400; }
+main .bk .bk-ust::before { display: none; }
+main .bk .bk-liste { gap: 0; padding: 0 0 12px; }
+main .bk .bk-liste > a { min-height: 0; border-top: 1px solid var(--ince); }
+main .bk .bk-liste > a:first-child { border-top: 0; }
+main .bk .bk-liste .kh-kart { margin-top: 8px; }
+main .bk .bk-liste .kh-kart:first-child { margin-top: 0; }
