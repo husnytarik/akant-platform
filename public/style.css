@@ -2620,3 +2620,8 @@ main .ders-panel .adim .yok-toplu { height: 32px; margin: 0 0 8px; font-size: .8
 main .ders-panel .oku-kaz { padding: 8px 0; border-radius: 0; background: transparent; border-top: 1px solid var(--ince); font-size: .82rem; }
 main .ders-panel .oku-kaz:first-child { border-top: 0; }
 main .ders-panel .kaydet-cubuk .birincil, main .ders-panel .kaydet-cubuk .ikincil { height: 38px; font-size: .86rem; }
+main .ders-panel .ks-satir { margin: 0 !important; min-height: 0; }
+main .ders-panel .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%, #fff); }
+main .ders-panel .adim .yok-hap.iki, main .ders-panel .adim .yok-hap { height: 40px; min-height: 0; padding: 0 5px 0 12px; }
+main .ders-panel .adim .yok-ikon { width: 28px; height: 28px; }
+main .ders-panel .adim .ks-liste { max-height: 200px; }
