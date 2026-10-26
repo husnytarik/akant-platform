@@ -402,16 +402,29 @@ function ekleForm({ tarihEtiket, tarihDeger, tarihMax, tarihMin, buton, gonder, 
   return f;
 }
 
+// Liste başlığı + "Ekle" düğmesi: form düğmeye basınca açılır, kayıttan sonra liste yenilenince kapanır
+function ekleBasligi(baslik, dugme, form) {
+  form.classList.add('gizli');
+  const ust = el('div', undefined, 'ekle-ust');
+  const d = el('button', '+ ' + dugme, 'ekle-ac'); d.type = 'button';
+  d.addEventListener('click', () => {
+    const kapali = form.classList.toggle('gizli');
+    d.textContent = kapali ? '+ ' + dugme : 'Vazgeç';
+    d.classList.toggle('acik', !kapali);
+  });
+  ust.append(el('h3', baslik, 'baslik3'), d);
+  return [ust, form];
+}
+
 async function konularCiz() {
   const k = $('icerik');
   k.replaceChildren();
-  k.appendChild(ekleForm({
+  k.append(...ekleBasligi('İşlenen konular', 'Konu ekle', ekleForm({
     tarihEtiket: 'İşlendiği tarih', tarihDeger: tarih > bugun ? bugun : tarih, tarihMax: bugun,
-    buton: 'Konu ekle', gonder: g => api('/api/ders/konu-ekle', g), konuModu: true, kazanimEtiket: 'Ünite ve kazanımlar',
-  }));
+    buton: 'Kaydet', gonder: g => api('/api/ders/konu-ekle', g), konuModu: true, kazanimEtiket: 'Ünite ve kazanımlar',
+  })));
   const r = await api('/api/ders/konular?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  k.appendChild(el('h3', 'İşlenen konular', 'baslik3'));
   if (!r.veri.konular.length) k.appendChild(el('p', 'Henüz konu girilmemiş.', 'alt'));
   for (const x of r.veri.konular) {
     k.appendChild(listeKart(x.baslik, kisaTarih(x.tarih), [x.aciklama, kazanimYaz(x.kazanim)].filter(Boolean).join(' · '), async () => {
@@ -425,13 +438,12 @@ async function konularCiz() {
 async function odevlerCiz() {
   const k = $('icerik');
   k.replaceChildren();
-  k.appendChild(ekleForm({
+  k.append(...ekleBasligi('Verilen ödevler', 'Ödev ver', ekleForm({
     tarihEtiket: 'Son teslim tarihi', tarihDeger: gunKaydir(bugun, 7), tarihMin: bugun,
-    buton: 'Ödev ver', gonder: g => api('/api/ders/odev-ekle', g), planli: true, kazanimEtiket: 'Ödevin kazanımı (isteğe bağlı)',
-  }));
+    buton: 'Kaydet', gonder: g => api('/api/ders/odev-ekle', g), planli: true, kazanimEtiket: 'Ödevin kazanımı (isteğe bağlı)',
+  })));
   const r = await api('/api/ders/odevler?atamaId=' + ders.atamaId);
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
-  k.appendChild(el('h3', 'Verilen ödevler', 'baslik3'));
   if (!r.veri.odevler.length) k.appendChild(el('p', 'Henüz ödev verilmemiş.', 'alt'));
   for (const x of r.veri.odevler) {
     k.appendChild(listeKart(x.baslik, 'Son: ' + kisaTarih(x.sonTarih), [x.gorunur && x.gorunur > bugun ? 'Planlı: ' + kisaTarih(x.gorunur) + ' tarihinde öğrencilere görünür' : '', x.aciklama, kazanimYaz(x.kazanim)].filter(Boolean).join(' · '), async () => {
