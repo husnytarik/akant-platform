@@ -763,7 +763,7 @@ try {
     const basliklar = BASLIKLAR.map(([ad, aciklama], i) => ins('INSERT INTO gelisim_basliklari (branch_id, ad, aciklama, sira) VALUES (?,?,?,?)', o.id, ad, aciklama, i + 1));
     const donem = (ad, bas, bit, top) => ins('INSERT INTO gelisim_donemleri (branch_id, ad, baslangic, bitis, toplanti_tarihi, created_at) VALUES (?,?,?,?,?,?)', o.id, ad, bas, bit, top, simdi);
     const kapali = donem('1. Dönem (Eylül – Ekim)', OKUL_BASI, kaydir(bugun, -10), kaydir(bugun, -5));
-    donem('2. Dönem (Kasım – Aralık)', kaydir(bugun, 7), kaydir(bugun, 50), kaydir(bugun, 56));
+    donem('2. Dönem (Ekim – Aralık)', kaydir(bugun, -3), kaydir(bugun, 40), kaydir(bugun, 46)); // şu an açık: gözlemler henüz yazılmadı
     donem('3. Dönem (Şubat)', kaydir(bugun, 120), kaydir(bugun, 145), kaydir(bugun, 151));
     for (const s of o.siniflar) {
       const ogretmenler = [s.rehber];
@@ -772,7 +772,7 @@ try {
         const duzeyi = ogr.yet.genel > 0.5 ? 0 : ogr.yet.genel < -0.5 ? 2 : 1;
         ogretmenler.forEach((t, ti) => basliklar.forEach((b, bi) => {
           // Bazı öğrenciler için gözlem yazılmamış kalır (öğretmen ana sayfasındaki "yazılmamış" göstergesi görünsün)
-          if ((t.ad === DEMO.ogretmen.ad ? oi % 2 === 1 : (s.id + oi + ti) % 11 === 0)) return;
+          if ((t.ad === DEMO.ogretmen.ad ? oi % 2 === 1 : t.ad === DEMO.coklu.ad ? oi === 2 : (s.id + oi + ti) % 11 === 0)) return;
           const seviye = rnd() < 0.15 ? sinirla(duzeyi + (rnd() < 0.5 ? -1 : 1), 0, 2) : duzeyi;
           let metin = METINLER[bi][seviye][(oi + ti) % 2];
           const brans = BRANS_CUMLE[t.dersler[0]];
