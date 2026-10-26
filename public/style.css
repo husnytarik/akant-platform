@@ -2584,12 +2584,12 @@ main .ders-panel .ekle-form input, main .ders-panel .ekle-form select { height: 
 main .ders-panel .ekle-form .form-satir { gap: 0 12px; }
 main .ders-panel .ekle-form .alt { margin: 4px 0 0; font-size: .74rem; }
 main .ders-panel .ekle-form .birincil { width: auto; height: 34px; margin-top: 14px; padding: 0 18px; border-radius: 999px; font-size: .84rem; }
-main .ders-panel .ekle-form .ks { gap: 6px; margin: 2px 0 4px; }
-main .ders-panel .ekle-form .ks-liste { gap: 0; max-height: 220px; }
-main .ders-panel .ekle-form .ks-satir { grid-template-columns: 18px 1fr; gap: 8px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; font-size: .8rem; line-height: 1.4; }
-main .ders-panel .ekle-form .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%, #fff); }
-main .ders-panel .ekle-form .ks-satir input { width: 16px; height: 16px; margin: 1px 0 0; padding: 0; }
-main .ders-panel .ekle-form .ks-cip { padding: 3px 9px; font-size: .72rem; }
+main .ders-panel .ks { gap: 6px; margin: 2px 0 4px; }
+main .ders-panel .ks-liste { gap: 0; max-height: 220px; }
+main .ders-panel .ks-satir { grid-template-columns: 18px 1fr; gap: 8px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; font-size: .8rem; line-height: 1.4; }
+main .ders-panel .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%, #fff); }
+main .ders-panel .ks-satir input { width: 16px; height: 16px; margin: 1px 0 0; padding: 0; }
+main .ders-panel .ks-cip { padding: 3px 9px; font-size: .72rem; }
 main .ders-panel .not-kart { padding: 10px 0 !important; margin: 0 !important; border: 0 !important; border-top: 1px solid var(--ince) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
 main .ders-panel .ekle-ust + .ekle-form + .not-kart, main .ders-panel .ekle-ust + .not-kart, main .ders-panel .ekle-form + .not-kart { border-top: 0 !important; }
 main .ders-panel .not-kart .not-ust { display: contents; }
@@ -2602,3 +2602,21 @@ main .ders-panel .not-kart > a { background: var(--ic-zemin); color: var(--murek
 main .ders-panel .ekle-form :is(input:not([type="checkbox"]):not([type="radio"]), select) { height: 36px !important; min-height: 0 !important; padding: 0 12px !important; border-radius: 10px !important; font-size: .86rem !important; }
 main .ders-panel .ekle-form .ks > select { margin: 0; }
 main .ders-panel .ekle-form .ks-satir input { height: 16px !important; width: 16px !important; padding: 0 !important; }
+
+/* Dersi bitir: aynı sade şablon (düz bölümler, küçük alanlar, kompakt yoklama) */
+main .ders-panel .adim { margin: 0; padding: 4px 0 8px; border-top: 1px solid var(--ince); }
+main .ders-panel .adim:first-child { border-top: 0; }
+main .ders-panel .adim-ust { margin: 10px 0 4px; }
+main .ders-panel .adim-ust h3 { font-size: .98rem; font-weight: 600; color: var(--murekkep); }
+main .ders-panel .adim-ust .alt { margin: 0; font-size: .76rem; }
+main .ders-panel .adim label { margin: 10px 0 2px; font-size: .74rem; font-weight: 500; color: var(--soluk); }
+main .ders-panel .adim :is(input:not([type="checkbox"]):not([type="radio"]), select) { height: 36px !important; min-height: 0 !important; padding: 0 12px !important; border-radius: 10px !important; font-size: .86rem !important; }
+main .ders-panel .adim .ks > select { margin: 0; }
+main .ders-panel .adim .ks-satir input { height: 16px !important; width: 16px !important; padding: 0 !important; }
+main .ders-panel .adim .yoklama-liste.hapli { gap: 6px; margin-top: 8px; }
+main .ders-panel .adim .yok-hap { min-height: 40px; }
+main .ders-panel .adim .yok-ozet { margin: 2px 0 8px; }
+main .ders-panel .adim .yok-toplu { height: 32px; margin: 0 0 8px; font-size: .8rem; }
+main .ders-panel .oku-kaz { padding: 8px 0; border-radius: 0; background: transparent; border-top: 1px solid var(--ince); font-size: .82rem; }
+main .ders-panel .oku-kaz:first-child { border-top: 0; }
+main .ders-panel .kaydet-cubuk .birincil, main .ders-panel .kaydet-cubuk .ikincil { height: 38px; font-size: .86rem; }
