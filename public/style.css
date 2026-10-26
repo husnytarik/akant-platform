@@ -2559,7 +2559,7 @@ main .ders-panel { margin-top: 14px; padding: 16px; border: 0; border-radius: 18
 main .ders-panel:has(#p-kapat.gizli) { display: none; }
 main .ders-panel-ust { align-items: center; gap: 10px; }
 main .ders-panel h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--serif); font-size: 1.1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--murekkep); }
-main .ders-panel .alt { margin: 2px 0 12px; font-size: .82rem; }
+main .ders-panel-ust .alt { margin: 2px 0 12px; font-size: .82rem; }
 main .ders-panel #p-kapat { flex: none; width: 32px; min-width: 0; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--ic-zemin); box-shadow: none; font-size: 0; color: var(--soluk); position: relative; }
 main .ders-panel #p-kapat::before { content: "×"; font-size: 1.3rem; line-height: 1; position: absolute; inset: 0; display: grid; place-items: center; }
 main .ders-panel .sekmeler { gap: 18px; margin: 0 0 12px; padding: 0; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; box-shadow: none; overflow-x: auto; }
@@ -2584,12 +2584,12 @@ main .ders-panel .ekle-form input, main .ders-panel .ekle-form select { height: 
 main .ders-panel .ekle-form .form-satir { gap: 0 12px; }
 main .ders-panel .ekle-form .alt { margin: 4px 0 0; font-size: .74rem; }
 main .ders-panel .ekle-form .birincil { width: auto; height: 34px; margin-top: 14px; padding: 0 18px; border-radius: 999px; font-size: .84rem; }
-main .ders-panel .ks { gap: 6px; margin: 2px 0 4px; }
-main .ders-panel .ks-liste { gap: 0; max-height: 220px; }
-main .ders-panel .ks-satir { grid-template-columns: 18px 1fr; gap: 8px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; font-size: .8rem; line-height: 1.4; }
-main .ders-panel .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%, #fff); }
-main .ders-panel .ks-satir input { width: 16px; height: 16px; margin: 1px 0 0; padding: 0; }
-main .ders-panel .ks-cip { padding: 3px 9px; font-size: .72rem; }
+main .ders-panel .ekle-form .ks { gap: 6px; margin: 2px 0 4px; }
+main .ders-panel .ekle-form .ks-liste { gap: 0; max-height: 220px; }
+main .ders-panel .ekle-form .ks-satir { grid-template-columns: 18px 1fr; gap: 8px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; background: transparent; font-size: .8rem; line-height: 1.4; }
+main .ders-panel .ekle-form .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%, #fff); }
+main .ders-panel .ekle-form .ks-satir input { width: 16px; height: 16px; margin: 1px 0 0; padding: 0; }
+main .ders-panel .ekle-form .ks-cip { padding: 3px 9px; font-size: .72rem; }
 main .ders-panel .not-kart { padding: 10px 0 !important; margin: 0 !important; border: 0 !important; border-top: 1px solid var(--ince) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
 main .ders-panel .ekle-ust + .ekle-form + .not-kart, main .ders-panel .ekle-ust + .not-kart, main .ders-panel .ekle-form + .not-kart { border-top: 0 !important; }
 main .ders-panel .not-kart .not-ust { display: contents; }
