@@ -41,16 +41,18 @@ function tcUret(ilk9) {
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const yenile = process.argv.includes('--yenile');
-if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0) {
+const dolu = db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
+if (dolu) {
   if (!yenile) { console.log('Veritabanı dolu, kampüs verisi eklenmedi. Baştan kurmak için: npm run kampus-yenile'); process.exit(0); }
   const damga = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
   const yedek = path.join(dir, 'data', `akant.db.yedek-${damga}`);
   copyFileSync(path.join(dir, 'data', 'akant.db'), yedek);
   console.log('Yedek alındı:', yedek);
-  db.exec('PRAGMA foreign_keys = OFF');
-  for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").all()) db.exec(`DELETE FROM "${name}"`);
-  db.exec('PRAGMA foreign_keys = ON');
 }
+// Boş veritabanında da kurulumun açtığı varsayılan satırlar (ders adları gibi) temizlenir
+db.exec('PRAGMA foreign_keys = OFF');
+for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").all()) db.exec(`DELETE FROM "${name}"`);
+db.exec('PRAGMA foreign_keys = ON');
 
 const hazirlar = new Map();
 const hazir = sql => hazirlar.get(sql) || (hazirlar.set(sql, db.prepare(sql)), hazirlar.get(sql));
