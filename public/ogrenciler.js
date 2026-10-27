@@ -8,6 +8,8 @@ async function yukle() {
   const v = await r.json();
   if (!r.ok) { $('mesaj').textContent = v.hata || 'Hata'; return; }
   veri = v;
+  const ben = await fetch('/api/ben').then(x => x.json()).catch(() => ({}));
+  document.querySelector('a[href="/ogrenci-kayit"]').classList.toggle('gizli', (ben.yetkiler || []).length > 0 && !ben.yetkiler.includes('ogrenci-kayit'));
   const okul = $('okul');
   okul.replaceChildren(new Option('Tüm okullar', ''));
   for (const s of v.subeler) okul.append(new Option(s.ad, String(s.id)));

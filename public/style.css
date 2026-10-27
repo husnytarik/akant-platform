@@ -2803,3 +2803,67 @@ main .p-eylem a.ikincil { text-decoration: none; }
 main .ok-form .ekle-ust { margin: 26px 0 8px; }
 main .ok-form .ekle-ust + p.alt { margin: 0 0 8px; }
 main .ok-form .ok-cipler { margin-bottom: 4px; }
+
+/* Kullanıcılar / Yönetim ve roller */
+main .kad-eylem { display: flex; align-items: center; gap: 8px; }
+main .kad-eylem .ekle-ac.kad-dolu, main .ders-panel .ekle-ac.kad-dolu { background: var(--ana); color: #fff; }
+main .kad-panel .ol-arac { margin-bottom: 4px; }
+main .kad-panel #yeni-alan { padding-bottom: 14px; }
+main .kad-panel #liste > .bos-not { margin: 14px 0; font-size: .88rem; color: var(--soluk); }
+main .kad-etiket { margin: 16px 0 4px; font-size: .72rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--soluk); }
+main .kad-etiket:first-child { margin-top: 0; }
+main .kad-alt { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 0; }
+main .kad-link { appearance: none; width: auto; height: auto; min-height: 0; margin: 0; padding: 4px 0; border: 0; background: none; box-shadow: none; color: var(--ana); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; }
+main .kad-link:hover { text-decoration: underline; }
+main .kad-link.tehlike { color: #b4483a; }
+main .kad-uyari { color: #b4741a; font-weight: 600; }
+main .kad-ok { flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--soluk); border-bottom: 2px solid var(--soluk); transform: rotate(45deg); transition: transform .15s; }
+main details[open] > summary .kad-ok { transform: rotate(-135deg); }
+main .kad-kisi { border-top: 1px solid var(--ince); }
+main .kad-kisi:first-child { border-top: 0; }
+main .kad-kisi > summary.ol-satir { border-top: 0; cursor: pointer; list-style: none; }
+main .kad-kisi > summary::-webkit-details-marker { display: none; }
+main .kad-duzen { padding: 4px 2px 16px 48px; }
+main .kad-duzen > input { width: 100%; box-sizing: border-box; height: 36px; margin: 0 0 4px; padding: 0 12px; border-radius: 10px; font-size: .86rem; }
+main .kad-bolum { margin-top: 16px; }
+main .kad-bolum:first-child { margin-top: 0; }
+main .kad-bolum .alt { margin: 8px 0 0; font-size: .76rem; }
+main .kad-foto { display: flex; align-items: center; gap: 14px; }
+main .kad-linkler { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+main .kad-ciplar { display: flex; flex-wrap: wrap; gap: 8px; }
+main .kad-cip { appearance: none; width: auto; height: 30px; min-height: 0; margin: 0; padding: 0 12px; border: 1px solid var(--ince); border-radius: 999px; background: none; box-shadow: none; color: var(--soluk); font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; }
+main .kad-cip[aria-pressed="true"] { border-color: transparent; background: color-mix(in srgb, var(--ana) 14%, #fff); color: var(--ana); font-weight: 600; }
+main .kad-cip.sabit { display: inline-flex; align-items: center; border-color: transparent; background: var(--ic-zemin); color: var(--murekkep); cursor: default; }
+main .kad-uyelik { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: .86rem; border-top: 1px solid var(--ince); }
+main .kad-uyelik:first-of-type { border-top: 0; }
+main .kad-uyelik.pasif > span { color: var(--soluk); }
+main .kad-ekle { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+main .kad-ekle select { flex: 1 1 140px; min-width: 0; height: 36px; padding: 0 10px; border-radius: 10px; font-size: .84rem; }
+main .kad-ekle .ekle-ac { height: 36px; }
+main .kad-yetkiler { margin-top: 4px; }
+main .kad-yetki { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 0; padding: 9px 0; border-top: 1px solid var(--ince); font-size: .88rem; cursor: pointer; }
+main .kad-yetki > span { min-width: 0; }
+main .kad-yetki b { display: block; font-weight: 500; }
+main .kad-yetki small { display: block; color: var(--soluk); font-size: .76rem; font-weight: 400; }
+main .kad-yetki input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 38px; height: 22px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 999px; background: #d9d4c6; box-shadow: none; transition: background .15s; cursor: pointer; }
+main .kad-yetki input[type="checkbox"]::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+main .kad-yetki input[type="checkbox"]:checked { background: var(--ana); }
+main .kad-yetki input[type="checkbox"]:checked::after { transform: translateX(16px); }
+main .kad-yetki-liste { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+main .kad-yetki-liste li { padding: 3px 10px; border-radius: 999px; background: var(--ic-zemin); font-size: .78rem; }
+main .kad-alt-dugmeler { display: flex; align-items: center; gap: 18px; margin-top: 16px; }
+main .kad-panel form > label, main .kad-panel form > div:not(.kad-yetkiler) > label { display: block; }
+main .kad-panel .kad-yetki { display: flex; }
+main .kad-panel #yeni-alan > form:not(.form-satir) .birincil { margin-top: 14px; }
+main .kad-panel details.kad-kisi { margin: 0; }
+main .kad-panel details.kad-kisi > summary { min-height: 0; padding: 10px 2px; border: 0; border-radius: 0; background: transparent; font-weight: 400; }
+main .kad-panel details.kad-kisi > summary::after { content: none; }
+main .kad-panel details.kad-kisi[open] > summary { border-bottom: 0; margin-bottom: 0; }
+main .kad-panel .yazdir-baslik { display: none; }
+@media (max-width: 520px) {
+  main .kad-duzen { padding-left: 2px; }
+}
+@media print {
+  main .kad-panel .yazdir-baslik { display: block; }
+  main .kad-eylem, main .kad-alt .kad-link, main .kad-ok { display: none !important; }
+}

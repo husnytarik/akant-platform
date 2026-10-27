@@ -2,6 +2,8 @@ const $ = id => document.getElementById(id);
 let secenekler = { duzeyler: [] };
 let acik = null;          // açık sınavın detayı
 let ben = { yon: false }; // yönetim hesabı mı
+let izinler = new Set();  // yönetim hesabının yetkileri
+const izin = (...k) => ben.yon && k.some(x => izinler.has(x));
 let mod = 'incele';       // incele | duzen
 let sekme = 'sonuc';
 let yeniTur = 'deneme'; // deneme | acilis | yazili
@@ -54,7 +56,7 @@ async function listeYukle() {
   kutu.replaceChildren();
   if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
   ben.yon = !!r.veri.yonetim;
-  $('yeni-ac').classList.toggle('gizli', !ben.yon);
+  $('yeni-ac').classList.toggle('gizli', !izin('sinav-yonet'));
   if (!r.veri.sinavlar.length) kutu.append(el('p', ben.yon ? 'Henüz sınav yok. Sağ üstteki "Yeni sınav" ile başlayın.' : 'Şu an sizin dersinize açılmış bir sınav yok. Yönetim sınavı etkinleştirince burada görünür.', 'bos-not'));
   for (const s of r.veri.sinavlar) {
     const kart = el('button', '', 'sinav-kart');
@@ -242,9 +244,10 @@ function sekmeListesi() {
   if (!yaz) l.push(['hazirlik', 'incele', 'Hazırlık']);
   l.push(['sonuc', 'incele', 'Özet'], ['ogr', 'incele', 'Öğrenciler']);
   if (!yaz) l.push(['analiz', 'incele', 'Madde analizi']);
-  if (!yaz && ben.yon) l.push(['cevap', 'duzen', 'Cevaplar']);
-  if (yaz) l.push(['puan', 'duzen', 'Puanlar'], ['kazanim', 'duzen', 'Kazanımlar']);
-  if (ben.yon) l.push(['ayarlar', 'duzen', 'Ayarlar']);
+  if (!yaz && izin('sinav-optik')) l.push(['cevap', 'duzen', 'Cevaplar']);
+  if (yaz && (!ben.yon || izin('sinav-optik', 'sinav-yonet'))) l.push(['puan', 'duzen', 'Puanlar']);
+  if (yaz && (!ben.yon || izin('sinav-yonet'))) l.push(['kazanim', 'duzen', 'Kazanımlar']);
+  if (izin('sinav-yonet', 'sinav-yayin')) l.push(['ayarlar', 'duzen', 'Ayarlar']);
   return l;
 }
 
@@ -1162,7 +1165,7 @@ function ayarlarCiz() {
     mesaj(aktif ? 'Sınav taslağa alındı; öğretmenler artık görmez.' : 'Sınav etkinleştirildi; ders öğretmenleri görebilir.', 'tamam');
   });
   durum.append(dugme);
-  kutu.append(durum);
+  if (izin('sinav-yonet')) kutu.append(durum);
 
   const bilgi = el('div', undefined, 'ak-kart');
   bilgi.append(el('label', 'Sınav adı'));
@@ -1196,9 +1199,9 @@ function ayarlarCiz() {
     mesaj('Sınav bilgileri güncellendi.', 'tamam');
   });
   bilgi.append(kaydet);
-  kutu.append(bilgi);
+  if (izin('sinav-yonet')) kutu.append(bilgi);
 
-  if (s.amac !== 'acilis') {
+  if (s.amac !== 'acilis' && izin('sinav-yayin')) {
     const yay = el('div', undefined, 'ak-kart');
     yay.append(el('label', 'Sonuçların yayını'), yayinDurumu());
     const yd = el('button', s.yayin ? 'Yayından kaldır' : 'Sonuçları yayınla', 'ikincil kucuk'); yd.type = 'button';
@@ -1225,7 +1228,7 @@ function ayarlarCiz() {
   });
   const satir = el('div', '', 'dugme-satir');
   satir.append(sil);
-  kutu.append(satir);
+  if (izin('sinav-yonet')) kutu.append(satir);
 }
 
 $('yeni-ac').addEventListener('click', yeniAc);
@@ -1238,4 +1241,4 @@ $('s-tur').addEventListener('click', e => { const b = e.target.closest('button')
 $('d-mod').addEventListener('click', e => { const b = e.target.closest('button'); if (b) modSec(b.dataset.mod); });
 $('d-sekmeler').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sekmeSec(b.dataset.sekme); });
 gorunum('liste');
-listeYukle();
+fetch('/api/ben').then(r => r.json()).then(b => { izinler = new Set(b.yetkiler || []); }).catch(() => {}).then(listeYukle);

@@ -1,5 +1,6 @@
 import { db, FOTO_SQL, tcGecerliMi } from './db.js';
 import { islem, kisiKaydet } from './kurulum.js';
+import { yetkiVar } from './yetki.js';
 import { devamOzeti, ogrenciDosyasi } from './ogrencilerim.js';
 
 // Öğrenci kaydı ve öğrenci dosyası: kayıt sırasında alınan bilgiler (kimlik, doğum, yemek, özel durumlar, aile) ve
@@ -206,7 +207,7 @@ export async function ogrenciApi({ req, res, url, o, json, govde, denetle }) {
       kayit: { dogumTarihi: k.dogum_tarihi || '', dogumYeri: k.dogum_yeri || '', cinsiyet: k.cinsiyet || '', kanGrubu: k.kan_grubu || '', oncekiOkul: k.onceki_okul || '',
         kayitTarihi: k.kayit_tarihi || '', kayitTuru: k.kayit_turu || 'yeni', yemek: k.yemek || '' },
       iletisim: { email: p.email || '', il: p.il || '', ilce: p.ilce || '', adres: p.adres || '', yakinAd: p.yakin_ad || '', yakinYakinlik: p.yakin_yakinlik || '', yakinTelefon: p.yakin_telefon || '' },
-      aile, ozelDurumlar: ozel, duzenleyebilir: yon, ...seceneklerVer(),
+      aile, ozelDurumlar: ozel, duzenleyebilir: yon && yetkiVar(o, 'ogrenci-kayit'), ...seceneklerVer(),
     }), true;
   }
 

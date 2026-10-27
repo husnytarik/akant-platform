@@ -26,6 +26,7 @@ import { ogrencimApi } from './ogrencim.js';
 import { profilApi } from './profil.js';
 import { kulupApi } from './kulup.js';
 import { gelisimApi } from './gelisim.js';
+import { yetkiApi, etkinYetkiler, yolYetkisi } from './yetki.js';
 import { odevApi } from './odev.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
@@ -38,6 +39,9 @@ const DEMO_HESAPLAR = {
   ogretmen: ['10000000214', '5550000002'],
   ogrenci: ['10000000382', '5550000003'],
   veli: ['10000000450', '5550000004'],
+  rehber: ['10000000696', '5550000006'],
+  teknik: ['10000000764', '5550000007'],
+  zumre: ['10000000832', '5550000008'],
 };
 const ROLLER = ['yonetim', 'ogretmen', 'ogrenci', 'veli'];
 const KOD_SURESI = 5 * 60 * 1000;
@@ -47,18 +51,18 @@ const MAKS_DENEME = 5;
 // Modül kayıt defteri: her modül hangi rollere görünür olduğunu burada bildirir.
 // Yeni modül eklemek = buraya bir kayıt eklemek (kullanıcı/yetki yapısı ortaktır).
 const MODULLER = [
-  { id: 'kurum', ad: 'Okul kurulumu', aciklama: 'Kurum profili, kampüsler, okullar, müdür ve müdür yardımcıları', roller: ['yonetim'], yol: '/kurum' },
-  { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yol: '/kullanicilar', kapsam: 'kurum' },
-  { id: 'ogrenci-yonetim', ad: 'Öğrenciler', aciklama: 'Öğrenci kaydı, kayıt bilgileri ve her öğrencinin güncel durum dosyası', roller: ['yonetim'], yol: '/ogrenciler' },
-  { id: 'okul-kurulum', ad: 'Sınıf ve kadro', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
-  { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
-  { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
-  { id: 'duyuru', ad: 'Duyurular', aciklama: 'Okul ya da rol bazında duyuru yayınla, okunma durumunu gör', roller: ['yonetim'], yol: '/duyurular' },
-  { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'], yol: '/raporlar' },
-  { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yol: '/kulupler' },
+  { id: 'kurum', ad: 'Okul kurulumu', aciklama: 'Kurum profili, kampüsler, okullar, müdür ve müdür yardımcıları', roller: ['yonetim'], yetki: ['kurum'], yol: '/kurum' },
+  { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yetki: ['kullanici-rol'], yol: '/kullanicilar', kapsam: 'kurum' },
+  { id: 'ogrenci-yonetim', ad: 'Öğrenciler', aciklama: 'Öğrenci kaydı, kayıt bilgileri ve her öğrencinin güncel durum dosyası', roller: ['yonetim'], yetki: ['ogrenci-gor'], yol: '/ogrenciler' },
+  { id: 'okul-kurulum', ad: 'Sınıf ve kadro', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yetki: ['kadro'], yol: '/kurulum' },
+  { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yetki: ['kadro'], yol: '/okul-takvimi' },
+  { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yetki: ['kadro'], yol: '/ders-programi' },
+  { id: 'duyuru', ad: 'Duyurular', aciklama: 'Okul ya da rol bazında duyuru yayınla, okunma durumunu gör', roller: ['yonetim'], yetki: ['duyuru'], yol: '/duyurular' },
+  { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'], yetki: ['rapor'], yol: '/raporlar' },
+  { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yetki: ['kulup'], yol: '/kulupler' },
   { id: 'kulup-ogretmen', ad: 'Kulüplerim', aciklama: 'Danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar', roller: ['ogretmen'], yol: '/kulupler' },
   { id: 'kulup-ogrenci', ad: 'Kulüp', aciklama: 'Kulüp tercihleri ve kulübüm', roller: ['ogrenci', 'veli'], yol: '/kulupler' },
-  { id: 'gelisim-yonetim', ad: 'Gelişim raporu', aciklama: 'Gözlem başlıkları ve dönemleri belirle, öğrenci raporunu yazdır', roller: ['yonetim'], yol: '/gelisim' },
+  { id: 'gelisim-yonetim', ad: 'Gelişim raporu', aciklama: 'Gözlem başlıkları ve dönemleri belirle, öğrenci raporunu yazdır', roller: ['yonetim'], yetki: ['gelisim'], yol: '/gelisim' },
   { id: 'gelisim-ogretmen', ad: 'Gelişim gözlemleri', aciklama: 'Dönem geldiğinde öğrencilerim için gözlem gir, önceki girişleri takip et', roller: ['ogretmen'], yol: '/gelisim' },
   { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
@@ -68,7 +72,7 @@ const MODULLER = [
   { id: 'odev-takip', ad: 'Ödevler', aciklama: 'Verilen ödevler ve son tarihleri', roller: ['ogrenci', 'veli'], yol: '/odevler' },
   { id: 'odev-takip-ogretmen', ad: 'Ödev takibi', aciklama: 'Ödevleri kimin yaptığını gör, doğrula, öğrenci sorularını yanıtla', roller: ['ogretmen'], yol: '/odev-takip' },
   { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Dersinizin sınavlarında cevap anahtarı ve kazanımları hazırla, yazılı puanlarını gir, sonuçları incele', roller: ['ogretmen'], yol: '/sinav' },
-  { id: 'sinav-yonetim', ad: 'Sınavlar', aciklama: 'Deneme, açılış ve yazılı sınavları oluştur, öğrenci cevaplarını gir, sonuçları yayınla', roller: ['yonetim'], yol: '/sinav' },
+  { id: 'sinav-yonetim', ad: 'Sınavlar', aciklama: 'Deneme, açılış ve yazılı sınavları oluştur, öğrenci cevaplarını gir, sonuçları yayınla', roller: ['yonetim'], yetki: ['sinav-yonet', 'sinav-optik', 'sinav-yayin', 'sinav-sonuc'], yol: '/sinav' },
   { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Sınıfın ya da bir öğrencinin velisine mesaj gönder', roller: ['ogretmen'], yol: '/duyurular?sekme=mesaj' },
   { id: 'duyurular-ogretmen', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogretmen'], yol: '/duyurular' },
   { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
@@ -190,13 +194,19 @@ function yetkiliUyelikler(kullanici, telefon, rol) {
 async function api(req, res, url) {
   const ip = req.socket.remoteAddress || '?';
 
+  // Yönetim oturumları yalnızca rollerinin yetkisi olan uçlara girebilir
+  if (cerezler(req).sid) {
+    const oo = oturum(req);
+    if (oo && !yolYetkisi(oo, url.pathname)) return json(res, 403, { hata: 'Bu işlem için yetkiniz yok' });
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/ben') {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     const { unvan, renk } = profilBilgisi({ id: o.membership_id, role: o.role });
     const coklu = profilListesi(o.user_id).length > 1;
     const foto = db.prepare(`SELECT ${FOTO_SQL} AS foto FROM users u WHERE u.id = ?`).get(o.user_id)?.foto || null;
-    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto });
+    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto, yetkiler: [...etkinYetkiler(o)] });
   }
 
   // Okul takvimi (ders günleri ve saatleri): her rol okuyabilir, yalnızca yönetim değiştirir
@@ -209,7 +219,8 @@ async function api(req, res, url) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     // Filtreleme sunucuda yapılır; istemci rol bildiremez.
-    const liste = MODULLER.filter(m => m.roller.includes(o.role) && (!m.kapsam || m.kapsam === o.gorev))
+    const yetkiler = etkinYetkiler(o);
+    const liste = MODULLER.filter(m => m.roller.includes(o.role) && (!m.kapsam || m.kapsam === o.gorev) && (!m.yetki || o.role !== 'yonetim' || m.yetki.some(k => yetkiler.has(k))))
       .map(({ id, ad, aciklama, yol }) => ({ id, ad, aciklama, yol, durum: yol ? 'hazir' : 'yakinda' }));
     return json(res, 200, { rol: o.role, moduller: liste });
   }
@@ -236,7 +247,7 @@ async function api(req, res, url) {
       const demo = DEMO_HESAPLAR[b.rol];
       if (!demo) return json(res, 400, { hata: 'Geçersiz giriş türü' });
       kullanici = kullaniciBul(demo[0]);
-      uyelikler = yetkiliUyelikler(kullanici, demo[1], b.rol);
+      uyelikler = yetkiliUyelikler(kullanici, demo[1], ['rehber', 'teknik', 'zumre'].includes(b.rol) ? 'yonetim' : b.rol);
     }
     if (!uyelikler.length) return json(res, 404, { hata: 'Demo hesap bulunamadı' });
     const sid = crypto.randomBytes(32).toString('hex');
@@ -441,11 +452,12 @@ async function yonetimApi(req, res, url) {
   const yol = url.pathname;
 
   // Hesap, üyelik ve kampüs/okul tanımı yalnızca kurum yönetimine açıktır; okul yönetimi kendi okulunun işlerini yürütür
-  if (o.gorev !== 'kurum' && req.method === 'POST' && yol.startsWith('/api/yonetim/') && /^(kullanici-|uyelik-|kampus-|okul-kaydet|okul-sil)/.test(yol.slice(13))) {
+  if (o.gorev !== 'kurum' && req.method === 'POST' && yol.startsWith('/api/yonetim/') && /^(kullanici-|uyelik-|rol-|kampus-|okul-kaydet|okul-sil)/.test(yol.slice(13))) {
     return json(res, 403, { hata: 'Bu işlem yalnızca kurum yönetimine açıktır' });
   }
 
   const ortak = { req, res, url, o, json, govde, denetle };
+  if (await yetkiApi(ortak)) return;
   if (await kurumApi(ortak)) return;
   if (await kurulumApi(ortak)) return;
   if (await dersProgramiApi(ortak)) return;
@@ -460,8 +472,10 @@ async function yonetimApi(req, res, url) {
 
   if (req.method === 'GET' && yol === '/api/yonetim/kullanicilar') {
     const kullanicilar = db.prepare(`SELECT u.id, u.tc_no, u.passport_no, u.phone, u.full_name, ${FOTO_SQL} AS foto FROM users u ORDER BY u.full_name`).all();
-    const uyelikler = db.prepare(`SELECT m.id, m.user_id, m.role, m.status, m.branch_id, b.name AS branch
+    const uyelikler = db.prepare(`SELECT m.id, m.user_id, m.role, m.status, m.gorev, m.branch_id, b.name AS branch
                                   FROM memberships m LEFT JOIN branches b ON b.id = m.branch_id`).all();
+    const atananlar = db.prepare('SELECT user_id, rol_id FROM kullanici_roller').all();
+    const mudurler = db.prepare('SELECT y.user_id, y.gorev, b.name AS okul FROM okul_yoneticileri y JOIN branches b ON b.id = y.branch_id').all();
     const maske = (s, bas, son) => s ? s.slice(0, bas) + '•'.repeat(Math.max(s.length - bas - son, 0)) + s.slice(-son) : '';
     return json(res, 200, {
       kullanicilar: kullanicilar.map(u => ({
@@ -472,7 +486,9 @@ async function yonetimApi(req, res, url) {
         kimlikTuru: u.tc_no ? 'T.C.' : 'Pasaport',
         telefon: maske(u.phone, 3, 2),
         uyelikler: uyelikler.filter(m => m.user_id === u.id)
-          .map(m => ({ id: m.id, rol: m.role, durum: m.status, subeId: m.branch_id, sube: m.branch })),
+          .map(m => ({ id: m.id, rol: m.role, durum: m.status, gorev: m.gorev, subeId: m.branch_id, sube: m.branch })),
+        roller: atananlar.filter(r => r.user_id === u.id).map(r => r.rol_id),
+        okulGorevleri: mudurler.filter(r => r.user_id === u.id).map(r => ({ gorev: r.gorev, okul: r.okul })),
       })),
     });
   }
@@ -495,7 +511,9 @@ async function yonetimApi(req, res, url) {
     if (var_) return json(res, 409, { hata: 'Bu kimlik numarası ile kayıtlı hesap zaten var' });
     const id = Number(db.prepare('INSERT INTO users (tc_no, passport_no, phone, full_name, created_at) VALUES (?,?,?,?,?)')
       .run(tcMi ? kimlik : null, tcMi ? null : kimlik, tel, ad, Date.now()).lastInsertRowid);
-    db.prepare('INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,?)').run(id, Number(b.subeId), b.rol);
+    db.prepare("INSERT INTO memberships (user_id, branch_id, role, gorev) VALUES (?,?,?,'okul')").run(id, Number(b.subeId), b.rol);
+    const rol = b.rol === 'yonetim' && b.rolId ? db.prepare('SELECT id, kod FROM roller WHERE id = ?').get(Number(b.rolId)) : null;
+    if (rol && !['kurum-yonetimi', 'mudur', 'mudur_yrd'].includes(rol.kod)) db.prepare('INSERT OR IGNORE INTO kullanici_roller (user_id, rol_id) VALUES (?,?)').run(id, rol.id);
     denetle(o.user_id, 'kullanici-ekle', { userId: id, rol: b.rol, subeId: Number(b.subeId) });
     return json(res, 201, { tamam: true, id });
   }
@@ -507,19 +525,19 @@ async function yonetimApi(req, res, url) {
     const mevcut = db.prepare('SELECT id FROM memberships WHERE user_id = ? AND branch_id = ? AND role = ?')
       .get(Number(b.userId), Number(b.subeId), b.rol);
     if (mevcut) return json(res, 409, { hata: 'Bu üyelik zaten var' });
-    db.prepare('INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,?)').run(Number(b.userId), Number(b.subeId), b.rol);
+    db.prepare("INSERT INTO memberships (user_id, branch_id, role, gorev) VALUES (?,?,?,'okul')").run(Number(b.userId), Number(b.subeId), b.rol);
     denetle(o.user_id, 'uyelik-ekle', { userId: Number(b.userId), rol: b.rol, subeId: Number(b.subeId) });
     return json(res, 201, { tamam: true });
   }
 
   if (yol === '/api/yonetim/uyelik-durum') {
     if (!['aktif', 'pasif'].includes(b.durum)) return json(res, 400, { hata: 'Geçersiz durum' });
-    const m = db.prepare('SELECT id, user_id, role FROM memberships WHERE id = ?').get(Number(b.uyelikId));
+    const m = db.prepare('SELECT id, user_id, role, gorev FROM memberships WHERE id = ?').get(Number(b.uyelikId));
     if (!m) return json(res, 404, { hata: 'Üyelik bulunamadı' });
     // Kilitlenmeyi önle: kurumda en az bir aktif yönetim üyeliği kalmalı.
-    if (b.durum === 'pasif' && m.role === 'yonetim') {
-      const kalan = db.prepare("SELECT COUNT(*) AS n FROM memberships WHERE role = 'yonetim' AND status = 'aktif' AND id != ?").get(m.id).n;
-      if (kalan === 0) return json(res, 409, { hata: 'Son aktif yönetim üyeliği pasifleştirilemez' });
+    if (b.durum === 'pasif' && m.role === 'yonetim' && m.gorev === 'kurum') {
+      const kalan = db.prepare("SELECT COUNT(*) AS n FROM memberships WHERE role = 'yonetim' AND gorev = 'kurum' AND status = 'aktif' AND id != ?").get(m.id).n;
+      if (kalan === 0) return json(res, 409, { hata: 'Son aktif kurum yönetimi üyeliği pasifleştirilemez' });
     }
     db.prepare('UPDATE memberships SET status = ? WHERE id = ?').run(b.durum, m.id);
     if (b.durum === 'pasif') db.prepare('DELETE FROM sessions WHERE membership_id = ?').run(m.id);

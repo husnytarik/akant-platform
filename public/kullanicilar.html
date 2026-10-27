@@ -13,40 +13,30 @@
     <h1>Yönetim ve öğretmenler</h1>
   </header>
   <main class="kart panel genis">
-
-    <div class="sekmeler s2" role="group" aria-label="Kullanıcı türü">
-      <button type="button" data-rol="yonetim" aria-pressed="true">Yönetim</button>
-      <button type="button" data-rol="ogretmen" aria-pressed="false">Öğretmenler</button>
+    <div class="sekmeler" id="sekmeler" role="group" aria-label="Bölüm">
+      <button type="button" data-sekme="kadro" aria-pressed="true">Yönetim</button>
+      <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmenler</button>
+      <button type="button" data-sekme="rol" aria-pressed="false">Roller</button>
     </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <div class="kur-arac kul-suzgec">
-      <select id="f-kampus" aria-label="Kampüs"></select>
-      <select id="f-okul" aria-label="Okul"></select>
-    </div>
-
-    <section id="kul-bolum">
-      <div class="kur-ust"><h2 id="kul-baslik" class="baslik2">Yönetim</h2>
-        <div class="kur-ust-dugmeler">
-          <button type="button" id="yazdir" class="ikincil kucuk">Yazdır</button>
-          <button type="button" id="duzen" class="ikincil kucuk">Düzenle</button>
+    <section class="ders-panel kad-panel">
+      <div class="ekle-ust">
+        <h3 class="baslik3" id="baslik">Yönetim</h3>
+        <div class="kad-eylem">
+          <button type="button" id="yeni" class="ekle-ac gizli">+ Yeni</button>
+          <button type="button" id="duzen" class="ekle-ac">Düzenle</button>
         </div>
       </div>
       <h2 id="yazdir-baslik" class="yazdir-baslik"></h2>
-      <div id="kul-liste" class="kur-liste"></div>
-      <p id="kul-sayi" class="alt"></p>
-
-      <div class="duzen-alan" id="yeni-alan">
-        <h3 class="baslik3">Yeni yönetici</h3>
-        <form id="ekle" class="form-satir">
-          <div><label for="ad">Ad soyad</label><input id="ad" required maxlength="80"></div>
-          <div><label for="kimlik">T.C. / pasaport no</label><input id="kimlik" required maxlength="20"></div>
-          <div><label for="telefon">Telefon</label><input id="telefon" type="tel" required maxlength="20" placeholder="5XX XXX XX XX"></div>
-          <div><label for="sube">Okul</label><select id="sube" required></select></div>
-          <div><button class="birincil" type="submit">Yönetici ekle</button></div>
-        </form>
+      <div class="ol-arac" id="arac">
+        <input id="ara" type="search" placeholder="Ad ile ara" aria-label="Kişi ara">
+        <select id="f-okul" aria-label="Okula göre süz"></select>
       </div>
-      <p class="duzen-alan alt" id="ogretmen-not">Yeni öğretmen eklemek için <a href="/kurulum" class="kur-baglanti">Okul kurulumu → Öğretmenler</a> bölümünü kullanın.</p>
+      <div id="yeni-alan" class="ekle-form gizli"></div>
+      <div id="liste"></div>
+      <p class="alt kad-alt"><span id="sayi"></span><button type="button" id="yazdir" class="kad-link">Yazdır</button></p>
+      <p class="alt gizli" id="ogretmen-not">Yeni öğretmen eklemek için <a href="/kurulum" class="kur-baglanti">Okul kurulumu → Öğretmenler</a> bölümünü kullanın.</p>
     </section>
   </main>
   <script src="/avatar.js"></script>

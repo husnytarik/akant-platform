@@ -12,6 +12,7 @@ import './duyuru.js';
 import './teslim.js';
 import './tatil.js';
 import './kurum.js';
+import { sistemRolleriKur } from './yetki.js';
 import './ogrenci.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
@@ -110,6 +111,9 @@ const DEMO = {
   ogrenci: { tc: tcUret('100000003'), tel: '5550000003', ad: 'Demo Öğrenci', foto: '/foto/ogrenci-lise.jpg' },
   veli: { tc: tcUret('100000004'), tel: '5550000004', ad: 'Demo Veli' },
   coklu: { tc: tcUret('100000005'), tel: '5550000005', ad: 'Demo Öğretmen-Veli' },
+  rehber: { tc: tcUret('100000006'), tel: '5550000006', ad: 'Demo Rehber' },
+  teknik: { tc: tcUret('100000007'), tel: '5550000007', ad: 'Demo Teknik' },
+  zumre: { tc: tcUret('100000008'), tel: '5550000008', ad: 'Demo Zümre Başkanı' },
 };
 
 // ---------- Kullanıcılar ----------
@@ -175,10 +179,23 @@ try {
     } else {
       for (const [a, d] of [['tr1', ['Türkçe']], ['tr2', ['Türkçe']], ['mat1', ['Matematik']], ['mat2', ['Matematik']], ['fen1', ['Fen Bilimleri']], ['fen2', ['Fen Bilimleri']],
         ['sos', ['Sosyal Bilgiler', INKILAP]], ['ing', ['İngilizce']], ['din', ['Din Kültürü']], ['bed', ['Beden Eğitimi']], ['gor', ['Görsel Sanatlar']], ['muz', ['Müzik']], ['bil', ['Bilişim']]]) {
-        const ozel = demoMu && a === 'fen1' ? DEMO.ogretmen : demoMu && a === 'ing' ? DEMO.coklu : null;
+        const ozel = demoMu && a === 'fen1' ? DEMO.ogretmen : demoMu && a === 'ing' ? DEMO.coklu : demoMu && a === 'mat1' ? DEMO.zumre : null;
         ogretmenEkle(o, a, d, ozel);
       }
     }
+  }
+
+  // Yönetim rolleri: rehber öğretmen ve teknik ekip yeni kişilerdir; zümre başkanı Meltem Ortaokulu'nun matematik öğretmenidir (ikinci profil: yönetim)
+  sistemRolleriKur();
+  {
+    const meltem = okullar.find(x => x.ad === 'Meltem Ortaokulu');
+    const rolVer = (k, kod) => calis('INSERT INTO kullanici_roller (user_id, rol_id) VALUES (?,?)', k.uid, db.prepare('SELECT id FROM roller WHERE kod = ?').get(kod).id);
+    const yonetimUyeligi = k => ins("INSERT INTO memberships (user_id, branch_id, role, gorev) VALUES (?,?,'yonetim','okul')", k.uid, meltem.id);
+    for (const [anahtar, kod] of [['rehber', 'rehber'], ['teknik', 'teknik']]) {
+      const k = kullaniciEkle('7', '556', DEMO[anahtar].ad, DEMO[anahtar]);
+      yonetimUyeligi(k); rolVer(k, kod);
+    }
+    yonetimUyeligi(meltem.t.mat1); rolVer(meltem.t.mat1, 'zumre');
   }
 
   // Sınıflar ve öğrenciler (ilkokulda her sınıfın kendi sınıf öğretmeni vardır)

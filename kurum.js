@@ -1,5 +1,6 @@
 import { db, tcGecerliMi, FOTO_SQL } from './db.js';
 import { resimTuru, hamGovde } from './foto.js';
+import { ekRolAdlari } from './yetki.js';
 
 // Kurum profili (tek kayıt) ve okul yönetimi (müdür, müdür yardımcıları).
 // Giriş yetkisi üyelikten gelir: memberships.gorev = 'kurum' (asıl yönetim) ya da 'okul' (yalnızca okul yönetimi).
@@ -49,7 +50,7 @@ export function yonetimUnvani(uyelikId) {
   if (!m) return 'Yönetim';
   const gorevler = db.prepare(`SELECT y.gorev, b.name FROM okul_yoneticileri y JOIN branches b ON b.id = y.branch_id
     WHERE y.user_id = ? ORDER BY b.name`).all(m.user_id).map(r => `${r.name} ${r.gorev === 'mudur' ? 'müdürü' : 'müdür yardımcısı'}`);
-  return [m.gorev === 'kurum' ? 'Kurum yönetimi' : '', ...gorevler].filter(Boolean).join(' · ') || 'Okul yönetimi';
+  return [m.gorev === 'kurum' ? 'Kurum yönetimi' : '', ...gorevler, ...ekRolAdlari(m.user_id)].filter(Boolean).join(' · ') || 'Okul yönetimi';
 }
 
 function kurumVerisi(o) {
