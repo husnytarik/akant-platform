@@ -2653,3 +2653,10 @@ main a.og-satir::after { content: ""; flex: none; width: 7px; height: 7px; borde
 main a.og-satir strong { margin-left: auto; }
 main .og-satir > a { color: var(--ana); text-decoration: none; font-weight: 500; }
 main .ders-panel .not-kart p a { color: var(--ana); text-decoration: none; border: 0; }
+
+/* Raporlar: ad ve değer üstte, çubuk altta (dar ekranda ad kesilmesin) */
+main .rapor-cubuk { gap: 12px; }
+main .rapor-cubuk .yatay-satir { grid-template-columns: 1fr auto; grid-template-areas: "ad deger" "cubuk cubuk"; gap: 4px 10px; }
+main .rapor-cubuk .yatay-ad { grid-area: ad; white-space: normal; color: var(--murekkep); font-size: .86rem; }
+main .rapor-cubuk .yatay-cubuk { grid-area: cubuk; height: 8px; }
+main .rapor-cubuk .yatay-satir b { grid-area: deger; font-size: .84rem; font-weight: 600; white-space: nowrap; }

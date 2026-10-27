@@ -12,6 +12,7 @@ import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
 import { duyuruApi } from './duyuru.js';
 import { teslimApi } from './teslim.js';
+import { raporApi } from './rapor.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -48,7 +49,7 @@ const MODULLER = [
   { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
   { id: 'duyuru', ad: 'Duyurular', aciklama: 'Okul ya da rol bazında duyuru yayınla, okunma durumunu gör', roller: ['yonetim'], yol: '/duyurular' },
-  { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'] },
+  { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'], yol: '/raporlar' },
   { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yol: '/kulupler' },
   { id: 'kulup-ogretmen', ad: 'Kulüplerim', aciklama: 'Danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar', roller: ['ogretmen'], yol: '/kulupler' },
   { id: 'kulup-ogrenci', ad: 'Kulüp', aciklama: 'Kulüp tercihleri ve kulübüm', roller: ['ogrenci', 'veli'], yol: '/kulupler' },
@@ -334,6 +335,12 @@ async function api(req, res, url) {
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
+  if (url.pathname.startsWith('/api/rapor/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await raporApi({ req, res, url, o, json })) return;
+  }
+
   if (url.pathname.startsWith('/api/teslim/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -516,6 +523,7 @@ function statik(req, res, url) {
   if (ad === '/ogrencilerim') ad = '/ogrencilerim.html';
   if (ad === '/ogrencim') ad = '/ogrencim.html';
   if (ad === '/teslim') ad = '/teslim.html';
+  if (ad === '/raporlar') ad = '/raporlar.html';
   if (ad === '/profil') ad = '/profil.html';
   if (ad === '/sinav') ad = '/sinav.html';
   if (ad === '/notlarim') ad = '/notlarim.html';
