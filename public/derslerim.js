@@ -348,7 +348,7 @@ function listeKart(baslik, alt, aciklama, sil, takip) {
   }
   const s = el('button', 'Sil', 'ikincil tehlike kucuk');
   s.type = 'button';
-  s.addEventListener('click', sil);
+  s.addEventListener('click', e => { if (confirm(`"${baslik}" silinsin mi?`)) sil(e); });
   kart.appendChild(s);
   return kart;
 }
