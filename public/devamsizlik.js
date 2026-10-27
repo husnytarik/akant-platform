@@ -41,40 +41,88 @@ function tarihYaz(t) {
     ozet.appendChild(sag);
     kutu.appendChild(ozet);
 
-    // Derse göre devamsızlık: yatay çubuklar
+    // Derse göre devamsızlık: dokununca aşağıdaki kayıtlar o derse göre süzülür
+    const filtre = { durum: null, ders: null };
+    const kayitKutu = el('div', undefined, 'devam-kayitlar');
     const dersSay = new Map();
-    for (const k of c.kayitlar) if (k.durum === 'gelmedi') dersSay.set(k.ders, (dersSay.get(k.ders) || 0) + 1);
-    if (dersSay.size) {
-      kutu.appendChild(el('h3', 'Derse göre gelmediği', 'mini-baslik'));
-      const sirali = [...dersSay].sort((x, y) => y[1] - x[1]);
-      const en = sirali[0][1];
-      const kap = el('div', undefined, 'yatay');
-      for (const [ders, n] of sirali) {
-        const s = el('div', undefined, 'yatay-satir');
+    for (const k of c.kayitlar) {
+      const d = dersSay.get(k.ders) || { gelmedi: 0, gec: 0, izinli: 0 };
+      d[k.durum]++;
+      dersSay.set(k.ders, d);
+    }
+    let dersKap = null;
+    const cizDers = () => {
+      dersKap.replaceChildren();
+      const sirali = [...dersSay].sort((x, y) => (y[1].gelmedi + y[1].gec + y[1].izinli) - (x[1].gelmedi + x[1].gec + x[1].izinli));
+      const en = Math.max(...sirali.map(([, d]) => d.gelmedi + d.gec + d.izinli));
+      for (const [ders, d] of sirali) {
+        const n = d.gelmedi + d.gec + d.izinli;
+        const s = el('button', undefined, 'yatay-satir devam-ders' + (filtre.ders === ders ? ' secili' : ''));
+        s.type = 'button';
         const cubuk = el('span', undefined, 'yatay-cubuk');
         cubuk.style.setProperty('--w', (n / en * 100) + '%');
-        const iç = el('i'); cubuk.appendChild(iç);
-        s.append(el('span', ders, 'yatay-ad'), cubuk, el('b', String(n)));
-        kap.appendChild(s);
+        cubuk.appendChild(el('i'));
+        const ayrinti = [d.gelmedi && `${d.gelmedi} gelmedi`, d.gec && `${d.gec} geç`, d.izinli && `${d.izinli} izinli`].filter(Boolean).join(' · ');
+        s.append(el('span', ders, 'yatay-ad'), el('b', ayrinti), cubuk);
+        s.addEventListener('click', () => { filtre.ders = filtre.ders === ders ? null : ders; cizDers(); cizKayit(); });
+        dersKap.appendChild(s);
       }
-      kutu.appendChild(kap);
+    };
+    if (dersSay.size) {
+      kutu.appendChild(el('h3', 'Derslere göre (dokununca süzülür)', 'mini-baslik'));
+      dersKap = el('div', undefined, 'yatay rapor-cubuk');
+      kutu.appendChild(dersKap);
+      cizDers();
     }
 
+    // Kayıtlar: duruma ve derse göre süzülür, güne göre gruplanır
+    const durumlar = [['', 'Tümü', c.kayitlar.length], ['gelmedi', 'Gelmedi', c.say.gelmedi], ['gec', 'Geç', c.say.gec], ['izinli', 'İzinli', c.say.izinli]];
+    const cizKayit = () => {
+      kayitKutu.replaceChildren();
+      const liste2 = c.kayitlar.filter(k => (!filtre.durum || k.durum === filtre.durum) && (!filtre.ders || k.ders === filtre.ders));
+      if (filtre.ders) {
+        const t = el('p', undefined, 'devam-filtre');
+        t.append(el('span', `${filtre.ders} dersi`));
+        const x = el('button', 'Süzmeyi kaldır', 'ku-baglanti'); x.type = 'button';
+        x.addEventListener('click', () => { filtre.ders = null; cizDers(); cizKayit(); });
+        t.append(x);
+        kayitKutu.appendChild(t);
+      }
+      if (!liste2.length) { kayitKutu.appendChild(el('p', 'Bu süzmeye uyan kayıt yok.', 'bos-not')); return; }
+      const gunler = new Map();
+      for (const k of liste2) (gunler.get(k.tarih) || gunler.set(k.tarih, []).get(k.tarih)).push(k);
+      for (const [tarih, kayitlar] of gunler) {
+        kayitKutu.appendChild(el('p', tarihYaz(tarih), 'devam-gun'));
+        const zaman = el('div', undefined, 'zaman');
+        for (const k of kayitlar.sort((x, y) => x.dersSaati - y.dersSaati)) {
+          const s = el('div', undefined, 'zaman-satir');
+          s.style.setProperty('--c', RENK[k.durum]);
+          s.appendChild(el('span', IKON[k.durum], 'zaman-nokta'));
+          const g = el('div', undefined, 'zaman-govde');
+          g.append(el('strong', k.ders), el('small', `${k.dersSaati}. ders`));
+          s.append(g, el('span', DURUM[k.durum], 'zaman-durum'));
+          zaman.appendChild(s);
+        }
+        kayitKutu.appendChild(zaman);
+      }
+    };
     if (!c.kayitlar.length) {
       kutu.appendChild(el('p', 'Kayıtlı devamsızlık yok.', 'bos-not'));
     } else {
       kutu.appendChild(el('h3', 'Kayıtlar', 'mini-baslik'));
-      const zaman = el('div', undefined, 'zaman');
-      for (const k of c.kayitlar) {
-        const s = el('div', undefined, 'zaman-satir');
-        s.style.setProperty('--c', RENK[k.durum]);
-        s.appendChild(el('span', IKON[k.durum], 'zaman-nokta'));
-        const g = el('div', undefined, 'zaman-govde');
-        g.append(el('strong', `${k.dersSaati}. ders · ${k.ders}`), el('small', tarihYaz(k.tarih)));
-        s.append(g, el('span', DURUM[k.durum], 'zaman-durum'));
-        zaman.appendChild(s);
+      const cipler = el('div', undefined, 'tatil-cipler devam-cipler');
+      for (const [d, ad, n] of durumlar) {
+        if (d && !n) continue;
+        const bt = el('button', `${ad} · ${n}`, 'tatil-cip' + (filtre.durum === (d || null) ? ' secili' : '')); bt.type = 'button';
+        bt.addEventListener('click', () => {
+          filtre.durum = d || null;
+          for (const x of cipler.children) x.classList.toggle('secili', x === bt);
+          cizKayit();
+        });
+        cipler.appendChild(bt);
       }
-      kutu.appendChild(zaman);
+      kutu.append(cipler, kayitKutu);
+      cizKayit();
     }
     liste.appendChild(kutu);
   }

@@ -2706,3 +2706,15 @@ main .ku-yeni.gizli { display: none; }
 main .kurum-not { margin: 18px 0 0; text-align: center; }
 main .kurum-not a { color: var(--ana); }
 @media (max-width: 520px) { main .ku-ayrinti { padding-left: 0; } }
+
+/* Devamsızlık: derslere ve duruma göre süzme, güne göre gruplu kayıtlar */
+main .yatay-satir.devam-ders { width: 100%; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; padding: 8px 8px; margin: 0; border-radius: 12px; cursor: pointer; box-shadow: none; -webkit-tap-highlight-color: transparent; }
+main .yatay-satir.devam-ders b { color: var(--soluk); font-weight: 500; }
+main .yatay-satir.devam-ders.secili { background: color-mix(in srgb, var(--ana) 9%, transparent); }
+main .devam-cipler { margin: 4px 0 8px; }
+main .tatil-cip.secili { background: var(--ana); color: #fff; }
+main .devam-gun { margin: 14px 0 2px; font-size: .74rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--soluk); }
+main .devam-filtre { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 0; font-size: .86rem; font-weight: 600; }
+main .devam-kayitlar .zaman { gap: 0; }
+main .devam-kayitlar .zaman-satir { background: transparent; border-radius: 0; border-top: 1px solid var(--ince); padding: 10px 0; }
+main .devam-kayitlar .zaman-satir:first-child { border-top: 0; }
