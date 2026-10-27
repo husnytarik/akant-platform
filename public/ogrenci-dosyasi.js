@@ -189,7 +189,7 @@ function sekmeAc(ad) {
   $('d-baslik').textContent = p.ad;
   $('d-foto').replaceChildren(avatarYap(p.ad, p.foto, 'buyuk'));
   $('d-alt').textContent = [p.sube, p.sinif || 'Sınıfsız', p.okulNo ? 'No ' + p.okulNo : '', p.mentor ? 'Sınıf öğretmeni: ' + p.mentor : ''].filter(Boolean).join(' · ');
-  $('d-rapor-tarih').textContent = `Durum raporu · ${tarihYaz(rapor.rapor)}`;
+  $('d-rapor-tarih').textContent = tarihYaz(rapor.rapor);
   $('geri').href = kayit.duzenleyebilir ? '/ogrenciler' : '/ogrencilerim';
   if (kayit.duzenleyebilir) { const d = $('d-duzenle'); d.href = '/ogrenci-kayit?id=' + id; d.classList.remove('gizli'); }
   $('dosya').classList.remove('gizli');
