@@ -105,9 +105,9 @@ const KAMPUSLER = [
 
 // Demo giriş hesapları (DEMO-HESAPLAR.txt ile aynı kimlik ve telefonlar)
 const DEMO = {
-  yonetim: { tc: tcUret('100000001'), tel: '5550000001', ad: 'Demo Yönetici' },
+  yonetim: { tc: tcUret('100000001'), tel: '5550000001', ad: 'Demo Yönetici', foto: '/foto/demo-yonetici.jpg' },
   ogretmen: { tc: tcUret('100000002'), tel: '5550000002', ad: 'Ceren Husny', foto: '/foto/ceren-husny.jpg' },
-  ogrenci: { tc: tcUret('100000003'), tel: '5550000003', ad: 'Demo Öğrenci' },
+  ogrenci: { tc: tcUret('100000003'), tel: '5550000003', ad: 'Demo Öğrenci', foto: '/foto/ogrenci-lise.jpg' },
   veli: { tc: tcUret('100000004'), tel: '5550000004', ad: 'Demo Veli' },
   coklu: { tc: tcUret('100000005'), tel: '5550000005', ad: 'Demo Öğretmen-Veli' },
 };
@@ -157,7 +157,8 @@ try {
   // Yönetim: her okulda müdür ve müdür yardımcısı (Meltem Ortaokulu müdürü demo yönetici hesabıdır)
   for (const o of okullar) {
     const demoMu = o.ad === 'Meltem Ortaokulu';
-    o.yon.push(uyeEkle(kullaniciEkle('3', '554', demoMu ? DEMO.yonetim.ad : isim('E'), demoMu ? DEMO.yonetim : null), o.id, 'yonetim'));
+    const ilkMudur = o.ad === 'Meltem İlkokulu'; // diğer okulun müdürü: fotoğraflı demo
+    o.yon.push(uyeEkle(kullaniciEkle('3', '554', demoMu ? DEMO.yonetim.ad : isim('E'), demoMu ? DEMO.yonetim : ilkMudur ? { foto: '/foto/mudur-ilkokul.jpg' } : null), o.id, 'yonetim'));
     o.yon.push(uyeEkle(kullaniciEkle('3', '554', isim('K')), o.id, 'yonetim'));
     // Müdür ve müdür yardımcısı okul yönetimidir; demo yönetici ayrıca asıl (kurum) yönetimindedir
     for (const [i, y] of o.yon.entries()) {
@@ -195,7 +196,7 @@ try {
         for (let i = 0; i < 5; i++) adlar.push({ cins: sec(['E', 'K']) });
         const demoSinif = o.ad === 'Meltem Ortaokulu' && ad === '6-A';
         for (const [i, x] of adlar.entries()) x.ad = demoSinif && i === 0 ? DEMO.ogrenci.ad : isim(x.cins);
-        if (demoSinif) adlar[0].cins = 'E';
+        if (demoSinif) adlar[0].cins = 'K';
         adlar.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
         for (const x of adlar) {
           const demoOgr = x.ad === DEMO.ogrenci.ad;
@@ -211,6 +212,10 @@ try {
       }
     }
   }
+
+  // Demo ilkokul öğrencisi (fotoğraflı): Meltem İlkokulu'ndaki ilk kız öğrenci
+  const ilkOgrenci = okullar.find(o => o.ad === 'Meltem İlkokulu').ogrenciler.find(x => x.cins === 'K');
+  if (ilkOgrenci) calis('UPDATE users SET foto = ? WHERE id = ?', '/foto/ogrenci-ilkokul.jpg', ilkOgrenci.uid);
 
   // Veliler: her öğrenciye bir veli; her kampüste ilkokul-ortaokul kardeş çiftleri aynı veliyi paylaşır
   const veliKaydi = (ogr, veli, yakinlik) => {
