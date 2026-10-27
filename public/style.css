@@ -2625,3 +2625,10 @@ main .ders-panel .ks-satir.secili { background: color-mix(in srgb, var(--ana) 7%
 main .ders-panel .adim .yok-hap.iki, main .ders-panel .adim .yok-hap { height: 40px; min-height: 0; padding: 0 5px 0 12px; }
 main .ders-panel .adim .yok-ikon { width: 28px; height: 28px; }
 main .ders-panel .adim .ks-liste { max-height: 200px; }
+
+/* Duyurular / mesajlar: dokununca açılan satırlar, yeni rozeti, çok satırlı alan */
+main .ders-panel .not-kart.ileti { cursor: pointer; }
+main .ders-panel .not-kart.acik p { display: block; -webkit-line-clamp: unset; white-space: pre-line; color: var(--murekkep); }
+main .ders-panel .ileti-alt { grid-column: 1 / -1; color: var(--soluk); font-size: .72rem; }
+main .yeni-rozet { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ana) 14%, #fff); color: var(--ana); font-size: .68rem; font-weight: 700; vertical-align: 1px; }
+main .ders-panel .ekle-form textarea { width: 100%; box-sizing: border-box; min-height: 88px; padding: 10px 12px; border-radius: 10px; font: inherit; font-size: .86rem; resize: vertical; }

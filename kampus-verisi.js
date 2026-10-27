@@ -8,6 +8,7 @@ import path from 'node:path';
 import { deflateSync, crc32 } from 'node:zlib';
 import { db, sonrakiOkulNo } from './db.js';
 import './gorev.js';
+import './duyuru.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
 import { dersKazanimlari } from './kazanim.js';
@@ -788,6 +789,17 @@ try {
           ogr.mid, haftaIci(kaydir(bugun, -1 - Math.floor(rnd() * 20))), sec(gorusmeTel), s.rehber.mid, simdi - 864e5);
       });
     }
+  }
+
+  // Duyurular (yönetim) ve veli mesajları (sınıf rehberi)
+  const ileti = (tur, baslik, metin, gonderen, sube, rol, sinif, gun) => ins('INSERT INTO iletiler (tur, baslik, metin, gonderen_membership_id, branch_id, rol, class_id, created_at) VALUES (?,?,?,?,?,?,?,?)',
+    tur, baslik, metin, gonderen, sube, rol, sinif, zaman(kaydir(bugun, gun), '09:00'));
+  for (const o of okullar) {
+    ileti('duyuru', '29 Ekim Cumhuriyet Bayramı', '29 Ekim Perşembe günü okulumuz tatildir. Cumhuriyet Bayramımız kutlu olsun.', o.yon[0].mid, o.id, 'hepsi', null, -2);
+    ileti('duyuru', '1. dönem veli toplantısı', "Veli toplantısı 5 Kasım Perşembe günü saat 18:00'de okulumuzda yapılacaktır. Katılımınızı bekleriz.", o.yon[0].mid, o.id, 'veli', null, -1);
+    ileti('duyuru', 'Öğretmenler kurulu', 'Dönem ortası öğretmenler kurulu cuma günü son ders sonrası toplantı salonundadır.', o.yon[0].mid, o.id, 'ogretmen', null, -3);
+    for (const s of o.siniflar.slice(0, 2))
+      ileti('mesaj', 'Gezi izin belgesi', 'Önümüzdeki hafta yapılacak müze gezisi için izin belgelerinin imzalanıp cuma gününe kadar teslim edilmesi rica olunur.', s.rehber.mid, o.id, null, s.id, -1);
   }
 
   db.exec('COMMIT');

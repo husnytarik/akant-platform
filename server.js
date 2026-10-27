@@ -10,6 +10,7 @@ import { gorevApi } from './gorev.js';
 import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
+import { duyuruApi } from './duyuru.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -44,7 +45,7 @@ const MODULLER = [
   { id: 'okul-kurulum', ad: 'Okul kurulumu', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
   { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
-  { id: 'duyuru', ad: 'Duyuru ve kampanyalar', aciklama: 'Okul adına duyuru ve bildirim yayınlama', roller: ['yonetim'] },
+  { id: 'duyuru', ad: 'Duyurular', aciklama: 'Okul ya da rol bazında duyuru yayınla, okunma durumunu gör', roller: ['yonetim'], yol: '/duyurular' },
   { id: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve şube bazlı özetler', roller: ['yonetim'] },
   { id: 'kulup-yonetimi', ad: 'Öğrenci kulüpleri', aciklama: 'Kulüpleri aç, öğretmen ve kontenjan belirle, talepleri yerleştir', roller: ['yonetim'], yol: '/kulupler' },
   { id: 'kulup-ogretmen', ad: 'Kulüplerim', aciklama: 'Danışmanı olduğum kulüpler, üyeler ve haftalık çalışmalar', roller: ['ogretmen'], yol: '/kulupler' },
@@ -60,10 +61,11 @@ const MODULLER = [
   { id: 'odev-takip-ogretmen', ad: 'Ödev takibi', aciklama: 'Ödevleri kimin yaptığını gör, doğrula, öğrenci sorularını yanıtla', roller: ['ogretmen'], yol: '/odev-takip' },
   { id: 'not-girisi', ad: 'Sınavlar', aciklama: 'Dersinizin sınavlarında cevap anahtarı ve kazanımları hazırla, yazılı puanlarını gir, sonuçları incele', roller: ['ogretmen'], yol: '/sinav' },
   { id: 'sinav-yonetim', ad: 'Sınavlar', aciklama: 'Deneme, açılış ve yazılı sınavları oluştur, öğrenci cevaplarını gir, sonuçları yayınla', roller: ['yonetim'], yol: '/sinav' },
-  { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Velilere mesaj ve bildirim gönderme', roller: ['ogretmen'] },
+  { id: 'veli-bilgilendirme', ad: 'Veli bilgilendirme', aciklama: 'Sınıfın ya da bir öğrencinin velisine mesaj gönder', roller: ['ogretmen'], yol: '/duyurular?sekme=mesaj' },
+  { id: 'duyurular-ogretmen', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogretmen'], yol: '/duyurular' },
   { id: 'ders-programi', ad: 'Ders programı', aciklama: 'Haftalık ders çizelgesi, işlenen konular ve ödevler', roller: ['ogrenci', 'veli'], yol: '/program' },
   { id: 'notlarim', ad: 'Sınav sonuçlarım', aciklama: 'Yayınlanan sınav sonuçları', roller: ['ogrenci', 'veli'], yol: '/notlarim' },
-  { id: 'duyurular', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular', roller: ['ogrenci', 'veli'] },
+  { id: 'duyurular', ad: 'Duyurular', aciklama: 'Okuldan gelen duyurular ve öğretmen mesajları', roller: ['ogrenci', 'veli'], yol: '/duyurular' },
   { id: 'ogrencim', ad: 'Öğrencim', aciklama: 'Çocuğumun bilgileri ve durumu', roller: ['veli'] },
   { id: 'devamsizlik-veli', ad: 'Devamsızlık', aciklama: 'Çocuğumun ders devamsızlıkları', roller: ['veli'], yol: '/devamsizlik' },
   { id: 'devamsizlik-ogrenci', ad: 'Devamsızlığım', aciklama: 'Ders devam durumum', roller: ['ogrenci'], yol: '/devamsizlik' },
@@ -330,6 +332,12 @@ async function api(req, res, url) {
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
+  if (url.pathname.startsWith('/api/duyuru/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await duyuruApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/etut/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -482,6 +490,7 @@ function statik(req, res, url) {
   if (ad === '/kurulum') ad = '/kurulum.html';
   if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
+  if (ad === '/duyurular') ad = '/duyurular.html';
   if (ad === '/kulupler') ad = '/kulupler.html';
   if (ad === '/gelisim') ad = '/gelisim.html';
   if (ad === '/yoklama') { res.writeHead(302, { Location: '/derslerim' + url.search }); res.end(); return; }
