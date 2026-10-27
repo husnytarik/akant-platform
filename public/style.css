@@ -2867,3 +2867,8 @@ main .kad-panel .yazdir-baslik { display: none; }
   main .kad-panel .yazdir-baslik { display: block; }
   main .kad-eylem, main .kad-alt .kad-link, main .kad-ok { display: none !important; }
 }
+
+/* Giriş sayfası: okul fotoğrafı ve logo */
+body.giris-sayfa .bant.buyuk { background: linear-gradient(rgba(62,88,132,.62), rgba(62,88,132,.86)), url('/foto/okul-genel.jpg') center / cover; }
+body.giris-sayfa .bant.buyuk .bant-avatar { overflow: hidden; padding: 0; background: #fff; }
+body.giris-sayfa .bant-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }

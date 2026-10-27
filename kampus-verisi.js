@@ -2,7 +2,7 @@
 // Okul yılı başından bugüne kadar ders programı, yoklama, işlenen konu, ödev, etüt, sınav, kulüp ve gelişim kayıtları üretilir.
 // Kullanım: npm run kampus           (veritabanı boşsa doldurur, doluysa hiçbir şey yapmaz)
 //           npm run kampus-yenile    (önce yedek alır, sonra tüm veriyi silip baştan üretir; sunucu kapalıyken çalıştırın)
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { deflateSync, crc32 } from 'node:zlib';
@@ -150,6 +150,7 @@ db.exec('BEGIN');
 try {
   dersId(KULUP_DERSI);
   calis("INSERT OR REPLACE INTO kurum (id, ad, kisa_ad, telefon, eposta, web, adres, guncelleme) VALUES (1,'Akant Koleji','Akant','0242 000 00 00','bilgi@akant.example','www.akant.example','Meltem Mah. Akdeniz Bul. No: 12, Antalya',?)", simdi);
+  calis('INSERT OR REPLACE INTO kurum_logo (id, mime, veri, guncelleme) VALUES (1, ?, ?, ?)', 'image/jpeg', readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public', 'foto', 'akant-logo.jpg')), simdi);
   for (const k of KAMPUSLER) {
     const kampusId = ins('INSERT INTO kampusler (name, adres, telefon) VALUES (?,?,?)', k.ad, k.adres, k.telefon);
     for (const s of k.okullar) {
