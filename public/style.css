@@ -2904,3 +2904,10 @@ body.giris-sayfa .bant-avatar img { display: block; width: 100%; height: 100%; o
   body.dosya-sayfa .sutunlar { height: 110px; }
   body.dosya-sayfa .ok-alt-baslik { break-after: avoid; }
 }
+
+/* Öğrenci dosyası: aile satırları başlıkla aynı hizada, çerçevesiz */
+body.dosya-sayfa main #icerik .veli-kart { margin: 0; padding: 9px 0; gap: 2px; background: none; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; box-shadow: none; }
+body.dosya-sayfa main #icerik .veli-kart strong { font-size: .95rem; font-weight: 600; }
+body.dosya-sayfa main #icerik .ok-eposta { margin: 0; padding: 0 0 9px; border-bottom: 1px solid var(--ince); }
+body.dosya-sayfa main #icerik .ok-eposta + .veli-kart { border-top: 0; }
+body.dosya-sayfa main #icerik .veli-kart:has(+ .ok-eposta) { border-bottom: 0; padding-bottom: 2px; }
