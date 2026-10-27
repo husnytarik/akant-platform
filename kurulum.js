@@ -8,14 +8,14 @@ const tamSayi = (v, min, max) => {
 const telNormalize = t => String(t || '').replace(/\D/g, '').slice(-10);
 const bos = v => v === null || v === undefined || v === '';
 
-function islem(fn) {
+export function islem(fn) {
   db.exec('BEGIN');
   try { const s = fn(); db.exec('COMMIT'); return s; } catch (e) { db.exec('ROLLBACK'); throw e; }
 }
 
 // Öğrenci / öğretmen kaydı: kişi yoksa hesap açılır, varsa (telefon eşleşirse)
 // yalnızca yeni üyelik eklenir. Hesap ile üyelik ayrı tutulur.
-function kisiKaydet(b, rol, aktorId, denetle) {
+export function kisiKaydet(b, rol, aktorId, denetle) {
   const ad = String(b.ad || '').trim();
   const kimlik = String(b.kimlik || '').trim().toUpperCase();
   const tel = telNormalize(b.telefon);

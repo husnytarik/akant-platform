@@ -2730,3 +2730,76 @@ main .kl-plan .kl-plan-satir > div { flex: 1; min-width: 0; text-align: left; }
 main .kl-plan .kl-plan-satir small { display: block; color: var(--soluk); }
 main .kl-plan .kl-plan-satir.iptal b { color: var(--soluk); text-decoration: line-through; }
 main .kl-bos { color: var(--soluk); font-weight: 400; }
+
+/* Öğrenci kaydı, listesi ve dosyası */
+main .ol-arac { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+main .ol-arac input { flex: 1 1 220px; min-width: 0; }
+main .ol-arac select { flex: 0 1 190px; min-width: 0; }
+main .ol-arac :is(input, select) { height: 38px; min-height: 0; padding: 0 12px; border-radius: 10px; font-size: .86rem; }
+main .ol-satir { display: flex; align-items: center; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--ince); color: inherit; text-decoration: none; }
+main .ol-satir:first-child { border-top: 0; }
+main .ol-satir:hover { background: color-mix(in srgb, var(--ana) 5%, transparent); }
+main .ol-orta { flex: 1; min-width: 0; }
+main .ol-orta strong { display: block; font-size: .94rem; font-weight: 600; }
+main .ol-orta small { display: block; color: var(--soluk); font-size: .78rem; }
+main .ol-etiket { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+main .ol-etiket span { padding: 2px 9px; border-radius: 999px; background: var(--ic-zemin, #f4f0e6); color: var(--soluk); font-size: .72rem; font-weight: 600; }
+main .ol-etiket span.uyari { background: #fdf1d8; color: #9a6400; }
+main .ders-panel .ekle-ust a.ekle-ac { display: inline-flex; align-items: center; text-decoration: none; }
+
+main .ok-form h3.baslik3 { margin: 22px 0 8px; }
+main .ok-form > h3.baslik3:first-child { margin-top: 4px; }
+main .ok-foto { display: flex; align-items: center; gap: 14px; margin: 0 0 6px; }
+main .ok-foto .ogr-avatar { width: 72px; height: 72px; }
+main .ok-foto small { display: block; margin-top: 4px; }
+main .ok-form .form-satir { align-items: start; }
+main .ok-form .ok-genis { grid-column: 1 / -1; }
+main .ok-form :is(input:not([type="checkbox"]), select) { height: 38px; min-height: 0; padding: 0 12px; border-radius: 10px; font-size: .88rem; }
+main .ok-form textarea { width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 10px; font: inherit; font-size: .88rem; resize: vertical; }
+main .ok-form input[readonly] { background: transparent; border-color: transparent; padding-left: 0; color: var(--soluk); }
+main .ok-cipler { display: flex; gap: 8px; flex-wrap: wrap; }
+main .ok-liste { display: flex; flex-direction: column; }
+main .ok-oge { padding: 10px 0 14px; border-top: 1px solid var(--ince); }
+main .ok-oge:first-child { border-top: 0; }
+main .ok-oge-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+main .ok-oge-ust strong { font-size: .86rem; }
+main .ok-kaldir { height: auto; padding: 4px 0; border: 0; background: none; box-shadow: none; color: #c62828; font-size: .8rem; font-weight: 600; }
+main .ok-alt { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
+main .ok-alt .birincil { width: auto; padding: 0 22px; }
+
+main .ok-ozet { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 4px 0 6px; }
+main .ok-ozet strong { display: block; font-family: var(--serif, Georgia, serif); font-size: 1.6rem; font-weight: 500; line-height: 1.15; }
+main .ok-ozet span { display: block; font-size: .74rem; color: var(--soluk); line-height: 1.3; }
+main .ok-ozet em.fark { margin: 2px 0 0; display: block; }
+main .ok-blok { margin-top: 6px; }
+main .ok-alt-baslik { margin: 12px 0 2px; font-size: .74rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--soluk); }
+main .ok-notlar { margin: 0; padding: 0; list-style: none; }
+main .ok-notlar li { padding: 7px 0 7px 16px; position: relative; font-size: .88rem; border-top: 1px solid var(--ince); }
+main .ok-notlar li:first-child { border-top: 0; }
+main .ok-notlar li::before { content: ''; position: absolute; left: 2px; top: 14px; width: 7px; height: 7px; border-radius: 50%; background: #3b82c4; }
+main .ok-notlar li.uyari::before { background: #e0a100; }
+main .ok-sag { display: flex; align-items: center; gap: 4px; }
+main .ok-sag b { font-size: .92rem; }
+main .ok-donem { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center; padding: 9px 0; border-top: 1px solid var(--ince); font-size: .88rem; }
+main .ok-donem small { font-weight: 400; color: var(--soluk); }
+main .ok-donem em.fark { margin: 0 0 0 4px; }
+main .ok-donem-baslik { border-top: 0; padding: 0 0 2px; font-size: .72rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--soluk); }
+main .ok-eposta { margin: -2px 0 8px; font-size: .8rem; color: var(--soluk); }
+main .p-eylem { display: flex; align-items: center; gap: 14px; flex: none; }
+main .p-eylem a.ikincil { text-decoration: none; }
+@media (max-width: 520px) {
+  main .ok-ozet { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; }
+  main .ol-etiket { display: none; }
+  main .ok-donem { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); font-size: .8rem; }
+  main .ok-donem em.fark { display: block; margin: 0; }
+  main .ders-panel-ust { flex-wrap: wrap; }
+}
+@media print {
+  main .p-eylem, main .ok-alt { display: none !important; }
+  main .yazdir-baslik { display: block; font-size: 1.05rem; text-transform: none; letter-spacing: 0; color: #000; margin: 0 0 10px; }
+  main .ok-ozet strong, main .sutun-cubuk, em.fark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  main .ok-blok { break-inside: avoid; }
+}
+main .ok-form .ekle-ust { margin: 26px 0 8px; }
+main .ok-form .ekle-ust + p.alt { margin: 0 0 8px; }
+main .ok-form .ok-cipler { margin-bottom: 4px; }

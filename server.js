@@ -21,6 +21,7 @@ import { kazanimApi } from './kazanim.js';
 import { sinavApi } from './sinav.js';
 import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
+import { ogrenciApi } from './ogrenci.js';
 import { ogrencimApi } from './ogrencim.js';
 import { profilApi } from './profil.js';
 import { kulupApi } from './kulup.js';
@@ -48,6 +49,7 @@ const MAKS_DENEME = 5;
 const MODULLER = [
   { id: 'kurum', ad: 'Okul kurulumu', aciklama: 'Kurum profili, kampüsler, okullar, müdür ve müdür yardımcıları', roller: ['yonetim'], yol: '/kurum' },
   { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yol: '/kullanicilar', kapsam: 'kurum' },
+  { id: 'ogrenci-yonetim', ad: 'Öğrenciler', aciklama: 'Öğrenci kaydı, kayıt bilgileri ve her öğrencinin güncel durum dosyası', roller: ['yonetim'], yol: '/ogrenciler' },
   { id: 'okul-kurulum', ad: 'Sınıf ve kadro', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
   { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
@@ -405,6 +407,12 @@ async function api(req, res, url) {
     if (await ogrencimApi({ req, res, url, o, json })) return;
   }
 
+  if (url.pathname.startsWith('/api/ogrenci/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await ogrenciApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/ogrencilerim')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -543,6 +551,9 @@ function statik(req, res, url) {
   if (ad === '/odevler') ad = '/odevler.html';
   if (ad === '/odev-takip') ad = '/odev-takip.html';
   if (ad === '/ogrencilerim') ad = '/ogrencilerim.html';
+  if (ad === '/ogrenciler') ad = '/ogrenciler.html';
+  if (ad === '/ogrenci-kayit') ad = '/ogrenci-kayit.html';
+  if (ad === '/ogrenci-dosyasi') ad = '/ogrenci-dosyasi.html';
   if (ad === '/ogrencim') ad = '/ogrencim.html';
   if (ad === '/teslim') ad = '/teslim.html';
   if (ad === '/raporlar') ad = '/raporlar.html';

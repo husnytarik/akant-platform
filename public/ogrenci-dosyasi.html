@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Öğrenci dosyası</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/renk.js"></script>
+</head>
+<body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" id="geri" aria-label="Geri dön">&larr;</a>
+    <h1>Öğrenci dosyası</h1>
+  </header>
+  <main class="kart panel genis">
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+    <section id="dosya" class="ders-panel gizli">
+      <div class="ders-panel-ust">
+        <div class="p-kimlik">
+          <span id="d-foto"></span>
+          <div>
+            <h2 id="d-baslik"></h2>
+            <p id="d-alt" class="alt"></p>
+          </div>
+        </div>
+        <div class="p-eylem">
+          <button type="button" id="d-yazdir" class="ikincil">Yazdır</button>
+          <a id="d-duzenle" class="ikincil gizli" href="#">Düzenle</a>
+        </div>
+      </div>
+      <p class="yazdir-baslik" id="d-rapor-tarih"></p>
+      <div class="sekmeler" id="sekmeler">
+        <button type="button" data-sekme="genel" aria-pressed="true">Genel durum</button>
+        <button type="button" data-sekme="sinav" aria-pressed="false">Sınavlar</button>
+        <button type="button" data-sekme="gelisim" aria-pressed="false">Gelişim</button>
+        <button type="button" data-sekme="devam" aria-pressed="false">Devam</button>
+        <button type="button" data-sekme="odev" aria-pressed="false">Ödev ve etkinlik</button>
+        <button type="button" data-sekme="kayit" aria-pressed="false">Kayıt bilgileri</button>
+      </div>
+      <div id="icerik"></div>
+    </section>
+  </main>
+  <script src="/grafik.js"></script>
+  <script src="/avatar.js"></script>
+  <script src="/sinav-sira.js"></script>
+  <script src="/ogrenci-ortak.js"></script>
+  <script src="/ogrenci-dosyasi.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

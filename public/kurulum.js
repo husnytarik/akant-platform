@@ -362,14 +362,7 @@ function veliHucresi(liste) {
   return td;
 }
 
-function ogrenciSinifSecenekleri() {
-  const subeId = Number($('g-sube').value);
-  doldur($('g-sinif'), siniflarOkul(subeId), s => s.id, s => `${s.kademe} · ${s.ad}`, 'Sınıfsız');
-}
-
 function cizOgrenciler() {
-  doldur($('g-sube'), v.subeler, s => s.id, okulEtiket);
-  ogrenciSinifSecenekleri();
 
   // Sınıf süzgeci
   const filtre = $('ogrenci-filtre');
@@ -404,7 +397,7 @@ function cizOgrenciler() {
     } else {
       sinifHucre = el('td', v.siniflar.find(s => s.id === o.sinifId)?.ad || '—');
     }
-    const adHucre = el('td', ad);
+    const adHucre = el('td'); const adLink = el('a', ad); adLink.href = '/ogrenci-dosyasi?id=' + o.uyelikId; adHucre.append(adLink);
     if (o.durum !== 'aktif') adHucre.append(el('small', ' · pasif', 'mad-ince'));
     tr.append(adHucre, el('td', soyad), el('td', o.okulNo || '—'), sinifHucre, veliHucresi(o.veliler.slice(0, 1)), veliHucresi(o.veliler.slice(1)));
     tb.append(tr);
@@ -417,16 +410,6 @@ function cizOgrenciler() {
 $('ogrenci-ara').addEventListener('input', cizOgrenciler);
 $('ogrenci-filtre').addEventListener('change', cizOgrenciler);
 $('yazdir').addEventListener('click', () => window.print());
-$('g-sube').addEventListener('change', ogrenciSinifSecenekleri);
-
-$('ogrenci-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const ok = await yap('/api/yonetim/ogrenci-kayit', {
-    ad: $('g-ad').value, kimlik: $('g-kimlik').value, telefon: $('g-tel').value, okulNo: $('g-no').value,
-    subeId: $('g-sube').value, sinifId: $('g-sinif').value === '' ? null : $('g-sinif').value,
-  }, 'Öğrenci kaydedildi.');
-  if (ok) $('ogrenci-form').reset();
-});
 
 // ---- Sekmeler ----
 document.querySelectorAll('.sekmeler button').forEach(b => {

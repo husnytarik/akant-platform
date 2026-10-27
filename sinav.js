@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { ogrenciErisimi } from './ogrenci.js';
 
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 const tarihGecerli = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !Number.isNaN(Date.parse(t));
@@ -319,13 +320,11 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
     };
   }).filter(Boolean);
 
-  // Mentor öğretmen: sınıfındaki bir öğrencinin yayınlanmış sınav sonuçları
+  // Yönetim ya da öğrencinin sınıfında ders veren / mentor öğretmen: bir öğrencinin yayınlanmış sınav sonuçları
   if (req.method === 'GET' && yol === '/api/sinav/ogrenci') {
-    if (o.role !== 'ogretmen') return hata(403, 'Bu işlem için yetkiniz yok');
+    if (o.role !== 'ogretmen' && o.role !== 'yonetim') return hata(403, 'Bu işlem için yetkiniz yok');
     const id = Number(url.searchParams.get('id'));
-    const mentor = db.prepare(`SELECT 1 FROM class_students cs JOIN classes c ON c.id = cs.class_id
-      WHERE cs.student_membership_id = ? AND c.homeroom_membership_id = ?`).get(id, o.membership_id);
-    if (!mentor) return hata(404, 'Öğrenci bulunamadı');
+    if (!ogrenciErisimi(o, id)) return hata(404, 'Öğrenci bulunamadı');
     json(res, 200, { sinavlar: yayinliSinavlar(id) });
     return true;
   }

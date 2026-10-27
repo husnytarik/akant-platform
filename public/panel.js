@@ -131,6 +131,7 @@ const IKON_YOL = {
   etut: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   derslerim: 'M4 5h16v14H4zM4 10h16M9 5v14',
   'not-girisi': 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5',
+  'ogrenci-yonetim': 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 8v6M14 11h6',
   ogrencilerim: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
   'veli-bilgilendirme': 'M4 5h16v11H9l-5 4zM8 9h8M8 12h5',
   'kullanici-rol': 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.8-4.2 4-6 8-6s7.2 1.8 8 6',

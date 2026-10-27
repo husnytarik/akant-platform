@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akant Koleji - Öğrenciler</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/renk.js"></script>
+</head>
+<body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1>Öğrenciler</h1>
+  </header>
+  <main class="kart panel genis">
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+    <section class="ders-panel">
+      <div class="ekle-ust">
+        <h3 class="baslik3" id="sayi">Öğrenciler</h3>
+        <a class="ekle-ac" href="/ogrenci-kayit">+ Yeni öğrenci</a>
+      </div>
+      <div class="ol-arac">
+        <input id="ara" type="search" placeholder="Ad ya da okul numarasıyla ara" aria-label="Öğrenci ara">
+        <select id="okul" aria-label="Okula göre süz"></select>
+        <select id="sinif" aria-label="Sınıfa göre süz"></select>
+      </div>
+      <div id="liste"></div>
+    </section>
+  </main>
+  <script src="/grafik.js"></script>
+  <script src="/avatar.js"></script>
+  <script src="/ogrenciler.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

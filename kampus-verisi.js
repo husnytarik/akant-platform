@@ -12,6 +12,7 @@ import './duyuru.js';
 import './teslim.js';
 import './tatil.js';
 import './kurum.js';
+import './ogrenci.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
 import { dersKazanimlari } from './kazanim.js';
@@ -229,6 +230,24 @@ try {
     }
   }
   const veliler = new Map(); // öğrenci mid -> veli kullanıcısı
+  // Kayıt bilgileri (doğum, kan grubu, yemek, özel durum) ve veli yakınlığı; rastgele sayı kullanılmaz, öğrenci numarasından türetilir
+  const KAN = ['0 Rh+', 'A Rh+', 'B Rh+', 'AB Rh+', 'A Rh-', '0 Rh-', 'B Rh-', 'AB Rh-'];
+  const ONCEKI = ['Güneş İlkokulu', 'Atatürk Ortaokulu', 'Bahçelievler İlkokulu', 'Deniz Koleji', 'Cumhuriyet Ortaokulu'];
+  const ogrenciKaydi = (ogr, okul, demoOgr) => {
+    const id = ogr.mid, duzey = ogr.sinif.duzey;
+    const dogum = `${2026 - duzey - 6}-${String(1 + (id * 7) % 12).padStart(2, '0')}-${String(1 + (id * 11) % 28).padStart(2, '0')}`;
+    const nakil = id % 7 === 0 && duzey > 1;
+    const tur = nakil ? 'nakil' : duzey === 1 || id % 11 === 0 ? 'yeni' : 'yenileme';
+    const oncekiOkul = nakil || tur === 'yeni' && duzey > 1 ? ONCEKI[id % ONCEKI.length] : '';
+    calis('INSERT INTO ogrenci_kayit (student_membership_id, dogum_tarihi, dogum_yeri, cinsiyet, kan_grubu, onceki_okul, kayit_tarihi, kayit_turu, yemek, guncelleme) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      id, dogum, 'Antalya', ogr.cins === 'E' ? 'erkek' : 'kiz', KAN[id % KAN.length], oncekiOkul, tur === 'yenileme' ? '2026-06-15' : '2026-08-25', tur, id % 5 === 0 ? 'almayacak' : 'alacak', simdi);
+    const ozel = demoOgr ? [['alerji', 'Fındık alerjisi', 'Fındık içeren yiyecek verilmemeli; belirti görülürse ailesi aranır.']]
+      : id % 9 === 0 ? [['alerji', 'Fıstık alerjisi', 'Okul yemeklerinde ve kulüp ikramlarında fıstık olmamalı.']]
+      : id % 13 === 0 ? [['saglik', 'Astım', 'Spor derslerinde ilacı yanında bulunur; nefes darlığında aile bilgilendirilir.']] : [];
+    for (const [tur2, baslik, aciklama] of ozel) calis('INSERT INTO ogrenci_ozel_durum (student_membership_id, tur, baslik, aciklama, created_at) VALUES (?,?,?,?,?)', id, tur2, baslik, aciklama, simdi);
+  };
+  const aileBilgi = (ogr, veliUyelik, yakinlik) => calis('INSERT OR REPLACE INTO aile_bilgi (student_membership_id, parent_membership_id, yakinlik, meslek) VALUES (?,?,?,?)',
+    ogr.mid, veliUyelik.mid ?? veliUyelik.id, yakinlik, ['Mühendis', 'Öğretmen', 'Esnaf', 'Doktor', 'Memur', 'Serbest meslek', 'Avukat'][ogr.mid % 7]);
   for (const o of okullar) {
     for (const ogr of o.ogrenciler) {
       if (veliler.has(ogr.mid) && !(o.ad === 'Meltem Ortaokulu' && false)) continue;
@@ -250,8 +269,12 @@ try {
         telefon2: '5' + String(30 + Math.floor(rnd() * 10)) + String(1000000 + Math.floor(rnd() * 8999999)), adres, yakinAd: yakin, yakinYakinlik: anne ? 'Baba' : 'Anne', yakinTel: '5' + String(30 + Math.floor(rnd() * 10)) + String(1000000 + Math.floor(rnd() * 8999999)) };
       profil(kisi.uid, iletisim);
       profil(ogr.uid, { adres, yakinAd: kisi.ad, yakinYakinlik: anne ? 'Anne' : 'Baba', yakinTel: kisi.tel });
+      aileBilgi(ogr, v, anne ? 'Anne' : 'Baba');
+      const kardesOgr = kardesler.get(ogr.mid);
+      if (kardesOgr && !kardesOgr.aileli) { kardesOgr.aileli = true; aileBilgi(kardesOgr, db.prepare("SELECT id FROM memberships WHERE user_id = ? AND branch_id = ? AND role = 'veli'").get(kisi.uid, kardesOgr.okul.id), anne ? 'Anne' : 'Baba'); }
     }
   }
+  for (const o of okullar) for (const ogr of o.ogrenciler) ogrenciKaydi(ogr, o, ogr.ad === DEMO.ogrenci.ad);
   // Demo Öğretmen-Veli: Meydan Ortaokulu'nda 6-A'daki bir öğrencinin velisi de (aynı hesap, öğretmen + veli)
   {
     const meydan = okullar.find(o => o.ad === 'Meydan Ortaokulu');
