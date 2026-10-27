@@ -2,7 +2,7 @@ const $ = id => document.getElementById(id);
 let secenekler = { duzeyler: [] };
 let acik = null;          // açık sınavın detayı
 let ben = { yon: false }; // yönetim hesabı mı
-let izinler = new Set();  // yönetim hesabının yetkileri
+let izinler = new Set(), kurumAd = '';  // yönetim hesabının yetkileri
 const izin = (...k) => ben.yon && k.some(x => izinler.has(x));
 let mod = 'incele';       // incele | duzen
 let sekme = 'sonuc';
@@ -810,7 +810,7 @@ const DURUM_RENK = { Edinildi: '#1a7f37', Kısmen: '#b45309', Eksik: '#c62828' }
 function raporGovdesi(rapor, v, g, secim, cevaplar) {
   rapor.replaceChildren();
   const kurum = el('div', undefined, 'rp-kurum');
-  kurum.append(el('b', 'Akant Koleji'), el('span', 'Sınav sonuç raporu'));
+  kurum.append(el('b', kurumAd), el('span', 'Sınav sonuç raporu'));
   const kim = el('div', undefined, 'rp-kim');
   kim.append(el('h2', g.ad), el('p', `${g.sinif}${g.okulNo ? ' · No ' + g.okulNo : ''}`), el('small', `${v.sinav.ad} · ${tarihYaz(v.sinav.tarih)}${v.sinav.tur === 'yazili' ? ' · Yazılı' : ''}`));
   rapor.append(kurum, kim);
@@ -1241,4 +1241,4 @@ $('s-tur').addEventListener('click', e => { const b = e.target.closest('button')
 $('d-mod').addEventListener('click', e => { const b = e.target.closest('button'); if (b) modSec(b.dataset.mod); });
 $('d-sekmeler').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sekmeSec(b.dataset.sekme); });
 gorunum('liste');
-fetch('/api/ben').then(r => r.json()).then(b => { izinler = new Set(b.yetkiler || []); }).catch(() => {}).then(listeYukle);
+fetch('/api/ben').then(r => r.json()).then(b => { izinler = new Set(b.yetkiler || []); kurumAd = b.kurum?.ad || ''; }).catch(() => {}).then(listeYukle);

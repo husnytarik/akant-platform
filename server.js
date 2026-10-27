@@ -206,7 +206,8 @@ async function api(req, res, url) {
     const { unvan, renk } = profilBilgisi({ id: o.membership_id, role: o.role });
     const coklu = profilListesi(o.user_id).length > 1;
     const foto = db.prepare(`SELECT ${FOTO_SQL} AS foto FROM users u WHERE u.id = ?`).get(o.user_id)?.foto || null;
-    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto, yetkiler: [...etkinYetkiler(o)] });
+    const kurum = db.prepare('SELECT ad, EXISTS (SELECT 1 FROM kurum_logo WHERE id = 1) AS logo FROM kurum WHERE id = 1').get();
+    return json(res, 200, { ad: o.full_name, rol: o.role, sube: o.branch, unvan, renk, coklu, foto, yetkiler: [...etkinYetkiler(o)], kurum: { ad: kurum?.ad || '', logo: !!kurum?.logo } });
   }
 
   // Okul takvimi (ders günleri ve saatleri): her rol okuyabilir, yalnızca yönetim değiştirir
@@ -601,4 +602,4 @@ http.createServer(async (req, res) => {
     console.error(e);
     if (!res.headersSent) json(res, 400, { hata: 'Geçersiz istek' });
   }
-}).listen(PORT, () => console.log(`Akant platformu: http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`neademy: http://localhost:${PORT}`));

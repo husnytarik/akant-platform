@@ -207,11 +207,15 @@ function tamRaporKur() {
   kayit.kayitTuruAd = kayit.secenekler.kayitTuru[kayit.kayit.kayitTuru] || '';
   sinavlar = s.ok ? s.veri.sinavlar : [];
   const p = rapor.ogrenci;
-  document.title = `Akant Koleji - ${p.ad}`;
+  document.title = `neademy - ${p.ad}`;
   $('d-baslik').textContent = p.ad;
   $('d-foto').replaceChildren(avatarYap(p.ad, p.foto, 'buyuk'));
   $('d-alt').textContent = [p.sube, p.sinif || 'Sınıfsız', p.okulNo ? 'No ' + p.okulNo : '', p.mentor ? 'Sınıf öğretmeni: ' + p.mentor : ''].filter(Boolean).join(' · ');
   $('d-rapor-tarih').textContent = tarihYaz(rapor.rapor);
+  fetch('/api/ben').then(r => r.json()).then(b => {
+    $('d-kurum-ad').textContent = b.kurum?.ad || '';
+    if (b.kurum?.logo) { $('d-kurum-logo').src = '/api/kurum-logo'; $('d-kurum-logo').hidden = false; }
+  }).catch(() => {});
   $('geri').href = kayit.duzenleyebilir ? '/ogrenciler' : '/ogrencilerim';
   if (kayit.duzenleyebilir) { const d = $('d-duzenle'); d.href = '/ogrenci-kayit?id=' + id; d.classList.remove('gizli'); }
   $('dosya').classList.remove('gizli');

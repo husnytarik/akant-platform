@@ -2934,3 +2934,6 @@ body.dosya-sayfa main :is(#icerik, #tam-rapor) .veli-kart:has(+ .ok-eposta) { bo
   body.dosya-sayfa main .hz-durum { align-self: center; line-height: 1.5; }
   body.dosya-sayfa main .hz-durum.onay { border-radius: 999px; }
 }
+
+/* neademy işareti (giriş sayfası) */
+.marka-isaret { font-family: var(--serif); font-size: 2.2rem; font-weight: 600; line-height: 1; color: var(--ana); }
