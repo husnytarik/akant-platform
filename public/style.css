@@ -2718,3 +2718,15 @@ main .devam-filtre { display: flex; align-items: center; justify-content: space-
 main .devam-kayitlar .zaman { gap: 0; }
 main .devam-kayitlar .zaman-satir { background: transparent; border-radius: 0; border-top: 1px solid var(--ince); padding: 10px 0; }
 main .devam-kayitlar .zaman-satir:first-child { border-top: 0; }
+
+/* Kulüp: tercih durumu özeti, planlanan etkinlikler */
+main .kl-durum { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin: 4px 0 16px; padding-bottom: 14px; border-bottom: 1px solid var(--ince); }
+main .kl-durum h3 { margin: 4px 0 0; font-family: var(--serif, Georgia, serif); font-size: 1.15rem; font-weight: 500; }
+main .kl-tercih-sira { width: 100%; margin-top: 6px; }
+main .kl-tercih-satir { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--ince); }
+main .kl-tercih-satir b { flex: 1; font-weight: 600; font-size: .92rem; }
+main .kl-plan .kl-plan-satir { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+main .kl-plan .kl-plan-satir > div { flex: 1; min-width: 0; text-align: left; }
+main .kl-plan .kl-plan-satir small { display: block; color: var(--soluk); }
+main .kl-plan .kl-plan-satir.iptal b { color: var(--soluk); text-decoration: line-through; }
+main .kl-bos { color: var(--soluk); font-weight: 400; }

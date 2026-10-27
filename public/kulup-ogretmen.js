@@ -11,12 +11,6 @@ async function yukle() {
 }
 yukle();
 
-// Kulübün bugünden itibaren ilk ders günü
-function sonrakiTarih(bugun, gun) {
-  const d = new Date(bugun + 'T00:00:00Z');
-  while (d.getUTCDay() !== gun) d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
 const gunYaz = t => new Date(t + 'T00:00:00Z').toLocaleDateString('tr-TR', { timeZone: 'UTC', day: 'numeric', month: 'long', weekday: 'long' });
 
 // Ders ekranı: Dersi bitir ile aynı form; kaydedince aynı ders (bitmişse salt okunur) yeniden açılır
@@ -51,10 +45,21 @@ function kart(k) {
   const ortak = k.ogretmenler.filter(o => o.ad).map(o => o.ad);
   if (ortak.length > 1) c.append(el('p', 'Danışmanlar: ' + ortak.join(', '), 'kl-kisi'));
 
-  const sonraki = sonrakiTarih(veri.bugun, k.gun);
-  const ac = el('a', `Sıradaki ders · ${tarihYaz(sonraki)}`, 'birincil kucuk kl-git-dugme');
-  ac.href = '#'; acDugme(ac, k, sonraki);
-  c.append(el('p', 'Kulüp dersi haftalık programınızda diğer dersler gibi görünür; konuyu önceden yazabilir, yoklamayı ders saatinde alabilirsiniz.', 'kl-not'), ac);
+  // Sonraki haftalar: her ders günü için etkinlik (konu) önceden yazılır; dokununca ders ekranı açılır
+  c.append(el('div', undefined, 'kl-ayrac'), el('h4', 'Sonraki haftalar'),
+    el('p', 'Her haftanın etkinliğini önceden yazın; öğrenciler kulüp sayfasında görür. Yoklama ders saatinde alınır.', 'kl-not'));
+  const plan = el('div', undefined, 'kl-plan');
+  for (const p of k.planlar) {
+    const s = el('a', undefined, 'kl-calisma kl-plan-satir' + (p.iptal ? ' iptal' : ''));
+    s.href = '#'; acDugme(s, k, p.tarih);
+    const sol = el('div');
+    sol.append(el('small', tarihYaz(p.tarih) + (p.tarih === veri.bugun ? ' · bugün' : '')),
+      el('b', p.iptal ? 'Ders iptal edildi' : p.baslik || 'Etkinlik yazılmadı', p.baslik || p.iptal ? '' : 'kl-bos'));
+    if (p.aciklama && !p.iptal) sol.append(el('p', p.aciklama, 'kl-aciklama'));
+    s.append(sol, el('span', p.iptal ? 'İptal' : p.baslik ? TUR[p.tur] : 'Yaz', 'kl-chip ' + (p.baslik && !p.iptal ? 'tamam' : p.iptal ? 'dolu' : 'vurgu')), el('span', '›', 'kl-git'));
+    plan.append(s);
+  }
+  c.append(plan);
 
   const uyeler = el('details', undefined, 'kl-detay');
   uyeler.append(el('summary', `Üyeler (${k.uyeler.length})`));

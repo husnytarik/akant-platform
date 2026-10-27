@@ -33,6 +33,20 @@ function kulupDurumu(tarih, saat, c) {
   return bitis && simdiSaat() > bitis ? 'gecikti' : 'bekliyor';
 }
 
+// Kulübün önümüzdeki ders günleri ve öğretmenin önceden yazdığı etkinlik (tatil günleri atlanır)
+function planlar(k, adet = 6) {
+  const sonuc = [];
+  const d = new Date(bugun() + 'T00:00:00Z');
+  for (let i = 0; i < 100 && sonuc.length < adet; i++, d.setUTCDate(d.getUTCDate() + 1)) {
+    const t = d.toISOString().slice(0, 10);
+    if (d.getUTCDay() !== k.gun || !tarihAcik(t)) continue;
+    const c = db.prepare('SELECT tur, baslik, aciklama, tamamlandi, iptal FROM kulup_calismalar WHERE kulup_id = ? AND tarih = ?').get(k.id, t);
+    if (c?.tamamlandi && !c.iptal) continue;
+    sonuc.push({ tarih: t, tur: c?.tur || 'diger', baslik: c?.baslik || '', aciklama: c?.aciklama || '', iptal: !!c?.iptal });
+  }
+  return sonuc;
+}
+
 // Öğretmenin o günkü kulüp dersleri: ders programındaki satırlarla aynı biçimde (ders.js ve panel kullanır)
 export function ogretmenKulupDersleri(ogretmenId, tarih) {
   if (!tarihAcik(tarih)) return [];
@@ -359,6 +373,7 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
     const uye = db.prepare('SELECT k.* FROM kulup_uyeler ku JOIN kulupler k ON k.id = ku.kulup_id WHERE ku.student_membership_id = ?').get(cocukId);
     if (uye) {
       const ozet = kulupOzeti(uye);
+      ozet.planlar = planlar(uye, 4).filter(p => !p.iptal);
       ozet.calismalar = db.prepare(`SELECT c.id, c.tarih, c.tur, c.baslik, c.aciklama, kk.durum AS devam
         FROM kulup_calismalar c LEFT JOIN kulup_katilim kk ON kk.calisma_id = c.id AND kk.student_membership_id = ?
         WHERE c.kulup_id = ? AND c.tamamlandi IS NOT NULL AND c.iptal = 0 ORDER BY c.tarih DESC, c.id DESC LIMIT 30`).all(cocukId, uye.id);
@@ -414,7 +429,7 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
     json(res, 200, {
       bugun: bugun(),
       kulupler: kulupler.map(k => ({
-        ...kulupOzeti(k), uyeler: uyeleri(k.id),
+        ...kulupOzeti(k), uyeler: uyeleri(k.id), planlar: planlar(k),
         calismalar: db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? AND tamamlandi IS NOT NULL AND iptal = 0 ORDER BY tarih DESC, id DESC LIMIT 30').all(k.id).map(calismaOzeti),
       })),
     });

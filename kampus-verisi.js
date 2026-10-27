@@ -715,9 +715,11 @@ try {
         const cid = ins('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at, tamamlandi) VALUES (?,?,?,?,?,?,?,?)', id, tarih, tur, baslik, aciklama, hoca.mid, zaman(kaydir(tarih, -6), '15:00'), zaman(tarih, '14:20'));
         uyeler.forEach((x, j) => calis('INSERT INTO kulup_katilim (calisma_id, student_membership_id, durum) VALUES (?,?,?)', cid, x.mid, (j + i) % 7 === 3 ? 'gelmedi' : (j + i) % 11 === 5 ? 'izinli' : 'geldi'));
       });
-      // Önümüzdeki hafta için önceden yazılmış plan
-      const [ptur, pbaslik, paciklama] = cal[carsambalar.length % cal.length];
-      calis('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)', id, sonrakiCarsamba, ptur, pbaslik, paciklama, hoca.mid, simdi);
+      // Önümüzdeki iki hafta için önceden yazılmış plan (üçüncü hafta henüz yazılmadı)
+      for (const hafta of [0, 1]) {
+        const [ptur, pbaslik, paciklama] = cal[(carsambalar.length + hafta) % cal.length];
+        calis('INSERT INTO kulup_calismalar (kulup_id, tarih, tur, baslik, aciklama, teacher_membership_id, created_at) VALUES (?,?,?,?,?,?,?)', id, kaydir(sonrakiCarsamba, hafta * 7), ptur, pbaslik, paciklama, hoca.mid, simdi);
+      }
       kayitlar.push({ id, k });
       kulupSayisi++;
     }

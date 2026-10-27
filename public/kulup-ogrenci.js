@@ -3,6 +3,7 @@ const kok = $('icerik');
 let cocuk = null;
 const DEVAM = { geldi: 'Geldi', gelmedi: 'Gelmedi', izinli: 'İzinli' };
 const DURUM = { bekliyor: 'Değerlendiriliyor', kabul: 'Yerleştirildi', red: 'Yerleşilemedi' };
+const DURUM_SINIF = { bekliyor: 'vurgu', kabul: 'tamam', red: 'dolu' };
 
 const chip = (m, sinif) => el('span', m, 'kl-chip' + (sinif ? ' ' + sinif : ''));
 
@@ -39,7 +40,17 @@ function kulubum(k) {
   kart.append(baslik, el('p', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'),
     el('p', 'Danışman: ' + k.ogretmenler.map(o => o.ad).join(', '), 'kl-kisi'));
   if (k.aciklama) kart.append(el('p', k.aciklama, 'kl-aciklama'));
-  kap.append(kart, el('h4', 'Haftalık çalışmalar'));
+  kap.append(kart, el('h4', 'Sonraki etkinlikler'));
+  for (const p of k.planlar) {
+    const s = el('div', undefined, 'kl-calisma sade');
+    const sol = el('div');
+    sol.append(el('b', p.baslik || 'Henüz belirlenmedi', p.baslik ? '' : 'kl-bos'), el('small', p.baslik ? `${tarihYaz(p.tarih)} · ${TUR[p.tur]}` : tarihYaz(p.tarih)));
+    if (p.aciklama) sol.append(el('p', p.aciklama, 'kl-aciklama'));
+    s.append(sol);
+    kap.append(s);
+  }
+  if (!k.planlar.length) kap.append(el('p', 'Yaklaşan ders günü yok.', 'bos-not'));
+  kap.append(el('h4', 'Geçmiş çalışmalar'));
   if (!k.calismalar.length) kap.append(el('p', 'Henüz çalışma girilmedi.', 'bos-not'));
   for (const w of k.calismalar) {
     const s = el('div', undefined, 'kl-calisma sade');
@@ -59,11 +70,28 @@ function tercihler(v) {
   const ilk = JSON.stringify(secili);
   const durum = Object.fromEntries(v.talepler.map(t => [t.kulupId, t.durum]));
 
-  kok.append(el('p', `Girmek istediğiniz kulüpleri sırayla seçin (en çok ${v.talepSiniri}). Dolu görünen kulüpleri de seçebilirsiniz; yerleştirmeyi okul yapar, sonuç bu sayfada görünür.`, 'kl-not'));
+  // Durum özeti: şu an ne aşamadayız?
+  const durumKutu = el('section', undefined, 'kl-durum');
+  if (!v.talepler.length) {
+    durumKutu.append(chip('Tercih yapılmadı', 'vurgu'), el('h3', 'Henüz kulüp tercihi yapılmadı'),
+      el('p', `Aşağıdan en çok ${v.talepSiniri} kulüp seçin. Seçme sırası tercih sıranızdır: önce seçtiğiniz kulüp 1. tercihtir.`, 'kl-not'));
+  } else {
+    durumKutu.append(chip('Tercih gönderildi', 'tamam'), el('h3', 'Tercihleriniz okula iletildi'),
+      el('p', 'Okul yerleştirmeyi yaptığında kulübünüz bu sayfada görünür. O zamana kadar tercihlerinizi değiştirebilirsiniz.', 'kl-not'));
+    const sirali = el('div', undefined, 'kl-tercih-sira');
+    for (const t of v.talepler) {
+      const r = el('div', undefined, 'kl-tercih-satir');
+      r.append(el('span', String(t.sira), 'kl-sira'), el('b', t.kulup), chip(DURUM[t.durum], DURUM_SINIF[t.durum]));
+      sirali.append(r);
+    }
+    durumKutu.append(sirali);
+  }
+  kok.append(durumKutu);
   if (!v.kulupler.length) return kok.append(el('p', `${v.sinif} sınıfı için açık kulüp yok.`, 'bos-not'));
+  kok.append(el('h4', 'Kulüpler'), el('p', 'Bir kulübe dokunarak seçin, tekrar dokunarak seçimi kaldırın. Dolu görünen kulüpler de seçilebilir.', 'kl-not'));
 
   const liste = el('div', undefined, 'kl-liste');
-  const kaydet = el('button', 'Talebi kaydet', 'birincil');
+  const kaydet = el('button', 'Kulüp seçin', 'birincil');
   kaydet.type = 'button';
   const cubuk = el('div', undefined, 'pf-kaydet');
   cubuk.append(kaydet);
@@ -80,12 +108,12 @@ function tercihler(v) {
       const b = el('div');
       b.append(el('h3', k.ad), el('p', k.tema || ' ', 'kl-not'));
       const sag = el('div', undefined, 'kl-sag');
-      if (sira) sag.append(el('span', String(sira), 'kl-sira'));
-      else if (k.uyeSayisi >= k.kontenjan) sag.append(chip('Dolu'));
+      if (sira) sag.append(chip(`${sira}. tercih`, 'tamam'));
+      else sag.append(chip(k.uyeSayisi >= k.kontenjan ? 'Dolu' : 'Seç', k.uyeSayisi >= k.kontenjan ? 'dolu' : ''));
       baslik.append(b, sag);
       kart.append(baslik, el('p', `${k.gunAd} · ${k.dersSaati}. ders ${k.aralik}`, 'kl-zaman'));
       if (k.aciklama) kart.append(el('p', k.aciklama, 'kl-aciklama'));
-      kart.append(el('p', 'Danışman: ' + k.ogretmenler.map(o => o.ad).join(', '), 'kl-kisi'));
+      kart.append(el('p', `Danışman: ${k.ogretmenler.map(o => o.ad).join(', ')} · ${k.uyeSayisi}/${k.kontenjan} kişi`, 'kl-kisi'));
       if (sira && durum[k.id] && durum[k.id] !== 'bekliyor') kart.append(chip(DURUM[durum[k.id]]));
       kart.addEventListener('click', () => {
         const i = secili.indexOf(k.id);
@@ -97,7 +125,9 @@ function tercihler(v) {
       });
       liste.append(kart);
     }
-    kaydet.disabled = JSON.stringify(secili) === ilk;
+    const degisti = JSON.stringify(secili) !== ilk;
+    kaydet.disabled = !degisti;
+    kaydet.textContent = degisti ? (secili.length ? `Tercihleri gönder (${secili.length})` : 'Tercihleri kaldır') : (v.talepler.length ? 'Tercihler gönderildi' : 'Kulüp seçin');
   }
   ciz2();
 
