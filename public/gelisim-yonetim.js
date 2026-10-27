@@ -105,6 +105,21 @@ async function donemDetay(id) {
   genel.append(bilgi('Giriş tarihleri', aralikYaz(d)), bilgi('Veli toplantısı', d.toplantiTarihi ? tarihYaz(d.toplantiTarihi) : 'Belirlenmedi'),
     bilgi('Başlık sayısı', String(r.veri.baslikSayisi)));
 
+  if (d.durum === 'kapandi') {
+    const ac = el('button', 'Yeniden aç (7 gün)', 'ikincil kucuk'); ac.type = 'button';
+    ac.addEventListener('click', async () => {
+      if (!confirm(`${d.ad} 7 gün için yeniden açılsın mı? Öğretmenler yorumlarını güncelleyebilir.`)) return;
+      const x = new Date(ayar.bugun + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 7);
+      const r = await api('/api/gelisim/donem-kaydet', { id: d.id, ad: d.ad, baslangic: d.baslangic, bitis: x.toISOString().slice(0, 10), toplantiTarihi: d.toplantiTarihi });
+      if (!r.ok) return mesaj(r.veri.hata || 'Açılamadı', 'hata');
+      await yukle();
+      await donemDetay(d.id);
+      mesaj('Dönem yeniden açıldı', 'tamam');
+    });
+    const dg = el('div', undefined, 'kl-dugmeler'); dg.append(ac);
+    genel.append(dg);
+  }
+
   const takip = bolum('Öğretmen girişleri', `${r.veri.ogretmenler.filter(t => t.tamam === t.ogrenciSayisi).length}/${r.veri.ogretmenler.length} tamam`);
   if (!r.veri.ogretmenler.length) takip.append(el('p', 'Öğrencisi olan öğretmen yok.', 'kl-not'));
   for (const t of r.veri.ogretmenler) {
