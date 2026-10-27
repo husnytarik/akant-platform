@@ -3,7 +3,7 @@ import { DERS_ZAMANLARI, ACIK_GUNLER, GUN_ADLARI, gunAcik } from './okul-ayar.js
 import { tarihAcik } from './tatil.js';
 import { KULUP_DERSI } from './ders-programi.js';
 
-const TURLER = ['deney', 'proje', 'sunum', 'gezi', 'diger'];
+const TURLER = ['deney', 'proje', 'sunum', 'gezi', 'diger', 'calisma', 'prova', 'konser', 'gosteri', 'turnuva'];
 const KATILIM = ['geldi', 'gelmedi', 'izinli'];
 const TALEP_SINIRI = 3;
 
@@ -451,7 +451,7 @@ export async function kulupApi({ req, res, url, o, json, govde, denetle }) {
     if (h) return hata(h[0], h[1]);
     const c = oturumSatiri(k.id, tarih);
     json(res, 200, {
-      kulup: { id: k.id, ad: k.ad, dersSaati: k.ders_saati, aralik: aralik(k.ders_saati) }, tarih, basladi: basladi(tarih, k.ders_saati),
+      kulup: { id: k.id, ad: k.ad, tema: k.tema, dersSaati: k.ders_saati, aralik: aralik(k.ders_saati) }, tarih, basladi: basladi(tarih, k.ders_saati),
       uyeler: uyeleri(k.id),
       calisma: c ? { id: c.id, tur: c.tur, baslik: c.baslik, aciklama: c.aciklama, tamam: !!c.tamamlandi && !c.iptal, iptal: !!c.iptal } : null,
       katilim: c ? Object.fromEntries(db.prepare('SELECT student_membership_id AS id, durum FROM kulup_katilim WHERE calisma_id = ?').all(c.id).map(r => [r.id, r.durum])) : {},

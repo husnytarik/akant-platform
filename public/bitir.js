@@ -208,7 +208,20 @@ async function bitirCiz(k, bitince) {
 
 // Kulüp dersi: günü ve saati kulüpte sabit. Konu önceden (ileri tarih için de) yazılabilir; yoklama ders başladıktan sonra alınır.
 const KULUP_SECENEK = [['geldi', 'Geldi'], ['gelmedi', 'Gelmedi'], ['izinli', 'İzinli']];
-const KULUP_TUR = [['diger', 'Genel'], ['deney', 'Deney'], ['proje', 'Proje'], ['sunum', 'Sunum'], ['gezi', 'Gezi']];
+const KULUP_TUR = [['diger', 'Genel'], ['deney', 'Deney'], ['proje', 'Proje'], ['sunum', 'Sunum'], ['gezi', 'Gezi'], ['calisma', 'Çalışma'], ['prova', 'Prova'], ['konser', 'Konser'], ['gosteri', 'Gösteri'], ['turnuva', 'Turnuva']];
+// Kulübün temasına göre sunulan çalışma türleri ve örnek konu
+const KULUP_TEMALARI = [
+  [/sanat|müzik|koro|enstrüman|resim/i, ['calisma', 'prova', 'konser', 'gezi'], 'Örn. Yıl sonu konseri repertuvarı'],
+  [/sahne|drama|tiyatro|dil/i, ['calisma', 'prova', 'gosteri', 'gezi'], 'Örn. İkinci perde provası'],
+  [/strateji|satranç|zeka|spor|futbol|basketbol|voleybol/i, ['calisma', 'turnuva', 'gezi'], 'Örn. Açılış stratejileri'],
+  [/bilim|teknoloji|fen|robot|kodlama|deney/i, ['deney', 'proje', 'sunum', 'gezi'], 'Örn. Basit elektrik devresi'],
+];
+function kulupTurleri(kulup, mevcut) {
+  const [, kodlar, ornek] = KULUP_TEMALARI.find(([ad]) => ad.test(`${kulup.tema || ''} ${kulup.ad || ''}`)) || [null, ['calisma', 'proje', 'sunum', 'gezi'], 'Örn. Bu haftaki çalışma'];
+  const liste = ['diger', ...kodlar];
+  if (mevcut && !liste.includes(mevcut)) liste.push(mevcut);
+  return { turler: liste.map(k => KULUP_TUR.find(([d]) => d === k)), ornek };
+}
 
 // Derslerim'de seçili dersten, Kulüplerim'de ise doğrudan kulüp ve tarihten çağrılır.
 async function kulupBitirCiz(k, bitince, kulupId = ders.kulupId, gun = tarih) {
@@ -265,9 +278,10 @@ async function kulupBitirCiz(k, bitince, kulupId = ders.kulupId, gun = tarih) {
 
   // Bu haftaki çalışma: konu önceden yazılabilir
   const tur = el('select');
-  for (const [d, e] of KULUP_TUR) tur.append(Object.assign(el('option', e), { value: d }));
+  const { turler, ornek } = kulupTurleri(kulup, c?.tur);
+  for (const [d, e] of turler) tur.append(Object.assign(el('option', e), { value: d }));
   tur.value = c?.tur || 'diger'; tur.id = 'kb-tur';
-  const konu = el('input'); konu.id = 'kb-konu'; konu.maxLength = 100; konu.placeholder = 'Örn. Basit elektrik devresi'; konu.value = c?.baslik || '';
+  const konu = el('input'); konu.id = 'kb-konu'; konu.maxLength = 100; konu.placeholder = ornek; konu.value = c?.baslik || '';
   const ac = el('input'); ac.id = 'kb-aciklama'; ac.maxLength = 1000; ac.placeholder = 'Plan, malzeme ya da derste neler yapıldı (isteğe bağlı)'; ac.value = c?.aciklama || '';
   const lt = el('label', 'Tür'); lt.htmlFor = 'kb-tur';
   const lk = el('label', 'Konu'); lk.htmlFor = 'kb-konu';

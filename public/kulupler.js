@@ -14,7 +14,7 @@ async function api(yol, govde) {
 const mesaj = (m, tur) => { const e = $('mesaj'); e.textContent = m || ''; e.className = 'mesaj' + (tur ? ' ' + tur : ''); };
 const AYLAR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 const tarihYaz = t => { const [, a, g] = t.split('-').map(Number); return `${g} ${AYLAR[a - 1]}`; };
-const TUR = { deney: 'Deney', proje: 'Proje', sunum: 'Sunum', gezi: 'Gezi', diger: 'Diğer' };
+const TUR = { deney: 'Deney', proje: 'Proje', sunum: 'Sunum', gezi: 'Gezi', diger: 'Diğer', calisma: 'Çalışma', prova: 'Prova', konser: 'Konser', gosteri: 'Gösteri', turnuva: 'Turnuva' };
 
 // Hap sekmeler: ciz(ad) seçilen sekmenin içeriğini çizer
 function sekmeler(kap, liste, ilk, ciz) {

@@ -18,11 +18,11 @@ const KULUPLER = [
     calismalar: [['deney', 'Yanardağ deneyi', 'Karbonat ve sirke ile yanardağ yaptık.'], ['deney', 'Yoğunluk kuleleri', 'Farklı sıvılarla yoğunluk kulesi kurduk.'], ['sunum', 'Bilim fuarı hazırlığı', 'Standlar için proje seçimi yapıldı.']],
     plan: ['deney', 'Asit ve baz göstergeleri', 'Mor lahana suyuyla gösterge hazırlanacak; malzemeler: lahana, limon, karbonat.'] },
   { ad: 'Satranç ve Zeka Oyunları', tema: 'Strateji', aciklama: 'Açılış stratejileri, bulmacalar ve okul içi turnuvalar.', hoca: 'Ahmet Tekin', duzeyler: ['4', '5', '6'], kontenjan: 12,
-    calismalar: [['diger', 'Açılış ilkeleri', 'Merkezi ele geçirme ve taş gelişimi.'], ['diger', 'Mini turnuva', 'Kendi aramızda turnuva oynadık.']] },
+    calismalar: [['calisma', 'Açılış ilkeleri', 'Merkezi ele geçirme ve taş gelişimi.'], ['turnuva', 'Mini turnuva', 'Kendi aramızda turnuva oynadık.']] },
   { ad: 'Müzik ve Koro', tema: 'Sanat', aciklama: 'Koro çalışması ve yıl sonu konseri için repertuvar hazırlığı.', hoca: 'Efe Öztürk', duzeyler: ['4', '5'], kontenjan: 20,
-    calismalar: [['diger', 'Ses ısınma çalışması', 'Nefes ve ses ısınma egzersizleri.'], ['sunum', 'Yıl sonu konseri provası', 'İlk iki parçanın provası.']] },
+    calismalar: [['calisma', 'Ses ısınma çalışması', 'Nefes ve ses ısınma egzersizleri.'], ['prova', 'Yıl sonu konseri provası', 'İlk iki parçanın provası.']] },
   { ad: 'İngilizce Drama', tema: 'Dil ve sahne', aciklama: 'İngilizce kısa oyunlar ve doğaçlama çalışmaları.', hoca: 'Ayşe Aksoy', duzeyler: ['5', '6'], kontenjan: 12,
-    calismalar: [['sunum', 'Kısa skeç', 'Rol dağılımı yapıldı ve ilk okuma yapıldı.']] },
+    calismalar: [['prova', 'Kısa skeç', 'Rol dağılımı yapıldı ve ilk okuma yapıldı.']] },
 ];
 
 function calistir() {
