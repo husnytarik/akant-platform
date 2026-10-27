@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS ileti_okundu (
   PRIMARY KEY (ileti_id, user_id)
 );`);
 
-const ROLLER = { hepsi: 'Herkes', ogretmen: 'Öğretmenler', ogrenci: 'Öğrenciler', veli: 'Veliler' };
+const ROLLER = { hepsi: 'Herkes', ogretmen: 'Öğretmenler', zumre: 'Zümre başkanları', ogrenci: 'Öğrenciler', veli: 'Veliler' };
+// Zümre başkanı: "Zümre başkanı" rolü atanmış öğretmen
+const ZUMRE_SORGU = `SELECT 1 FROM kullanici_roller kr JOIN roller r ON r.id = kr.rol_id WHERE r.kod = 'zumre' AND kr.user_id`;
 const metinDuz = (v, en) => String(v ?? '').trim().slice(0, en);
 
 export async function duyuruApi({ req, res, url, o, json, govde, denetle }) {
@@ -57,16 +59,17 @@ export async function duyuruApi({ req, res, url, o, json, govde, denetle }) {
         FROM iletiler i JOIN memberships m ON m.id = i.gonderen_membership_id JOIN users u ON u.id = m.user_id
         LEFT JOIN branches b ON b.id = i.branch_id WHERE i.tur = 'duyuru' ORDER BY i.created_at DESC, i.id DESC`).all();
       const alici = (rol, sube) => db.prepare(`SELECT COUNT(DISTINCT user_id) AS n FROM memberships
-        WHERE status = 'aktif' AND role IN (${rol === 'hepsi' ? "'ogretmen','ogrenci','veli'" : '?'}) AND (? IS NULL OR branch_id = ?)`)
-        .get(...(rol === 'hepsi' ? [] : [rol]), sube, sube).n;
+        WHERE status = 'aktif' AND role IN (${rol === 'hepsi' ? "'ogretmen','ogrenci','veli'" : rol === 'zumre' ? "'ogretmen'" : '?'}) AND (? IS NULL OR branch_id = ?)
+        ${rol === 'zumre' ? `AND EXISTS (${ZUMRE_SORGU} = memberships.user_id)` : ''}`)
+        .get(...(rol === 'hepsi' || rol === 'zumre' ? [] : [rol]), sube, sube).n;
       return json(res, 200, { duyurular: satirlar.map(r => ({ ...tarihli(r), hedef: (r.okul || 'Tüm okullar') + ' · ' + ROLLER[r.rol], alici: alici(r.rol, r.branch_id), okunan: r.okunan })) }), true;
     }
 
     // Öğretmen / öğrenci / veli: kendi okuluna ve rolüne gelen duyurular
     const duyurular = db.prepare(`SELECT i.*, u.full_name AS yazan, EXISTS (SELECT 1 FROM ileti_okundu k WHERE k.ileti_id = i.id AND k.user_id = ?) AS okundu
       FROM iletiler i JOIN memberships m ON m.id = i.gonderen_membership_id JOIN users u ON u.id = m.user_id
-      WHERE i.tur = 'duyuru' AND (i.branch_id IS NULL OR i.branch_id = ?) AND i.rol IN ('hepsi', ?)
-      ORDER BY i.created_at DESC, i.id DESC`).all(o.user_id, uye.sube, o.role).map(r => ({ ...tarihli(r), yeni: !r.okundu }));
+      WHERE i.tur = 'duyuru' AND (i.branch_id IS NULL OR i.branch_id = ?) AND (i.rol IN ('hepsi', ?) OR (i.rol = 'zumre' AND EXISTS (${ZUMRE_SORGU} = ?)))
+      ORDER BY i.created_at DESC, i.id DESC`).all(o.user_id, uye.sube, o.role, o.user_id).map(r => ({ ...tarihli(r), yeni: !r.okundu }));
     let mesajlar = [];
     if (o.role === 'veli') {
       mesajlar = db.prepare(`SELECT i.*, u.full_name AS yazan, c.name AS sinif, su.full_name AS ogrenci,

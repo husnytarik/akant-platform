@@ -186,7 +186,7 @@ try {
     }
   }
 
-  // Yönetim rolleri: rehber öğretmen ve teknik ekip yeni kişilerdir; zümre başkanı Meltem Ortaokulu'nun matematik öğretmenidir (ikinci profil: yönetim)
+  // Yönetim rolleri: rehber öğretmen ve teknik ekip yeni kişilerdir; matematik zümre başkanı ikinci profil olarak yönetimdedir, diğer branşların başkanları rol olarak atanır
   sistemRolleriKur();
   {
     const meltem = okullar.find(x => x.ad === 'Meltem Ortaokulu');
@@ -197,6 +197,8 @@ try {
       yonetimUyeligi(k); rolVer(k, kod);
     }
     yonetimUyeligi(meltem.t.mat1); rolVer(meltem.t.mat1, 'zumre');
+    // Diğer zümre başkanları öğretmen olarak kalır (yalnızca rol: duyuru hedefi ve zümre işleri)
+    for (const anahtar of ['tr1', 'fen1', 'sos', 'ing', 'din', 'bed', 'gor', 'muz', 'bil']) rolVer(meltem.t[anahtar], 'zumre');
   }
 
   // Sınıflar ve öğrenciler (ilkokulda her sınıfın kendi sınıf öğretmeni vardır)
@@ -855,6 +857,7 @@ try {
     ileti('duyuru', '29 Ekim Cumhuriyet Bayramı', '29 Ekim Perşembe günü okulumuz tatildir. Cumhuriyet Bayramımız kutlu olsun.', o.yon[0].mid, o.id, 'hepsi', null, -2);
     ileti('duyuru', '1. dönem veli toplantısı', "Veli toplantısı 5 Kasım Perşembe günü saat 18:00'de okulumuzda yapılacaktır. Katılımınızı bekleriz.", o.yon[0].mid, o.id, 'veli', null, -1);
     ileti('duyuru', 'Öğretmenler kurulu', 'Dönem ortası öğretmenler kurulu cuma günü son ders sonrası toplantı salonundadır.', o.yon[0].mid, o.id, 'ogretmen', null, -3);
+    ileti('duyuru', 'Zümre toplantısı', 'Dönem ortası zümre toplantıları pazartesi günü 8. ders yapılacaktır. Zümre başkanlarından sınav takvimi taslağı beklenmektedir.', o.yon[0].mid, o.id, 'zumre', null, -1);
     for (const s of o.siniflar.slice(0, 2))
       ileti('mesaj', 'Gezi izin belgesi', 'Önümüzdeki hafta yapılacak müze gezisi için izin belgelerinin imzalanıp cuma gününe kadar teslim edilmesi rica olunur.', s.rehber.mid, o.id, null, s.id, -1);
   }
