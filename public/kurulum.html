@@ -3,64 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Akant Koleji - Okul Kurulumu</title>
+  <title>Akant Koleji - Sınıf ve kadro</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/renk.js"></script>
 </head>
 <body>
   <header class="bant alt-bant">
     <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
-    <h1>Okul kurulumu</h1>
+    <h1>Sınıf ve kadro</h1>
   </header>
   <main class="kart panel genis">
 
-    <div class="sekmeler s5" role="group" aria-label="Kurulum adımları">
-      <button type="button" data-sekme="okul" aria-pressed="true">Okul</button>
-      <button type="button" data-sekme="dersler" aria-pressed="false">Dersler</button>
+    <div class="sekmeler s4" role="group" aria-label="Kurulum adımları">
+      <button type="button" data-sekme="dersler" aria-pressed="true">Dersler</button>
       <button type="button" data-sekme="ogretmenler" aria-pressed="false">Öğretmenler</button>
       <button type="button" data-sekme="siniflar" aria-pressed="false">Sınıflar</button>
       <button type="button" data-sekme="ogrenciler" aria-pressed="false">Öğrenciler</button>
     </div>
     <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
 
-    <!-- 1. Okul: kampüsler ve okullar -->
-    <section id="s-okul">
-      <div class="kur-ust"><h2 class="baslik2">Kampüsler ve okullar</h2><button type="button" class="ikincil kucuk duzen-dugme" data-bolum="okul">Düzenle</button></div>
-      <p class="alt kur-aciklama">Bir kampüste birden çok okul olabilir (örneğin ilkokul ve lise).</p>
-      <div id="okul-liste" class="kur-liste"></div>
-      <div class="duzen-alan"><button type="button" id="kampus-ekle" class="kur-ekle">+ Kampüs ekle</button></div>
-
-      <form id="kampus-panel" class="kur-panel gizli">
-        <h3 id="kampus-baslik" class="baslik3">Kampüs</h3>
-        <div class="form-satir">
-          <div><label for="k-ad">Kampüs adı</label><input id="k-ad" required maxlength="80"></div>
-          <div><label for="k-adres">Adres</label><input id="k-adres" maxlength="200"></div>
-          <div><label for="k-tel">Telefon</label><input id="k-tel" type="tel" maxlength="30"></div>
-        </div>
-        <div class="kaydet-cubuk"><button type="button" id="k-vazgec" class="ikincil">Vazgeç</button><button type="submit" class="birincil">Kaydet</button></div>
-        <button type="button" id="k-sil" class="kur-sil">Kampüsü sil</button>
-      </form>
-
-      <form id="okul-panel" class="kur-panel gizli">
-        <h3 id="okul-baslik" class="baslik3">Okul</h3>
-        <div class="form-satir">
-          <div><label for="ok-ad">Okul adı</label><input id="ok-ad" required maxlength="80"></div>
-          <div><label for="ok-kampus">Kampüs</label><select id="ok-kampus" required></select></div>
-          <div><label for="ok-tur">Okul türü</label><select id="ok-tur"></select></div>
-          <div><label for="ok-kod">Kurum kodu</label><input id="ok-kod" maxlength="30"></div>
-          <div><label for="ok-tel">Telefon</label><input id="ok-tel" type="tel" maxlength="30"></div>
-          <div><label for="ok-eposta">E-posta</label><input id="ok-eposta" type="email" maxlength="80"></div>
-          <div><label for="ok-adres">Adres</label><input id="ok-adres" maxlength="200"></div>
-          <div><label for="ok-logo">Logo (JPEG, PNG, WebP)</label><input id="ok-logo" type="file" accept="image/jpeg,image/png,image/webp"></div>
-        </div>
-        <button type="button" id="ok-logo-sil" class="kur-sil">Mevcut logoyu kaldır</button>
-        <div class="kaydet-cubuk"><button type="button" id="ok-vazgec" class="ikincil">Vazgeç</button><button type="submit" class="birincil">Kaydet</button></div>
-        <button type="button" id="ok-sil" class="kur-sil">Okulu sil</button>
-      </form>
-    </section>
-
     <!-- 2. Dersler -->
-    <section id="s-dersler" class="gizli">
+    <section id="s-dersler">
       <div class="kur-ust"><h2 class="baslik2">Dersler</h2><button type="button" class="ikincil kucuk duzen-dugme" data-bolum="dersler">Düzenle</button></div>
       <div id="ders-liste" class="kur-liste"></div>
       <div class="duzen-alan">

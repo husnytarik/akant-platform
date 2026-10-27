@@ -322,7 +322,7 @@ export async function okulLogoApi({ req, res, url, o, json, denetle }) {
     return true;
   }
   if (req.method !== 'POST') return false;
-  if (o.role !== 'yonetim') return hata(403, 'Bu işlem için yetkiniz yok');
+  if (o.role !== 'yonetim' || o.gorev !== 'kurum') return hata(403, 'Bu işlem için yetkiniz yok');
   if (!db.prepare('SELECT 1 FROM branches WHERE id = ?').get(id)) return hata(404, 'Okul bulunamadı');
   if (url.pathname === '/api/okul-logo-sil') {
     db.prepare('DELETE FROM okul_logo WHERE branch_id = ?').run(id);

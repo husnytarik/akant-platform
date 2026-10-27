@@ -14,6 +14,7 @@ import { duyuruApi } from './duyuru.js';
 import { teslimApi } from './teslim.js';
 import { raporApi } from './rapor.js';
 import { tatilApi } from './tatil.js';
+import { kurumApi, kurumLogoApi, yonetimUnvani } from './kurum.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -45,8 +46,9 @@ const MAKS_DENEME = 5;
 // Modül kayıt defteri: her modül hangi rollere görünür olduğunu burada bildirir.
 // Yeni modül eklemek = buraya bir kayıt eklemek (kullanıcı/yetki yapısı ortaktır).
 const MODULLER = [
-  { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yol: '/kullanicilar' },
-  { id: 'okul-kurulum', ad: 'Okul kurulumu', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
+  { id: 'kurum', ad: 'Okul kurulumu', aciklama: 'Kurum profili, kampüsler, okullar, müdür ve müdür yardımcıları', roller: ['yonetim'], yol: '/kurum' },
+  { id: 'kullanici-rol', ad: 'Kullanıcı ve rol yönetimi', aciklama: 'Hesaplar, üyelikler, roller ve yetkiler', roller: ['yonetim'], yol: '/kullanicilar', kapsam: 'kurum' },
+  { id: 'okul-kurulum', ad: 'Sınıf ve kadro', aciklama: 'Ders, öğretmen, öğrenci ve sınıf kayıtları ile atamalar', roller: ['yonetim'], yol: '/kurulum' },
   { id: 'okul-takvimi', ad: 'Okul takvimi', aciklama: 'Ders günleri ve ders saatleri (zil saatleri)', roller: ['yonetim'], yol: '/okul-takvimi' },
   { id: 'ders-programi-yonetimi', ad: 'Haftalık ders programı', aciklama: 'Sınıf programlarını hazırla, öğretmen programlarını gör', roller: ['yonetim'], yol: '/ders-programi' },
   { id: 'duyuru', ad: 'Duyurular', aciklama: 'Okul ya da rol bazında duyuru yayınla, okunma durumunu gör', roller: ['yonetim'], yol: '/duyurular' },
@@ -125,7 +127,7 @@ function oturum(req) {
   const sid = cerezler(req).sid;
   if (!sid) return null;
   const o = db.prepare(`
-    SELECT s.id, s.expires_at, u.id AS user_id, u.full_name, m.id AS membership_id, m.role, b.name AS branch
+    SELECT s.id, s.expires_at, u.id AS user_id, u.full_name, m.id AS membership_id, m.role, m.gorev, b.name AS branch
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     JOIN memberships m ON m.id = s.membership_id AND m.status = 'aktif'
@@ -139,7 +141,8 @@ function oturum(req) {
 function profilBilgisi(m) {
   let unvan = { yonetim: 'Okul yönetimi', veli: 'Veli', ogretmen: 'Öğretmen', ogrenci: 'Öğrenci' }[m.role] || '';
   let renk = null;
-  if (m.role === 'ogretmen') {
+  if (m.role === 'yonetim') unvan = yonetimUnvani(m.id);
+  else if (m.role === 'ogretmen') {
     // Asıl branş: en çok sınıfa girilen ders; yoksa verebildiği dersler
     let d = db.prepare(`SELECT c.name, c.renk FROM assignments a JOIN courses c ON c.id = a.course_id
       WHERE a.teacher_membership_id = ? GROUP BY c.id ORDER BY COUNT(*) DESC, c.name`).all(m.id);
@@ -204,7 +207,7 @@ async function api(req, res, url) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     // Filtreleme sunucuda yapılır; istemci rol bildiremez.
-    const liste = MODULLER.filter(m => m.roller.includes(o.role))
+    const liste = MODULLER.filter(m => m.roller.includes(o.role) && (!m.kapsam || m.kapsam === o.gorev))
       .map(({ id, ad, aciklama, yol }) => ({ id, ad, aciklama, yol, durum: yol ? 'hazir' : 'yakinda' }));
     return json(res, 200, { rol: o.role, moduller: liste });
   }
@@ -322,6 +325,11 @@ async function api(req, res, url) {
     if (await fotoApi({ req, res, url, o, json, denetle })) return;
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/kurum-logo') {
+    if (!oturum(req)) return json(res, 401, { hata: 'Oturum yok' });
+    return kurumLogoApi({ res, json });
+  }
+
   if (url.pathname === '/api/okul-logo' || url.pathname === '/api/okul-logo-sil') {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -424,7 +432,13 @@ async function yonetimApi(req, res, url) {
   if (o.role !== 'yonetim') return json(res, 403, { hata: 'Bu işlem için yetkiniz yok' });
   const yol = url.pathname;
 
+  // Hesap, üyelik ve kampüs/okul tanımı yalnızca kurum yönetimine açıktır; okul yönetimi kendi okulunun işlerini yürütür
+  if (o.gorev !== 'kurum' && req.method === 'POST' && yol.startsWith('/api/yonetim/') && /^(kullanici-|uyelik-|kampus-|okul-kaydet|okul-sil)/.test(yol.slice(13))) {
+    return json(res, 403, { hata: 'Bu işlem yalnızca kurum yönetimine açıktır' });
+  }
+
   const ortak = { req, res, url, o, json, govde, denetle };
+  if (await kurumApi(ortak)) return;
   if (await kurulumApi(ortak)) return;
   if (await dersProgramiApi(ortak)) return;
   if (await gorevApi(ortak)) return;
@@ -516,6 +530,7 @@ function statik(req, res, url) {
   if (ad === '/kullanicilar') ad = '/kullanicilar.html';
   if (ad === '/ders-programi') ad = '/ders-programi.html';
   if (ad === '/kurulum') ad = '/kurulum.html';
+  if (ad === '/kurum') ad = '/kurum.html';
   if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
   if (ad === '/duyurular') ad = '/duyurular.html';

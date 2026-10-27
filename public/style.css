@@ -2351,7 +2351,7 @@ main .sn-say { gap: 7px; }
 main .sn-ders { padding: 12px; }
 
 /* Okul kurulumu: önce liste, "Düzenle" ile form */
-main .sekmeler.s5 button { padding: 12px 9px; font-size: .88rem; }
+main .sekmeler:is(.s4, .s5) button { padding: 12px 9px; font-size: .88rem; }
 main .kur-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 main .kur-ust .baslik2 { margin: 18px 0 8px; }
 main .kur-ust-dugmeler { display: flex; gap: 8px; }
@@ -2409,8 +2409,8 @@ main .yazdir-baslik { display: none; }
   main table.kur-tablo td select { appearance: none; border: 0; background: none; padding: 0; }
   @page { size: A4 landscape; margin: 12mm; }
 }
-main .sekmeler.s5 { gap: 0; padding: 4px 6px; }
-main .sekmeler.s5 button { padding: 12px 8px; font-size: .84rem; }
+main .sekmeler:is(.s4, .s5) { gap: 0; padding: 4px 6px; }
+main .sekmeler:is(.s4, .s5) button { padding: 12px 8px; font-size: .84rem; }
 
 /* Kullanıcılar: Yönetim / Öğretmen listesi */
 main .sekmeler.s2 button { flex: 1; }
@@ -2674,3 +2674,35 @@ main :is(.kutu, .ders-panel, .bolum-kutu) .etut-satir.etut-satir { background: t
 main :is(.kutu, .ders-panel, .bolum-kutu) .etut-satir.etut-satir:first-of-type { border-top: 0 !important; }
 main .kl-calisma .kl-sayi { margin-left: auto; color: var(--soluk); font-size: .84rem; }
 main .kl-detay > summary { background: transparent; padding: 10px 0; border-radius: 0; color: var(--murekkep); }
+
+/* Okul kurulumu (kurum profili, kampüsler, okullar, okul yönetimi): çerçevesiz, ince çizgiyle ayrılır */
+main .ku-profil { display: flex; align-items: center; gap: 14px; margin: 6px 0 10px; }
+main .ku-profil-yazi { min-width: 0; display: flex; flex-direction: column; gap: 2px; flex: 1; text-align: left; }
+main .ku-profil-yazi strong { font-size: 1rem; font-weight: 600; }
+main .ku-profil .ku-profil-yazi strong { font-family: var(--serif, Georgia, serif); font-size: 1.3rem; font-weight: 500; }
+main .ku-profil-yazi small { font-size: .78rem; color: var(--soluk); }
+main .ku-bilgi { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+main .ku-bilgi > div { display: flex; justify-content: space-between; gap: 14px; font-size: .86rem; }
+main .ku-bilgi span { color: var(--soluk); flex: none; }
+main .ku-bilgi b { font-weight: 500; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+main .ku-cubuk { display: flex; gap: 10px; margin-top: 16px; }
+main .ku-cubuk button { flex: 1; margin: 0 !important; }
+main .ku-kampus { padding: 14px 0 6px; border-top: 1px solid var(--ince); }
+main .ku-kampus:first-of-type { border-top: 0; }
+main .ku-kampus-bas { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+main .ku-kampus-bas strong { font-family: var(--serif, Georgia, serif); font-size: 1.12rem; font-weight: 500; }
+main .ku-baglanti { border: 0; background: transparent; color: var(--ana); font: inherit; font-size: .84rem; font-weight: 600; padding: 8px 2px; cursor: pointer; box-shadow: none; width: auto; margin: 0; }
+main .ku-okul { border-top: 1px solid var(--ince); }
+main .ku-okul:first-of-type { border-top: 0; }
+main .ku-okul-bas { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: none; margin: 0; }
+main .ku-okul-bas .ku-ok { color: var(--soluk); font-size: 1rem; }
+main .ku-mudur { color: var(--murekkep) !important; }
+main .ku-mudur.yok { color: #b07a1f !important; }
+main .ku-ayrinti { padding: 0 0 12px 64px; }
+main .ku-alt-baslik { margin: 14px 0 4px; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--soluk); }
+main .ku-yonetici { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+main .ku-eylem { display: flex; gap: 18px; }
+main .ku-yeni.gizli { display: none; }
+main .kurum-not { margin: 18px 0 0; text-align: center; }
+main .kurum-not a { color: var(--ana); }
+@media (max-width: 520px) { main .ku-ayrinti { padding-left: 0; } }

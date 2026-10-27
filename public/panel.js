@@ -135,6 +135,7 @@ const IKON_YOL = {
   'veli-bilgilendirme': 'M4 5h16v11H9l-5 4zM8 9h8M8 12h5',
   'kullanici-rol': 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c.8-4.2 4-6 8-6s7.2 1.8 8 6',
   'okul-kurulum': 'M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18',
+  kurum: 'M4 21V6l8-3 8 3v15M9 21v-5h6v5M8 9h2M14 9h2M8 12.5h2M14 12.5h2',
   'okul-takvimi': 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3.5 2',
   'ders-programi-yonetimi': 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
   'ders-programi': 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',

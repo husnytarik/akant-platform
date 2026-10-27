@@ -1,8 +1,7 @@
 const $ = id => document.getElementById(id);
 let v = null;          // sunucudan gelen tüm kurulum verisi
 let seciliSinifId = null;
-const duzen = { okul: false, dersler: false, ogretmenler: false, siniflar: false, ogrenciler: false };
-let panel = null;      // Açık kampüs / okul formu: { tur, id, kampusId }
+const duzen = { dersler: false, ogretmenler: false, siniflar: false, ogrenciler: false };
 let dersDuzen = null;  // Adı değiştirilen ders
 
 function mesaj(metin, tur = '') {
@@ -76,7 +75,7 @@ const siniflarOkul = subeId => v.siniflar.filter(s => s.subeId === subeId);
 async function yukle() {
   const r = await api('/api/yonetim/kurulum');
   v = r.veri;
-  cizOkul();
+
   cizDersler();
   cizOgretmenler();
   cizOgrenciler();
@@ -92,177 +91,11 @@ for (const b of document.querySelectorAll('.duzen-dugme')) {
     b.classList.toggle('birincil', duzen[bolum]);
     b.classList.toggle('ikincil', !duzen[bolum]);
     $('s-' + bolum).classList.toggle('duzende', duzen[bolum]);
-    if (!duzen[bolum]) { if (bolum === 'okul') panel = null; if (bolum === 'dersler') dersDuzen = null; }
+    if (!duzen[bolum]) { if (bolum === 'dersler') dersDuzen = null; }
     mesaj('');
-    cizOkul(); cizDersler(); cizOgretmenler(); cizOgrenciler(); cizSiniflar();
+    cizDersler(); cizOgretmenler(); cizOgrenciler(); cizSiniflar();
   });
 }
-
-// ---- 1. Okul: kampüsler ve okullar ----
-const slotlar = new Map();
-const slot = anahtar => { const s = el('div', undefined, 'kur-slot'); slotlar.set(anahtar, s); return s; };
-
-function logoAvatar(s) {
-  return avatarYap(s.ad, s.logo ? `/api/okul-logo?id=${s.id}&v=${s.logo}` : null, 'orta logo');
-}
-
-function okulBilgileri(s) {
-  const b = el('div', undefined, 'kur-bilgi');
-  const alanlar = [['Okul türü', s.tur], ['Kurum kodu', s.kurumKodu], ['Telefon', telYaz(s.telefon)], ['E-posta', s.eposta], ['Adres', s.adres]];
-  for (const [ad, deger] of alanlar) if (deger) { const r = el('div'); r.append(el('span', ad), el('b', deger)); b.append(r); }
-  if (!b.children.length) b.append(el('small', 'Ayrıntı girilmedi.', 'mad-ince'));
-  return b;
-}
-
-function cizOkul() {
-  // Açık formları, liste temizlenmeden önce güvenli yere al
-  $('s-okul').append($('kampus-panel'), $('okul-panel'));
-  slotlar.clear();
-  const kutu = $('okul-liste');
-  kutu.replaceChildren();
-  const d = duzen.okul;
-  for (const k of v.kampusler) {
-    const blok = el('div', undefined, 'kur-kampus');
-    const ust = el('div', undefined, 'kur-kampus-ust');
-    const sol = el('div', undefined, 'kur-sol');
-    sol.append(el('strong', k.ad), el('small', [k.adres, telYaz(k.telefon)].filter(Boolean).join(' · ') || `${k.okulSayisi} okul`));
-    ust.append(sol);
-    if (d) ust.append(dugme('Düzenle', () => panelAc({ tur: 'kampus', id: k.id })));
-    blok.append(ust, slot('k' + k.id));
-    for (const s of v.subeler.filter(x => x.kampusId === k.id)) {
-      const ozet = [s.tur, `${s.sinifSayisi} sınıf`, `${s.ogrenciSayisi} öğrenci`, `${s.ogretmenSayisi} öğretmen`].filter(Boolean).join(' · ');
-      if (d) {
-        listeSatiri(blok, s.ad, ozet, dugme('Düzenle', () => panelAc({ tur: 'okul', id: s.id, kampusId: k.id })), 'kur-okul-satir', logoAvatar(s));
-        blok.append(slot('o' + s.id));
-      } else {
-        const det = el('details', undefined, 'kur-okul');
-        const sm = el('summary');
-        const yazi = el('div', undefined, 'kur-sol');
-        yazi.append(el('strong', s.ad), el('small', ozet));
-        sm.append(logoAvatar(s), yazi);
-        det.append(sm, okulBilgileri(s));
-        blok.append(det);
-      }
-    }
-    if (!v.subeler.some(x => x.kampusId === k.id)) blok.append(el('p', 'Bu kampüse henüz okul eklenmedi.', 'bos-not'));
-    if (d) blok.append(dugme('+ Okul ekle', () => panelAc({ tur: 'okul', id: null, kampusId: k.id }), 'kur-ekle'), slot('yo' + k.id));
-    kutu.append(blok);
-  }
-  if (!v.kampusler.length) bosNot(kutu, 'Henüz kampüs tanımlanmadı. Düzenle’ye basıp kampüs ekleyin.');
-  kutu.append(slot('yeni-kampus'));
-  if (panel) panelYerlestir();
-}
-
-function panelAc(p) {
-  panel = p;
-  mesaj('');
-  const f = p.tur === 'kampus' ? v.kampusler.find(k => k.id === p.id) : v.subeler.find(s => s.id === p.id);
-  if (p.tur === 'kampus') {
-    $('kampus-baslik').textContent = p.id ? 'Kampüsü düzenle' : 'Yeni kampüs';
-    $('k-ad').value = f?.ad || ''; $('k-adres').value = f?.adres || ''; $('k-tel').value = f?.telefon || '';
-    $('k-sil').classList.toggle('gizli', !p.id);
-  } else {
-    $('okul-baslik').textContent = p.id ? 'Okulu düzenle' : 'Yeni okul';
-    doldur($('ok-kampus'), v.kampusler, k => k.id, k => k.ad);
-    doldur($('ok-tur'), ['', ...v.kademeler, 'Karma'], t => t, t => t || 'Seçilmedi');
-    $('ok-ad').value = f?.ad || ''; $('ok-kampus').value = String(f?.kampusId || p.kampusId);
-    $('ok-tur').value = f?.tur || ''; $('ok-kod').value = f?.kurumKodu || ''; $('ok-tel').value = f?.telefon || '';
-    $('ok-eposta').value = f?.eposta || ''; $('ok-adres').value = f?.adres || ''; $('ok-logo').value = '';
-    $('ok-logo-sil').classList.toggle('gizli', !f?.logo);
-    $('ok-sil').classList.toggle('gizli', !p.id);
-  }
-  panelYerlestir();
-  (p.tur === 'kampus' ? $('k-ad') : $('ok-ad')).focus();
-}
-
-function panelYerlestir() {
-  const kampus = panel.tur === 'kampus';
-  $('kampus-panel').classList.toggle('gizli', !kampus);
-  $('okul-panel').classList.toggle('gizli', kampus);
-  const anahtar = kampus ? (panel.id ? 'k' + panel.id : 'yeni-kampus') : (panel.id ? 'o' + panel.id : 'yo' + panel.kampusId);
-  slotlar.get(anahtar)?.append(kampus ? $('kampus-panel') : $('okul-panel'));
-}
-
-function panelKapat() {
-  panel = null;
-  $('kampus-panel').classList.add('gizli');
-  $('okul-panel').classList.add('gizli');
-}
-
-$('kampus-ekle').addEventListener('click', () => panelAc({ tur: 'kampus', id: null }));
-$('k-vazgec').addEventListener('click', () => { panelKapat(); });
-$('ok-vazgec').addEventListener('click', () => { panelKapat(); });
-
-$('kampus-panel').addEventListener('submit', async e => {
-  e.preventDefault();
-  const p = panel;
-  const r = await api('/api/yonetim/kampus-kaydet', { id: p.id, ad: $('k-ad').value, adres: $('k-adres').value, telefon: $('k-tel').value });
-  if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
-  panel = null;
-  mesaj('Kampüs kaydedildi.', 'tamam');
-  await yukle();
-});
-
-$('k-sil').addEventListener('click', async () => {
-  const k = v.kampusler.find(x => x.id === panel?.id);
-  if (!k || !confirm(`${k.ad} kampüsü silinsin mi?`)) return;
-  const r = await api('/api/yonetim/kampus-sil', { id: k.id });
-  if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
-  panel = null;
-  mesaj('Kampüs silindi.', 'tamam');
-  await yukle();
-});
-
-// Logoyu en uzun kenarı 512 px olacak şekilde küçültür; oranı ve saydamlığı korur (PNG)
-async function logoKucult(dosya) {
-  const bmp = await createImageBitmap(dosya);
-  const oran = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
-  const tuval = document.createElement('canvas');
-  tuval.width = Math.round(bmp.width * oran);
-  tuval.height = Math.round(bmp.height * oran);
-  tuval.getContext('2d').drawImage(bmp, 0, 0, tuval.width, tuval.height);
-  bmp.close?.();
-  return await new Promise((ok, hata) => tuval.toBlob(b => b ? ok(b) : hata(new Error('küçültülemedi')), 'image/png'));
-}
-
-$('okul-panel').addEventListener('submit', async e => {
-  e.preventDefault();
-  const p = panel;
-  const r = await api('/api/yonetim/okul-kaydet', {
-    id: p.id, ad: $('ok-ad').value, kampusId: $('ok-kampus').value, tur: $('ok-tur').value, kurumKodu: $('ok-kod').value,
-    telefon: $('ok-tel').value, eposta: $('ok-eposta').value, adres: $('ok-adres').value,
-  });
-  if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
-  const dosya = $('ok-logo').files[0];
-  if (dosya) {
-    let govde;
-    try { govde = await logoKucult(dosya); } catch { mesaj('Okul kaydedildi ama logo okunamadı; başka bir görsel deneyin.', 'hata'); panel = null; return yukle(); }
-    const y = await fetch('/api/okul-logo?id=' + r.veri.id, { method: 'POST', headers: { 'Content-Type': govde.type }, body: govde });
-    if (!y.ok) { mesaj((await y.json().catch(() => ({}))).hata || 'Logo yüklenemedi', 'hata'); panel = null; return yukle(); }
-  }
-  panel = null;
-  mesaj('Okul kaydedildi.', 'tamam');
-  await yukle();
-});
-
-$('ok-logo-sil').addEventListener('click', async () => {
-  const id = panel?.id;
-  if (!id || !confirm('Okul logosu kaldırılsın mı?')) return;
-  const r = await api('/api/okul-logo-sil?id=' + id, {});
-  if (!r.ok) return mesaj(r.veri.hata || 'Kaldırılamadı', 'hata');
-  mesaj('Logo kaldırıldı.', 'tamam');
-  await yukle();
-});
-
-$('ok-sil').addEventListener('click', async () => {
-  const s = v.subeler.find(x => x.id === panel?.id);
-  if (!s || !confirm(`${s.ad} silinsin mi?`)) return;
-  const r = await api('/api/yonetim/okul-sil', { id: s.id });
-  if (!r.ok) return mesaj(r.veri.hata || 'Silinemedi', 'hata');
-  panel = null;
-  mesaj('Okul silindi.', 'tamam');
-  await yukle();
-});
 
 // ---- 2. Dersler ----
 function cizDersler() {
@@ -599,7 +432,7 @@ $('ogrenci-form').addEventListener('submit', async e => {
 document.querySelectorAll('.sekmeler button').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.sekmeler button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    for (const id of ['okul', 'dersler', 'ogretmenler', 'siniflar', 'ogrenciler']) {
+    for (const id of ['dersler', 'ogretmenler', 'siniflar', 'ogrenciler']) {
       $('s-' + id).classList.toggle('gizli', id !== b.dataset.sekme);
     }
     mesaj('');

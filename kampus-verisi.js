@@ -11,6 +11,7 @@ import './gorev.js';
 import './duyuru.js';
 import './teslim.js';
 import './tatil.js';
+import './kurum.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
 import { dersKazanimlari } from './kazanim.js';
@@ -143,6 +144,7 @@ const profil = (uid, ek) => calis(`INSERT OR REPLACE INTO profil_bilgi (user_id,
 db.exec('BEGIN');
 try {
   dersId(KULUP_DERSI);
+  calis("INSERT OR REPLACE INTO kurum (id, ad, kisa_ad, telefon, eposta, web, adres, guncelleme) VALUES (1,'Akant Koleji','Akant','0242 000 00 00','bilgi@akant.example','www.akant.example','Meltem Mah. Akdeniz Bul. No: 12, Antalya',?)", simdi);
   for (const k of KAMPUSLER) {
     const kampusId = ins('INSERT INTO kampusler (name, adres, telefon) VALUES (?,?,?)', k.ad, k.adres, k.telefon);
     for (const s of k.okullar) {
@@ -156,6 +158,11 @@ try {
     const demoMu = o.ad === 'Meltem Ortaokulu';
     o.yon.push(uyeEkle(kullaniciEkle('3', '554', demoMu ? DEMO.yonetim.ad : isim('E'), demoMu ? DEMO.yonetim : null), o.id, 'yonetim'));
     o.yon.push(uyeEkle(kullaniciEkle('3', '554', isim('K')), o.id, 'yonetim'));
+    // Müdür ve müdür yardımcısı okul yönetimidir; demo yönetici ayrıca asıl (kurum) yönetimindedir
+    for (const [i, y] of o.yon.entries()) {
+      if (!(demoMu && i === 0)) calis("UPDATE memberships SET gorev = 'okul' WHERE id = ?", y.mid);
+      calis('INSERT INTO okul_yoneticileri (branch_id, user_id, gorev, created_at) VALUES (?,?,?,?)', o.id, y.uid, i === 0 ? 'mudur' : 'mudur_yrd', simdi);
+    }
   }
 
   // Öğretmenler
