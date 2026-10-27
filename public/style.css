@@ -2632,3 +2632,23 @@ main .ders-panel .not-kart.acik p { display: block; -webkit-line-clamp: unset; w
 main .ders-panel .ileti-alt { grid-column: 1 / -1; color: var(--soluk); font-size: .72rem; }
 main .yeni-rozet { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ana) 14%, #fff); color: var(--ana); font-size: .68rem; font-weight: 700; vertical-align: 1px; }
 main .ders-panel .ekle-form textarea { width: 100%; box-sizing: border-box; min-height: 88px; padding: 10px 12px; border-radius: 10px; font: inherit; font-size: .86rem; resize: vertical; }
+
+/* Öğrencim: kimlik başlığı, üç sayaç ve düz satır listeleri */
+main .og-ust { display: flex; align-items: center; gap: 14px; padding: 4px 0 14px; }
+main .og-ust .ogr-avatar { width: 56px; height: 56px; flex: none; }
+main .og-ust div { display: grid; gap: 2px; min-width: 0; }
+main .og-ust strong { font-size: 1.1rem; font-weight: 600; }
+main .og-ust small { color: var(--soluk); font-size: .8rem; }
+main .og-sayilar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+main .og-sayac { display: grid; align-content: center; border: 0 !important; gap: 2px; padding: 10px 6px; border-radius: 14px; background: var(--ic-zemin); text-align: center; }
+main .og-sayac strong { font-size: 1.25rem; font-weight: 700; line-height: 1.1; }
+main .og-sayac span { color: var(--soluk); font-size: .7rem; }
+main .og-sayac.kirmizi strong { color: #d64545; }
+main .og-baslik { margin: 18px 0 2px; font-size: .78rem; font-weight: 600; color: var(--soluk); text-transform: none; letter-spacing: 0; }
+main .og-satir { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 46px; padding: 8px 0; border-top: 1px solid var(--ince); color: var(--murekkep); text-decoration: none; font-size: .9rem; }
+main .og-liste > .og-satir:first-child { border-top: 0; }
+main .og-satir span { color: var(--soluk); min-width: 0; }
+main .og-satir strong { font-weight: 500; text-align: right; font-size: .85rem; }
+main a.og-satir::after { content: ""; flex: none; width: 7px; height: 7px; border-right: 1.6px solid #b9b3a4; border-bottom: 1.6px solid #b9b3a4; transform: rotate(-45deg); }
+main a.og-satir strong { margin-left: auto; }
+main .og-satir > a { color: var(--ana); text-decoration: none; font-weight: 500; }
