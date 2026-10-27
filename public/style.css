@@ -2668,3 +2668,9 @@ main .tatil-cipler { display: flex; flex-wrap: wrap; gap: 6px; }
 main .tatil-cip { min-height: 32px; text-align: left; padding: 0 12px; border: 0; border-radius: 999px; background: var(--navy-soft); color: var(--murekkep); font: inherit; font-size: .78rem; cursor: pointer; }
 main .tatil-gecmis { margin-top: 8px; }
 main .tatil-gecmis summary { color: var(--soluk); font-size: .82rem; padding: 8px 0; cursor: pointer; }
+
+/* Etüt ve Kulüplerim: kart içindeki satırlar çerçevesiz, ince çizgiyle ayrılır (iç içe kutu yok) */
+main :is(.kutu, .ders-panel, .bolum-kutu) .etut-satir.etut-satir { background: transparent !important; border-radius: 0 !important; border-top: 1px solid var(--ince) !important; margin: 0 !important; padding: 10px 0 !important; }
+main :is(.kutu, .ders-panel, .bolum-kutu) .etut-satir.etut-satir:first-of-type { border-top: 0 !important; }
+main .kl-calisma .kl-sayi { margin-left: auto; color: var(--soluk); font-size: .84rem; }
+main .kl-detay > summary { background: transparent; padding: 10px 0; border-radius: 0; color: var(--murekkep); }
