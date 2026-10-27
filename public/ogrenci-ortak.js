@@ -125,16 +125,21 @@ const OgrOrtak = (() => {
       const kim = el('div', undefined, 'ogs-kim');
       kim.append(el('strong', s.ad), el('small', kisaTarih(s.tarih)));
       const puan = el('div', undefined, 'ogs-puan');
-      puan.append(el('b', String(s.ortalama)), el('small', `ortalama · ${s.sira}. sıra (${s.giren} öğrenci)`));
+      puan.append(el('b', String(s.ortalama)));
+      if (!s.yazili) puan.append(el('small', `ortalama · ${s.sira}. sıra (${s.giren} öğrenci)`));
       ust.append(kim, puan);
-      kart.append(ust, siraSerit(s.siralama, s.degisim));
+      kart.append(ust, siraSerit(s.siralama, s.degisim, s.yazili));
       for (const d of s.dersler) {
         const h = el('div', undefined, 'ogs-ayr');
-        const baslik = el('div', undefined, 'ogs-ayr-ust');
-        const sayilar = s.yazili || d.dogru === null ? '' : `${d.dogru} D · ${d.yanlis} Y · ${d.bos} B`;
-        baslik.append(el('strong', d.ders), el('small', sayilar), el('b', String(d.net ?? d.puan)));
-        h.append(baslik);
+        // Yazılı tek dersten oluşur: ders ve puan başlıkta zaten var, satır tekrarlanmaz
+        if (!s.yazili) {
+          const baslik = el('div', undefined, 'ogs-ayr-ust');
+          const sayilar = d.dogru === null ? '' : `${d.dogru} D · ${d.yanlis} Y · ${d.bos} B`;
+          baslik.append(el('strong', d.ders), el('small', sayilar), el('b', String(d.net ?? d.puan)));
+          h.append(baslik);
+        }
         const eksik = (d.kazanimlar || []).filter(x => x.durum !== 'Edinildi');
+        if (s.yazili && !eksik.length) continue;
         if (eksik.length) {
           const l = el('ul', undefined, 'ogs-kaz');
           for (const x of eksik) l.append(el('li', `${x.kazanim} — ${x.durum}`));

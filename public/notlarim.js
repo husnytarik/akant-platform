@@ -37,9 +37,9 @@ function sinavKarti(s, acik) {
   kart.open = acik;
   const ozet = el('summary');
   const ad = el('div', undefined, 'nt-ad');
-  ad.append(el('strong', s.ad), el('small', `${tarihYaz(s.tarih)} · ${s.giren} öğrenci içinde ${s.sira}. sıra`));
+  ad.append(el('strong', s.ad), el('small', s.yazili ? tarihYaz(s.tarih) : `${tarihYaz(s.tarih)} · ${s.giren} öğrenci içinde ${s.sira}. sıra`));
   ozet.append(ad, el('span', String(s.ortalama), 'nt-puan'));
-  kart.append(ozet, siraSerit(s.siralama, s.degisim));
+  kart.append(ozet, siraSerit(s.siralama, s.degisim, s.yazili));
 
   const yatay = el('div', undefined, 'yatay');
   for (const d of s.dersler) {
@@ -48,7 +48,7 @@ function sinavKarti(s, acik) {
     satir.append(el('span', d.ders, 'yatay-ad'), cubuk, el('b', String(Math.round(Number(d.puan)))));
     yatay.append(satir);
   }
-  kart.append(yatay);
+  if (!s.yazili) kart.append(yatay);
 
   const izgara = el('div', undefined, 'sn-dersler');
   for (const d of s.dersler) {

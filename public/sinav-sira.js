@@ -21,7 +21,7 @@ function dersFarki(onceki, puan) {
   return siraKur('em', `${f.ok} ${f.yazi}`, 'fark ' + f.sinif);
 }
 
-function siraSerit(siralama, degisim) {
+function siraSerit(siralama, degisim, yazili) {
   const kap = siraKur('div', undefined, 'sira-serit');
   if (siralama) {
     const hucreler = siraKur('div', undefined, 'sira-hucreler');
@@ -40,6 +40,6 @@ function siraSerit(siralama, degisim) {
     satir.append(siraKur('b', `${f.ok} ${f.yazi} puan${degisim.fark === 0 ? ' (değişmedi)' : oran}`),
       siraKur('small', `Önceki sınav: ${degisim.ad} · ${siraSayi(degisim.ortalama)}`));
     kap.append(satir);
-  } else if (siralama) kap.append(siraKur('small', 'Önceki sınav olmadığı için değişim gösterilmiyor.', 'sira-not'));
+  } else if (siralama && !yazili) kap.append(siraKur('small', 'Önceki sınav olmadığı için değişim gösterilmiyor.', 'sira-not'));
   return kap;
 }
