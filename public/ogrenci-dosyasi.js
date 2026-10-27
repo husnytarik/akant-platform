@@ -22,7 +22,7 @@ function farkRozeti(f, birim = '') {
 const blok = (baslik, ...icerik) => { const k = el('section', undefined, 'ok-blok'); k.append(el('h3', baslik, 'baslik3'), ...icerik); return k; };
 
 // ---- Genel durum raporu ----
-function genel(k) {
+function genel(k, tam) {
   const denemeler = sinavlar.filter(s => !s.yazili).sort((a, b) => a.tarih.localeCompare(b.tarih));
   const sonDeneme = denemeler.at(-1);
   const dv = rapor.devam;
@@ -115,7 +115,7 @@ function genel(k) {
 
   // Son gelişim gözlemleri
   const sonDonem = rapor.donemler.find(d => d.girisler.length);
-  if (sonDonem) {
+  if (sonDonem && !tam) {
     const liste = el('div');
     for (const g of sonDonem.girisler.slice(0, 4)) {
       const y = el('div', undefined, 'ogd-not');
@@ -177,6 +177,28 @@ function sekmeAc(ad) {
   })[ad]();
 }
 
+// Yazdırma: tüm sekmeler tek raporda, sırayla
+function tamRaporKur() {
+  $('tam-rapor')?.remove();
+  const tam = el('div'); tam.id = 'tam-rapor';
+  const bolumler = [
+    ['Genel durum', k => genel(k, true)],
+    ['Sınavlar', k => OgrOrtak.sinav(k, sinavlar)],
+    ['Gelişim', k => OgrOrtak.gelisim(k, rapor)],
+    ['Devam', k => OgrOrtak.devam(k, rapor)],
+    ['Ödev ve etkinlik', k => OgrOrtak.odev(k, rapor)],
+    ['Kayıt bilgileri', k => kayitCiz(k)],
+  ];
+  for (const [ad, ciz] of bolumler) {
+    const b = el('section', undefined, 'rapor-bolum');
+    b.append(el('h2', ad));
+    const k = el('div'); ciz(k); b.append(k);
+    tam.append(b);
+  }
+  for (const d of tam.querySelectorAll('details')) d.open = true;
+  $('dosya').append(tam);
+}
+
 (async () => {
   if (!id) { location.href = '/panel'; return; }
   const [r, y, s] = await Promise.all([api('/api/ogrenci/rapor?id=' + id), api('/api/ogrenci/kayit?id=' + id), api('/api/sinav/ogrenci?id=' + id)]);
@@ -194,6 +216,8 @@ function sekmeAc(ad) {
   if (kayit.duzenleyebilir) { const d = $('d-duzenle'); d.href = '/ogrenci-kayit?id=' + id; d.classList.remove('gizli'); }
   $('dosya').classList.remove('gizli');
   for (const b of $('sekmeler').children) b.addEventListener('click', () => sekmeAc(b.dataset.sekme));
-  $('d-yazdir').addEventListener('click', () => { sekmeAc('genel'); window.print(); });
+  $('d-yazdir').addEventListener('click', () => window.print());
+  window.addEventListener('beforeprint', tamRaporKur);
+  window.addEventListener('afterprint', () => $('tam-rapor')?.remove());
   sekmeAc(new URLSearchParams(location.search).get('sekme') || 'genel');
 })();

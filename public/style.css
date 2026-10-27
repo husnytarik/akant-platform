@@ -2906,8 +2906,31 @@ body.giris-sayfa .bant-avatar img { display: block; width: 100%; height: 100%; o
 }
 
 /* Öğrenci dosyası: aile satırları başlıkla aynı hizada, çerçevesiz */
-body.dosya-sayfa main #icerik .veli-kart { margin: 0; padding: 9px 0; gap: 2px; background: none; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; box-shadow: none; }
-body.dosya-sayfa main #icerik .veli-kart strong { font-size: .95rem; font-weight: 600; }
-body.dosya-sayfa main #icerik .ok-eposta { margin: 0; padding: 0 0 9px; border-bottom: 1px solid var(--ince); }
-body.dosya-sayfa main #icerik .ok-eposta + .veli-kart { border-top: 0; }
-body.dosya-sayfa main #icerik .veli-kart:has(+ .ok-eposta) { border-bottom: 0; padding-bottom: 2px; }
+body.dosya-sayfa main :is(#icerik, #tam-rapor) .veli-kart { margin: 0; padding: 9px 0; gap: 2px; background: none; border: 0; border-bottom: 1px solid var(--ince); border-radius: 0; box-shadow: none; }
+body.dosya-sayfa main :is(#icerik, #tam-rapor) .veli-kart strong { font-size: .95rem; font-weight: 600; }
+body.dosya-sayfa main :is(#icerik, #tam-rapor) .ok-eposta { margin: 0; padding: 0 0 9px; border-bottom: 1px solid var(--ince); }
+body.dosya-sayfa main :is(#icerik, #tam-rapor) .ok-eposta + .veli-kart { border-top: 0; }
+body.dosya-sayfa main :is(#icerik, #tam-rapor) .veli-kart:has(+ .ok-eposta) { border-bottom: 0; padding-bottom: 2px; }
+
+/* Öğrenci dosyası: tam rapor yalnızca yazdırmada */
+#tam-rapor { display: none; }
+@media print {
+  body.dosya-sayfa #icerik { display: none; }
+  body.dosya-sayfa #tam-rapor { display: block; }
+  body.dosya-sayfa .rapor-bolum { margin-top: 18px; }
+  body.dosya-sayfa .rapor-bolum > h2 { break-after: avoid; margin: 0 0 6px; padding: 0 0 4px; border-bottom: 1px solid var(--ince); font-family: var(--serif); font-size: 1.1rem; font-weight: 600; color: var(--ana); }
+  body.dosya-sayfa .rapor-bolum details > summary { list-style: none; }
+}
+@media print {
+  /* tam rapor: kutular yerine düz satırlar */
+  body.dosya-sayfa main .ogs-kart { margin: 0 0 4px; padding: 10px 0 8px; border-radius: 0; background: none; border-bottom: 1px solid var(--ince); }
+  body.dosya-sayfa main .ogs-ders { padding: 5px 0; border-radius: 0; background: none; }
+  body.dosya-sayfa main .ogs-puan b { font-size: 1.3rem; }
+  body.dosya-sayfa main .ogs-ayr { break-inside: avoid; }
+  body.dosya-sayfa main .ogd-donem { margin: 0 0 8px; padding: 0; border: 0; border-radius: 0; background: none; }
+  body.dosya-sayfa main .ogd-donem > summary { padding: 6px 0; }
+  body.dosya-sayfa main .ogd-donem > summary::after, body.dosya-sayfa main .ogd-donem > summary::before { display: none; }
+  body.dosya-sayfa main .profil-blok { padding: 0; border-radius: 0; background: none; }
+  body.dosya-sayfa main .hz-durum { align-self: center; line-height: 1.5; }
+  body.dosya-sayfa main .hz-durum.onay { border-radius: 999px; }
+}
