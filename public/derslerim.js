@@ -91,12 +91,13 @@ async function haftaYukle() {
   $('gun-adi').textContent = `${tarihYaz(r.veri.pazartesi).split(' ').slice(0, 2).join(' ')} – ${tarihYaz(son).split(' ').slice(0, 2).join(' ')}`;
   $('bugun').classList.toggle('bugunde', r.veri.gunler.some(g => g.tarih === bugun));
   // Ders günü olmayan ve dersi/etüdü bulunmayan günler gösterilmez
-  const gunler = r.veri.gunler.filter(g => g.acik || g.dersler.length || g.etutler.length);
+  const gunler = r.veri.gunler.filter(g => g.acik || g.tatil || g.dersler.length || g.etutler.length);
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
   for (const g of gunler) {
-    const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
+    const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '') + (g.tatil ? ' tatil-sutun' : ''));
+    if (g.tatil) th.title = g.tatil;
     th.append(el('strong', ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'][g.gun]), el('span', `${g.tarih.slice(8)}.${g.tarih.slice(5, 7)}`));
     bas.appendChild(th);
   }
@@ -168,7 +169,7 @@ function zamanCiz() {
   const k = $('zaman');
   k.replaceChildren();
   if (!veri.gunluk.length && !veri.etutler.length) {
-    k.appendChild(el('p', veri.hafta_sonu ? 'Bugün ders günü değil.' : 'Bu günde dersiniz yok.', 'bos-not'));
+    k.appendChild(el('p', veri.tatil ? `${veri.tatil} · okul tatil` : veri.hafta_sonu ? 'Bugün ders günü değil.' : 'Bu günde dersiniz yok.', 'bos-not'));
     if (veri.hafta_sonu) {
       const git = el('button', 'Sonraki ders gününe git', 'ikincil'); git.type = 'button';
       git.addEventListener('click', () => { do { tarih = gunKaydir(tarih, 1); } while (!acikGunler.includes(new Date(tarih + 'T12:00:00').getDay())); gunYukle(); });

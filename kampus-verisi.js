@@ -10,6 +10,7 @@ import { db, sonrakiOkulNo } from './db.js';
 import './gorev.js';
 import './duyuru.js';
 import './teslim.js';
+import './tatil.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
 import { dersKazanimlari } from './kazanim.js';
@@ -810,6 +811,10 @@ try {
     const [ad, yakinlik] = TESLIM[i % TESLIM.length];
     ins('INSERT INTO teslim_yetkilileri (student_membership_id, ad, yakinlik, telefon, created_at) VALUES (?,?,?,?,?)', ogr.mid, ad, yakinlik, '05' + String(300000000 + i * 7919 + o.id * 104729).slice(0, 9), simdi);
   });
+
+  // Okul takvimi: resmi tatiller ve yaklaşan ara tatil
+  for (const [bas, bit, ad, tur] of [['2026-10-29', '2026-10-29', 'Cumhuriyet Bayramı', 'resmi'], ['2026-11-10', '2026-11-10', "Atatürk'ü Anma Günü", 'ozel'], ['2027-01-18', '2027-01-29', 'Yarıyıl tatili', 'ara']])
+    ins('INSERT INTO tatiller (baslangic, bitis, ad, tur, created_at) VALUES (?,?,?,?,?)', bas, bit, ad, tur, simdi);
 
   db.exec('COMMIT');
   const topla = t => db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n;

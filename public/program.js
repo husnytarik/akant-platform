@@ -84,7 +84,7 @@ function gunCiz() {
   $('bugun').classList.toggle('bugunde', tarih === bugun);
   const etutler = g ? g.etutler : [];
   if (!g || (!g.dersler.length && !etutler.length)) {
-    k.appendChild(el('p', g && !g.acik ? 'Bu gün ders günü değil.' : 'Bu günde ders yok.', 'bos-not'));
+    k.appendChild(el('p', g?.tatil ? `${g.tatil} · okul tatil` : g && !g.acik ? 'Bu gün ders günü değil.' : 'Bu günde ders yok.', 'bos-not'));
     return;
   }
   const ogeler = [
@@ -117,12 +117,13 @@ function gunCiz() {
 
 function haftaCiz() {
   // Ders günü olmayan ve dersi/etüdü bulunmayan günler gösterilmez
-  const gorunen = veri.gunler.filter(g => g.acik || g.dersler.length || g.etutler.length);
+  const gorunen = veri.gunler.filter(g => g.acik || g.tatil || g.dersler.length || g.etutler.length);
   const t = el('table', undefined, 'hafta-tablo');
   const bas = document.createElement('tr');
   bas.appendChild(el('th'));
   for (const g of gorunen) {
-    const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : ''));
+    const th = el('th', undefined, (g.tarih === bugun ? 'bugun-sutun ' : '') + (g.gun === 0 || g.gun === 6 ? 'hafta-sonu' : '') + (g.tatil ? ' tatil-sutun' : ''));
+    if (g.tatil) th.title = g.tatil;
     th.append(el('strong', GUN[g.gun].slice(0, 3)), el('span', kisa(g.tarih)));
     bas.appendChild(th);
   }

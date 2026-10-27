@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { DERS_ZAMANLARI, ACIK_GUNLER, GUN_ADLARI, gunAcik } from './okul-ayar.js';
+import { tarihAcik } from './tatil.js';
 import { KULUP_DERSI } from './ders-programi.js';
 
 const TURLER = ['deney', 'proje', 'sunum', 'gezi', 'diger'];
@@ -34,7 +35,7 @@ function kulupDurumu(tarih, saat, c) {
 
 // Öğretmenin o günkü kulüp dersleri: ders programındaki satırlarla aynı biçimde (ders.js ve panel kullanır)
 export function ogretmenKulupDersleri(ogretmenId, tarih) {
-  if (!gunAcik(gunNo(tarih))) return [];
+  if (!tarihAcik(tarih)) return [];
   return db.prepare(`SELECT k.* FROM kulupler k JOIN kulup_ogretmen ko ON ko.kulup_id = k.id
     WHERE ko.teacher_membership_id = ? AND k.aktif = 1 AND k.gun = ? ORDER BY k.ders_saati`).all(ogretmenId, gunNo(tarih)).map(k => {
     const c = db.prepare('SELECT * FROM kulup_calismalar WHERE kulup_id = ? AND tarih = ?').get(k.id, tarih);

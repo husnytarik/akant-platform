@@ -1,5 +1,6 @@
 import { db } from './db.js';
-import { DERS_ZAMANLARI, gunAcik } from './okul-ayar.js';
+import { DERS_ZAMANLARI } from './okul-ayar.js';
+import { tarihAcik, tatilAdi } from './tatil.js';
 import { kazanimCoz } from './mufredat.js';
 
 const tamSayi = (v, min, max) => {
@@ -22,7 +23,7 @@ function islem(fn) {
 // Öğretmenin o gün, o sınıfta, o ders saatinde gerçekten dersi var mı?
 function dersBul(ogretmenUyelikId, sinifId, tarih, dersSaati) {
   const gun = gunNo(tarih);
-  if (!gunAcik(gun)) return null;
+  if (!tarihAcik(tarih)) return null;
   return db.prepare(`
     SELECT a.id AS atamaId, a.class_id AS sinifId, c.name AS sinif, co.name AS ders, s.period AS dersSaati
     FROM schedule s JOIN assignments a ON a.id = s.assignment_id
@@ -76,7 +77,7 @@ export async function yoklamaApi({ req, res, url, o, json, govde, denetle }) {
     if (!tarihGecerli(tarih)) return hata(400, 'Tarih geçersiz');
     if (tarih > bugun()) return hata(400, 'Gelecek tarih için yoklama alınamaz');
     const gun = gunNo(tarih);
-    if (!gunAcik(gun)) return json(res, 200, { dersler: [], hafta_sonu: true }), true;
+    if (!tarihAcik(tarih)) return json(res, 200, { dersler: [], hafta_sonu: true, tatil: tatilAdi(tarih) }), true;
     const satirlar = db.prepare(`
       SELECT s.period AS dersSaati, a.class_id AS sinifId, c.name AS sinif, co.name AS ders,
              y.id AS yoklamaId, y.completed_at AS tamamlandi, y.cancelled AS iptal,

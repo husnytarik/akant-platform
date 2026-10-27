@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { gunAcik } from './okul-ayar.js';
+import { tarihAcik } from './tatil.js';
 
 // Raporlar (yönetim): okul ya da tüm kurum için devam, eksik ders, ödev ve kulüp özetleri
 const bugun = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
@@ -50,7 +50,7 @@ export async function raporApi({ req, res, url, o, json }) {
   for (let n = 1; n <= 14; n++) {
     const t = kaydir(bugun(), -n);
     const gun = new Date(t + 'T00:00:00Z').getUTCDay();
-    if (!gunAcik(gun)) continue;
+    if (!tarihAcik(t)) continue;
     for (const r of program.all(gun)) {
       programToplam++;
       if (tamam.get(r.sinifId, t, r.saat)) continue;

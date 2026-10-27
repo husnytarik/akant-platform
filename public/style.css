@@ -2660,3 +2660,11 @@ main .rapor-cubuk .yatay-satir { grid-template-columns: 1fr auto; grid-template-
 main .rapor-cubuk .yatay-ad { grid-area: ad; white-space: normal; color: var(--murekkep); font-size: .86rem; }
 main .rapor-cubuk .yatay-cubuk { grid-area: cubuk; height: 8px; }
 main .rapor-cubuk .yatay-satir b { grid-area: deger; font-size: .84rem; font-weight: 600; white-space: nowrap; }
+
+/* Tatiller: haftalık tabloda tatil sütunu, Okul takvimi'nde öneri çipleri ve geçmiş listesi */
+main .hafta-tablo th.tatil-sutun { background: #fbf1d6; color: #8a6a10; }
+main .tatil-oneri { margin: 4px 0 8px; }
+main .tatil-cipler { display: flex; flex-wrap: wrap; gap: 6px; }
+main .tatil-cip { min-height: 32px; text-align: left; padding: 0 12px; border: 0; border-radius: 999px; background: var(--navy-soft); color: var(--murekkep); font: inherit; font-size: .78rem; cursor: pointer; }
+main .tatil-gecmis { margin-top: 8px; }
+main .tatil-gecmis summary { color: var(--soluk); font-size: .82rem; padding: 8px 0; cursor: pointer; }

@@ -1,5 +1,6 @@
 import { db } from './db.js';
-import { DERS_ZAMANLARI, GUN_ADLARI, gunAcik } from './okul-ayar.js';
+import { DERS_ZAMANLARI, GUN_ADLARI } from './okul-ayar.js';
+import { tarihAcik } from './tatil.js';
 
 export { DERS_ZAMANLARI };
 
@@ -16,7 +17,7 @@ const SURELER = [30, 40, 45, 60, 80, 90, 120];
 function programCakismalari(ogretmenUyelikId, tarih, bas, bit, ogrenciler) {
   const gun = new Date(tarih + 'T00:00:00Z').getUTCDay(); // 0=Pazar, 1=Pazartesi ... 6=Cumartesi
   const bos = { ogrenci: [], ogretmen: [] };
-  if (!gunAcik(gun)) return bos;
+  if (!tarihAcik(tarih)) return bos;
   const cakisan = DERS_ZAMANLARI.map((z, i) => ({ ders: i + 1, bas: dk(z[0]), bit: dk(z[1]), z }))
     .filter(p => p.bas < bit && bas < p.bit);
   if (!cakisan.length) return bos;

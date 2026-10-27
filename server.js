@@ -13,6 +13,7 @@ import { etutApi } from './etut.js';
 import { duyuruApi } from './duyuru.js';
 import { teslimApi } from './teslim.js';
 import { raporApi } from './rapor.js';
+import { tatilApi } from './tatil.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -334,6 +335,12 @@ async function api(req, res, url) {
   }
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
+
+  if (url.pathname.startsWith('/api/tatil/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await tatilApi({ req, res, url, o, json, govde, denetle })) return;
+  }
 
   if (url.pathname.startsWith('/api/rapor/')) {
     const o = oturum(req);
