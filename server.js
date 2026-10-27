@@ -11,6 +11,7 @@ import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
 import { duyuruApi } from './duyuru.js';
+import { teslimApi } from './teslim.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -70,7 +71,7 @@ const MODULLER = [
   { id: 'ogrencim', ad: 'Öğrencim', aciklama: 'Çocuğumun bilgileri ve durumu', roller: ['veli'], yol: '/ogrencim' },
   { id: 'devamsizlik-veli', ad: 'Devamsızlık', aciklama: 'Çocuğumun ders devamsızlıkları', roller: ['veli'], yol: '/devamsizlik' },
   { id: 'devamsizlik-ogrenci', ad: 'Devamsızlığım', aciklama: 'Ders devam durumum', roller: ['ogrenci'], yol: '/devamsizlik' },
-  { id: 'teslim', ad: 'Teslim yetkileri', aciklama: 'Öğrenciyi teslim alabilecek kişiler', roller: ['veli'] },
+  { id: 'teslim', ad: 'Teslim yetkileri', aciklama: 'Öğrenciyi teslim alabilecek kişiler', roller: ['veli'], yol: '/teslim' },
 ];
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
@@ -333,6 +334,12 @@ async function api(req, res, url) {
 
   if (url.pathname.startsWith('/api/yonetim/')) return await yonetimApi(req, res, url);
 
+  if (url.pathname.startsWith('/api/teslim/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await teslimApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/duyuru/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -508,6 +515,7 @@ function statik(req, res, url) {
   if (ad === '/odev-takip') ad = '/odev-takip.html';
   if (ad === '/ogrencilerim') ad = '/ogrencilerim.html';
   if (ad === '/ogrencim') ad = '/ogrencim.html';
+  if (ad === '/teslim') ad = '/teslim.html';
   if (ad === '/profil') ad = '/profil.html';
   if (ad === '/sinav') ad = '/sinav.html';
   if (ad === '/notlarim') ad = '/notlarim.html';

@@ -9,6 +9,7 @@ import { deflateSync, crc32 } from 'node:zlib';
 import { db, sonrakiOkulNo } from './db.js';
 import './gorev.js';
 import './duyuru.js';
+import './teslim.js';
 import { DERS_ZAMANLARI } from './okul-ayar.js';
 import { KULUP_DERSI } from './ders-programi.js';
 import { dersKazanimlari } from './kazanim.js';
@@ -801,6 +802,14 @@ try {
     for (const s of o.siniflar.slice(0, 2))
       ileti('mesaj', 'Gezi izin belgesi', 'Önümüzdeki hafta yapılacak müze gezisi için izin belgelerinin imzalanıp cuma gününe kadar teslim edilmesi rica olunur.', s.rehber.mid, o.id, null, s.id, -1);
   }
+
+  // Teslim yetkilileri: öğrencilerin bir kısmı için anneanne / servis şoförü gibi kişiler
+  const TESLIM = [['Nermin Aksoy', 'Anneanne'], ['Hasan Yıldız', 'Servis şoförü'], ['Selma Kaya', 'Teyze'], ['Orhan Demir', 'Dede']];
+  for (const o of okullar) o.ogrenciler.forEach((ogr, i) => {
+    if (i % 3) return;
+    const [ad, yakinlik] = TESLIM[i % TESLIM.length];
+    ins('INSERT INTO teslim_yetkilileri (student_membership_id, ad, yakinlik, telefon, created_at) VALUES (?,?,?,?,?)', ogr.mid, ad, yakinlik, '05' + String(300000000 + i * 7919 + o.id * 104729).slice(0, 9), simdi);
+  });
 
   db.exec('COMMIT');
   const topla = t => db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n;
