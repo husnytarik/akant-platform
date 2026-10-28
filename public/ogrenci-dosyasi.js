@@ -4,7 +4,7 @@ const { yuzde, kisaTarih, tarihYaz, satir, aramaLink } = OgrOrtak;
 const id = Number(new URLSearchParams(location.search).get('id')) || 0;
 const YEMEK = { alacak: 'Yemek alacak', almayacak: 'Yemek almayacak' };
 const CINSIYET = { kiz: 'Kız', erkek: 'Erkek' };
-let rapor = null, kayit = null, sinavlar = [];
+let rapor = null, kayit = null, sinavlar = [], teslimler = [];
 
 async function api(yol) {
   const r = await fetch(yol);
@@ -173,6 +173,7 @@ function sekmeAc(ad) {
     gelisim: () => OgrOrtak.gelisim(k, rapor),
     devam: () => OgrOrtak.devam(k, rapor),
     odev: () => OgrOrtak.odev(k, rapor),
+    teslim: () => teslimGecmisiCiz(k, teslimler),
     kayit: () => kayitCiz(k),
   })[ad]();
 }
@@ -187,6 +188,7 @@ function tamRaporKur() {
     ['Gelişim', k => OgrOrtak.gelisim(k, rapor)],
     ['Devam', k => OgrOrtak.devam(k, rapor)],
     ['Ödev ve etkinlik', k => OgrOrtak.odev(k, rapor)],
+    ['Teslim kayıtları', k => teslimGecmisiCiz(k, teslimler)],
     ['Kayıt bilgileri', k => kayitCiz(k)],
   ];
   for (const [ad, ciz] of bolumler) {
@@ -201,11 +203,12 @@ function tamRaporKur() {
 
 (async () => {
   if (!id) { location.href = '/panel'; return; }
-  const [r, y, s] = await Promise.all([api('/api/ogrenci/rapor?id=' + id), api('/api/ogrenci/kayit?id=' + id), api('/api/sinav/ogrenci?id=' + id)]);
+  const [r, y, s, t] = await Promise.all([api('/api/ogrenci/rapor?id=' + id), api('/api/ogrenci/kayit?id=' + id), api('/api/sinav/ogrenci?id=' + id), api('/api/ogrenci/teslim?id=' + id)]);
   if (!r.ok || !y.ok) { $('mesaj').textContent = (r.ok ? y : r).veri.hata || 'Öğrenci bulunamadı'; $('mesaj').className = 'mesaj hata'; return; }
   rapor = r.veri; kayit = y.veri;
   kayit.kayitTuruAd = kayit.secenekler.kayitTuru[kayit.kayit.kayitTuru] || '';
   sinavlar = s.ok ? s.veri.sinavlar : [];
+  teslimler = t.ok ? t.veri.kayitlar : [];
   const p = rapor.ogrenci;
   document.title = `neademy - ${p.ad}`;
   $('d-baslik').textContent = p.ad;

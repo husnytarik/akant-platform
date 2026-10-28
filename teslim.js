@@ -100,6 +100,12 @@ function sureDolanlariKapat() {
   db.prepare('DELETE FROM teslim_kodlari WHERE bitis < ?').run(simdi - 60_000);
 }
 
+// Bir öğrencinin onaylanmış teslimleri, en yeniden eskiye (veli ve öğrenci dosyası okur)
+export function teslimGecmisi(ogrenciId, limit = 300) {
+  return db.prepare(`SELECT k.zaman, k.kisi_ad AS kisi, k.yakinlik, g.full_name AS guvenlik FROM teslim_kayitlari k
+    LEFT JOIN users g ON g.id = k.guvenlik_user_id WHERE k.student_membership_id = ? ORDER BY k.zaman DESC LIMIT ?`).all(ogrenciId, limit);
+}
+
 // ---- Teslim alan kişinin tarafı (veli oturumu ya da yetkilinin özel bağlantısı) ----
 function ozneIslem(tur, id, req, yol, b, { json, res, denetle }) {
   const ogr = ogrencilerDe(tur, id);
@@ -264,6 +270,13 @@ export async function teslimApi({ req, res, url, o, json, govde, denetle }) {
     const kisiler = db.prepare(`SELECT y.id, y.ad, y.yakinlik, y.telefon, b.kod AS baglanti FROM teslim_yetkilileri y
       LEFT JOIN teslim_baglantilari b ON b.yetkili_id = y.id WHERE y.student_membership_id = ? ORDER BY y.id`);
     json(res, 200, { ogrenciler: cocuklar.map(c => ({ ...c, kisiler: kisiler.all(c.id) })) });
+    return true;
+  }
+
+  if (req.method === 'GET' && yol === '/api/teslim/gecmis') {
+    const id = Number(url.searchParams.get('ogrenciId'));
+    if (!cocukMu(id)) return json(res, 403, { hata: 'Bu öğrenci için işlem yapamazsınız' }), true;
+    json(res, 200, { kayitlar: teslimGecmisi(id) });
     return true;
   }
 

@@ -138,6 +138,11 @@ function ciz() {
   icerik.append(el('p', 'Anne ve baba her zaman yetkilidir. Buraya yalnızca onlar dışında öğrenciyi teslim alabilecek kişileri ekleyin; okul teslimde kimlik isteyebilir.', 'alt'));
   if (!c.kisiler.length) icerik.append(el('p', 'Henüz kimse eklenmedi.', 'alt'));
   for (const k of c.kisiler) icerik.append(kisi(k));
+
+  // Onaylanan teslimlerin gün gün kaydı
+  const gecmis = el('div');
+  icerik.append(el('h3', 'Teslim kayıtları', 'baslik3'), gecmis);
+  api('/api/teslim/gecmis?ogrenciId=' + c.id).then(r => { if (r.ok) teslimGecmisiCiz(gecmis, r.veri.kayitlar); });
 }
 
 async function yukle() {

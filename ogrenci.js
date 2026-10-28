@@ -1,6 +1,7 @@
 import { db, FOTO_SQL, tcGecerliMi } from './db.js';
 import { islem, kisiKaydet } from './kurulum.js';
 import { yetkiVar } from './yetki.js';
+import { teslimGecmisi } from './teslim.js';
 import { devamOzeti, ogrenciDosyasi } from './ogrencilerim.js';
 
 // Öğrenci kaydı ve öğrenci dosyası: kayıt sırasında alınan bilgiler (kimlik, doğum, yemek, özel durumlar, aile) ve
@@ -209,6 +210,13 @@ export async function ogrenciApi({ req, res, url, o, json, govde, denetle }) {
       iletisim: { email: p.email || '', il: p.il || '', ilce: p.ilce || '', adres: p.adres || '', yakinAd: p.yakin_ad || '', yakinYakinlik: p.yakin_yakinlik || '', yakinTelefon: p.yakin_telefon || '' },
       aile, ozelDurumlar: ozel, duzenleyebilir: yon && yetkiVar(o, 'ogrenci-kayit'), ...seceneklerVer(),
     }), true;
+  }
+
+  // Teslim kayıtları: öğrenciyi okuldan kim, ne zaman teslim aldı
+  if (req.method === 'GET' && yol === '/api/ogrenci/teslim') {
+    const id = tamSayi(url.searchParams.get('id'));
+    if (!ogrenciErisimi(o, id)) return hata(404, 'Öğrenci bulunamadı');
+    return json(res, 200, { kayitlar: teslimGecmisi(id) }), true;
   }
 
   // Rapor: öğrencinin o anki tüm durumu (devam, ödev, gelişim, dönem karşılaştırması); sınav sonuçları /api/sinav/ogrenci'den gelir
