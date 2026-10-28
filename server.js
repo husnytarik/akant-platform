@@ -10,6 +10,7 @@ import { gorevApi } from './gorev.js';
 import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
+import { zumremApi } from './zumrem.js';
 import { duyuruApi } from './duyuru.js';
 import { teslimApi, teslimBaglantiApi } from './teslim.js';
 import { raporApi } from './rapor.js';
@@ -66,6 +67,7 @@ const MODULLER = [
   { id: 'gelisim-yonetim', ad: 'Gelişim raporu', aciklama: 'Gözlem başlıkları ve dönemleri belirle, öğrenci raporunu yazdır', roller: ['yonetim'], yetki: ['gelisim'], yol: '/gelisim' },
   { id: 'gelisim-ogretmen', ad: 'Gelişim gözlemleri', aciklama: 'Dönem geldiğinde öğrencilerim için gözlem gir, önceki girişleri takip et', roller: ['ogretmen'], yol: '/gelisim' },
   { id: 'etut', ad: 'Etüt', aciklama: 'Etüt aç, veli katılım onayını takip et', roller: ['ogretmen'], yol: '/etut' },
+  { id: 'zumrem', ad: 'Zümrem', aciklama: 'Zümre öğretmenleri, rutin toplantılar ve zümre yazışmaları', roller: ['ogretmen'], yol: '/zumrem' },
   { id: 'etut-ogrenci', ad: 'Etütlerim', aciklama: 'Davet edildiğim etütler', roller: ['ogrenci'], yol: '/etut' },
   { id: 'etut-veli', ad: 'Etüt onayları', aciklama: 'Çocuğumun etütlerine gelecek / gelmeyecek bildir', roller: ['veli'], yol: '/etut' },
   { id: 'ogrencilerim', ad: 'Öğrencilerim', aciklama: 'Mentor olduğum sınıfın öğrencileri ve profilleri', roller: ['ogretmen'], yol: '/ogrencilerim' },
@@ -391,6 +393,12 @@ async function api(req, res, url) {
     if (await duyuruApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname.startsWith('/api/zumre/')) {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await zumremApi({ req, res, url, o, json, govde, denetle })) return;
+  }
+
   if (url.pathname.startsWith('/api/etut/')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -569,6 +577,7 @@ function statik(req, res, url) {
   if (ad === '/kurum') ad = '/kurum.html';
   if (ad === '/okul-takvimi') ad = '/okul-takvimi.html';
   if (ad === '/etut') ad = '/etut.html';
+  if (ad === '/zumrem') ad = '/zumrem.html';
   if (ad === '/duyurular') ad = '/duyurular.html';
   if (ad === '/kulupler') ad = '/kulupler.html';
   if (ad === '/gelisim') ad = '/gelisim.html';

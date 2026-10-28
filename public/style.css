@@ -2984,3 +2984,22 @@ main .ders-panel .ekle-ust .dugme-link { margin: 0 8px 0 auto; }
 .tk-secim label { color: var(--text); font-size: .9rem; font-weight: 400; }
 .tk-kamera { max-height: 340px; }
 main .ders-panel .tk-kodum { display: flex; justify-content: center; width: 100%; margin: 0 0 8px; }
+
+/* Zümrem: toplantılar, yazılar, öğretmen listesi (çerçevesiz, ince çizgilerle) */
+main .zm-form { display: grid; gap: 10px; margin: 12px 0 8px; }
+main .zm-form .form-satir { margin: 0; }
+main .zm-form label { display: block; font-size: .82rem; color: var(--soluk); margin-bottom: 4px; }
+main .zm-form .birincil.kucuk { width: auto; margin-top: 0; justify-self: start; }
+main .zm-dugme { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+main .zm-toplanti { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--ince); }
+main .zm-toplanti .etut-orta strong { font-size: 1rem; }
+main .zm-gundem { margin: 4px 0 0; font-size: .9rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+main .zm-yazi { padding: 14px 0; border-bottom: 1px solid var(--ince); }
+main .zm-yazi .ikincil { margin-top: 8px; }
+main .zm-yazi-ust { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+main .zm-yazi-ust strong { font-size: .92rem; font-weight: 600; }
+main .zm-yazi-ust small { color: var(--soluk); font-size: .78rem; margin-left: auto; }
+main .zm-etiket { font-size: .72rem; font-weight: 600; color: var(--ana); background: color-mix(in srgb, var(--ana) 12%, #fff); padding: 2px 8px; border-radius: 999px; }
+main .bk-zumre { --bk-renk: var(--ana); --bk-zemin: color-mix(in srgb, var(--ana) 14%, #fff); }
+main .zm-toplanti .alt { margin: 0; }
+main .zm-toplanti .zm-gundem { margin-top: 6px; }

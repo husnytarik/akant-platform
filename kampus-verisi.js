@@ -10,6 +10,7 @@ import { db, sonrakiOkulNo } from './db.js';
 import './gorev.js';
 import './duyuru.js';
 import './teslim.js';
+import './zumrem.js';
 import './tatil.js';
 import './kurum.js';
 import { sistemRolleriKur } from './yetki.js';
@@ -199,6 +200,20 @@ try {
     }
     // Zümre başkanları normal öğretmendir; aynı ekranda ek olarak zümre işlerini görürler
     for (const anahtar of ['mat1', 'tr1', 'fen1', 'sos', 'ing', 'din', 'bed', 'gor', 'muz', 'bil']) rolVer(meltem.t[anahtar], 'zumre');
+
+    // Zümre toplantıları (yarından başlayan rutinler: demo panelinde hatırlatma görünür) ve zümre yazıları
+    // n gün sonrası; hafta sonuna denk gelirse pazartesiye kaydırılır
+    const gun = n => { const d = new Date(simdi + n * 86400000); while ([0, 6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate() + 1); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }); };
+    const toplanti = (anahtar, baslik, tekrar, bas, saat, yer, gundem) => ins('INSERT INTO zumre_toplantilari (branch_id, course_id, baslik, tekrar, baslangic, saat, yer, gundem, olusturan_membership_id, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      meltem.id, dersId(meltem.t[anahtar].dersler[0]), baslik, tekrar, bas, saat, yer, gundem, meltem.t[anahtar].mid, simdi);
+    toplanti('mat1', 'Haftalık zümre toplantısı', 'haftalik', gun(2), '15:30', 'Öğretmenler odası', 'Ortak yazılı takvimi\nGeride kalan kazanımlar\nSoru bankası paylaşımı');
+    toplanti('mat1', 'Aylık değerlendirme', 'aylik', gun(9), '16:00', 'Toplantı salonu', 'Ay sonu başarı analizi');
+    toplanti('tr1', 'Zümre toplantısı', 'haftalik', gun(2), '15:30', 'Kütüphane', '');
+    toplanti('fen1', 'Zümre toplantısı', '2haftalik', gun(4), '15:30', 'Fen laboratuvarı', 'Deney malzemeleri ve laboratuvar planı');
+    const yazi = (anahtar, metin, saatOnce) => ins('INSERT INTO zumre_iletileri (branch_id, course_id, membership_id, metin, created_at) VALUES (?,?,?,?,?)',
+      meltem.id, dersId('Matematik'), meltem.t[anahtar].mid, metin, simdi - saatOnce * 3600000);
+    yazi('mat2', 'Yazılı sorularını ortak klasöre yükledim; incelemek isteyen olursa yorum yazabilir.', 30);
+    yazi('mat1', 'Arkadaşlar, bu hafta 7. sınıflarda "Oran-Orantı" konusunu bitirmiş olmamız gerekiyor. Geride kalan varsa pazartesi toplantısında konuşalım.', 5);
   }
 
   // Sınıflar ve öğrenciler (ilkokulda her sınıfın kendi sınıf öğretmeni vardır)

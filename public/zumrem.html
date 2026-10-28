@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neademy - Zümrem</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/renk.js"></script>
+</head>
+<body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1 id="baslik">Zümrem</h1>
+  </header>
+  <main class="kart panel genis">
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+    <div id="zumre-sec" class="sekmeler gizli"></div>
+    <div class="sekmeler" id="z-sekmeler">
+      <button type="button" data-sekme="toplanti" aria-pressed="true">Toplantılar</button>
+      <button type="button" data-sekme="yazi" aria-pressed="false">Yazılar</button>
+      <button type="button" data-sekme="ogretmen" aria-pressed="false">Öğretmenler</button>
+    </div>
+    <section id="toplanti"></section>
+    <section id="yazi" class="gizli"></section>
+    <section id="ogretmen" class="gizli"></section>
+  </main>
+  <script src="/zumrem.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

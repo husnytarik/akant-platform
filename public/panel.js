@@ -56,6 +56,7 @@ const BK_IKON = {
   ders: 'M12 8v5M12 16.5v.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z',
   kazanim: 'M4 12a8 8 0 018-8 8 8 0 015.7 2.3L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 01-8 8 8 8 0 01-5.7-2.3L4 15.5M4 20v-4.5h4.5',
   gelisim: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  zumre: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
 };
 
 function bekleyenSatiri(tur, baslik, alt, sayi, govde) {
@@ -72,7 +73,7 @@ function bekleyenSatiri(tur, baslik, alt, sayi, govde) {
 }
 
 async function bekleyenler(geciken) {
-  const [m, g] = await Promise.all([fetch('/api/mufredat/takip'), fetch('/api/gelisim/bekleyen')]);
+  const [m, g, z] = await Promise.all([fetch('/api/mufredat/takip'), fetch('/api/gelisim/bekleyen'), fetch('/api/zumre/hatirlatma')]);
   const satirlar = [];
 
   if (geciken.sayi) {
@@ -120,6 +121,16 @@ async function bekleyenler(geciken) {
     }
   }
 
+  // Zümre toplantısı hatırlatması: bugün ve önümüzdeki iki gün
+  if (z.ok) {
+    for (const t of (await z.json()).toplantilar) {
+      const gun = t.kalanGun === 0 ? 'Bugün' : t.kalanGun === 1 ? 'Yarın' : `${t.kalanGun} gün sonra`;
+      const s = bekleyenSatiri('zumre', t.baslik, [`${t.zumre} zümresi`, t.saat, t.yer].filter(Boolean).join(' · '), gun);
+      s.href = '/zumrem?courseId=' + t.courseId;
+      satirlar.unshift(s);
+    }
+  }
+
   if (!satirlar.length) return;
   const kutu = document.getElementById('bekleyenler');
   kutu.append(...satirlar);
@@ -150,6 +161,7 @@ const IKON_YOL = {
   'devamsizlik-veli': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
   'devamsizlik-ogrenci': 'M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z',
   teslim: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+  zumrem: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .4 3.2 1.8 3.5 5',
 };
 IKON_YOL['sinav-yonetim'] = IKON_YOL['not-girisi'];
 IKON_YOL['duyurular-ogretmen'] = IKON_YOL.duyurular;
