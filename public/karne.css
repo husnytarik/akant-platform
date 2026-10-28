@@ -1,0 +1,126 @@
+/* Dönem karnesi: ekranda A4 sayfa önizlemesi, yazdırırken birebir aynı sayfalar */
+body.karne-govde {
+  --kr-yazi: #1c1b19; --kr-soluk: #78746c; --kr-ince: #e7e3da; --kr-iyi: #3f8a5f; --kr-orta: #b8862b; --kr-zayif: #b4483f;
+  background: #eeebe4; color: var(--kr-yazi);
+}
+
+.kr-arac { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 210mm; margin: 10px auto 0; padding: 0 12px; box-sizing: border-box; }
+.kr-arac-sol { display: flex; flex-direction: column; min-width: 0; }
+.kr-arac-sol strong { font-size: 1rem; }
+.kr-arac-sol .alt { font-size: .82rem; color: var(--kr-soluk); }
+.kr-arac-sag { display: flex; align-items: center; gap: 10px; }
+.kr-arac-sag select { height: 32px; max-width: 46vw; }
+.kr-arac-sag .birincil, .kr-arac-sag .birincil.kucuk { margin: 0; width: auto; height: 34px; padding: 0 18px; }
+p.kr-arac { min-height: 0; }
+p.kr-arac:empty { display: none; }
+
+.kr-kagitlar { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px 0 40px; }
+
+.kr-sayfa {
+  display: flex; flex-direction: column; box-sizing: border-box; flex: none;
+  width: 210mm; height: 296mm; padding: 13mm 14mm 9mm; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 8px 24px rgba(0, 0, 0, .06);
+  font-size: 9.5pt; line-height: 1.4; color: var(--kr-yazi);
+}
+.kr-ic { flex: 1; min-height: 0; overflow: hidden; }
+.kr-alt { display: flex; justify-content: space-between; gap: 8mm; padding-top: 2.5mm; border-top: 1px solid var(--kr-ince); font-size: 7.5pt; color: var(--kr-soluk); }
+
+/* Başlık: ilk sayfa */
+.kr-ust { margin-bottom: 6mm; }
+.kr-hero { display: grid; grid-template-columns: 27mm 1fr auto; gap: 6mm; align-items: start; }
+.kr-foto { width: 27mm; height: 34mm; }
+.kr-foto .ogr-avatar { width: 100%; height: 100%; border-radius: 3mm; font-size: 22pt; }
+.kr-tur { margin: 0 0 1mm; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--ana, #5a78a8); font-weight: 700; }
+.kr-kimlik h2 { margin: 0 0 3mm; font-family: var(--serif, Charter, Cambria, serif); font-size: 21pt; line-height: 1.15; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--kr-yazi); }
+.kr-bilgi { display: grid; grid-template-columns: auto 1fr; gap: 1mm 5mm; margin: 0; font-size: 9pt; }
+.kr-bilgi > div { display: contents; }
+.kr-bilgi dt { color: var(--kr-soluk); }
+.kr-bilgi dd { margin: 0; }
+.kr-okul { display: flex; flex-direction: column; align-items: center; gap: 2mm; width: 34mm; text-align: center; font-size: 8pt; color: var(--kr-soluk); }
+.kr-logo { display: block; flex: none; width: 17mm; height: 17mm; }
+.kr-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.kr-logo:empty { display: none; }
+
+.kr-ozet { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 6mm; padding: 3.5mm 0; border-top: 1px solid var(--kr-ince); border-bottom: 1px solid var(--kr-ince); }
+.kr-ist { display: flex; flex-direction: column; align-items: center; gap: .5mm; }
+.kr-ist b { font-family: var(--serif, Charter, Cambria, serif); font-size: 17pt; font-weight: 600; line-height: 1.1; }
+.kr-ist span { font-size: 7.5pt; color: var(--kr-soluk); text-transform: uppercase; letter-spacing: .06em; }
+.kr-ist.vurgulu b { color: var(--kr-zayif); }
+
+/* Başlık: devam sayfaları */
+.kr-ust-kucuk { display: flex; align-items: center; gap: 4mm; margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 1px solid var(--kr-ince); }
+.kr-ust-kucuk b { font-family: var(--serif, Charter, Cambria, serif); font-size: 12pt; font-weight: 600; }
+.kr-ust-kucuk span { flex: 1; font-size: 8.5pt; color: var(--kr-soluk); }
+.kr-ust-kucuk .kr-logo { width: 8mm; height: 8mm; }
+
+/* Bölümler */
+.kr-bolum { break-inside: avoid; }
+.kr-bolum + .kr-bolum { margin-top: 7mm; }
+.kr-bolum > h3 { margin: 0 0 3mm; padding-bottom: 1.5mm; border-bottom: 1px solid var(--kr-ince); font-size: 8.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--ana, #5a78a8); font-weight: 700; }
+.kr-bolum > * + * { margin-top: 4mm; }
+.kr-alt-baslik { margin: 0 0 1.5mm; font-size: 9pt; font-weight: 700; }
+.kr-cumle { margin: 0; font-size: 9.5pt; color: var(--kr-soluk); }
+
+.kr-tablo { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.kr-tablo th { padding: 0 2mm 1.5mm 0; font-size: 7.5pt; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; text-align: left; color: var(--kr-soluk); border-bottom: 1px solid var(--kr-ince); }
+.kr-tablo td { padding: 1.6mm 2mm 1.6mm 0; border-bottom: 1px solid #f0ede6; vertical-align: middle; }
+.kr-tablo .sag { text-align: right; padding-right: 0; padding-left: 2mm; }
+.kr-tablo .soluk { color: var(--kr-soluk); }
+.kr-tablo .vurgulu { color: var(--kr-zayif); font-weight: 600; }
+.kr-tablo .artis { color: var(--kr-iyi); }
+.kr-tablo .azalis { color: var(--kr-zayif); }
+.kr-tablo tr.toplam td { font-weight: 700; border-top: 1px solid var(--kr-ince); border-bottom: 0; padding-top: 2.2mm; }
+.not { font-weight: 700; font-variant-numeric: tabular-nums; }
+.not.cok-iyi { color: var(--kr-iyi); }
+.not.orta { color: var(--kr-orta); }
+.not.zayif { color: var(--kr-zayif); }
+.kr-ist.not b { font-weight: 600; }
+
+/* Sınav grafiği */
+.kr-sinav-ozet { display: flex; align-items: center; gap: 8mm; }
+.kr-buyuk { display: flex; flex-direction: column; flex: none; width: 36mm; }
+.kr-buyuk b { font-family: var(--serif, Charter, Cambria, serif); font-size: 26pt; font-weight: 600; line-height: 1.05; }
+.kr-buyuk span { font-size: 8.5pt; color: var(--kr-soluk); }
+.kr-buyuk small { font-size: 7.5pt; color: var(--kr-soluk); }
+.kr-cizgi { flex: 1; min-width: 0; height: auto; max-height: 42mm; }
+.kr-cizgi .izgara { stroke: var(--kr-ince); stroke-width: 1; }
+.kr-cizgi .cizgi { fill: none; stroke: var(--ana, #5a78a8); stroke-width: 2; stroke-linejoin: round; }
+.kr-cizgi .nokta { fill: #fff; stroke: var(--ana, #5a78a8); stroke-width: 2; }
+.kr-cizgi .eksen { font-size: 9px; fill: var(--kr-soluk); }
+.kr-cizgi .deger { font-size: 11px; font-weight: 700; fill: var(--kr-yazi); }
+
+/* Ödev özeti */
+.kr-odev-ozet { display: flex; align-items: center; gap: 8mm; }
+.kr-odev-ozet .halka { width: 30mm; height: 30mm; flex: none; }
+.kr-odev-ozet .halka-orta { font-size: 22px; font-weight: 700; fill: var(--kr-yazi); }
+.kr-odev-ozet .halka-alt { font-size: 10px; fill: var(--kr-soluk); }
+.kr-odev-sag { display: flex; flex-direction: column; gap: 2.5mm; }
+.kr-odev-sag .gosterge { display: flex; flex-wrap: wrap; gap: 1.5mm 5mm; font-size: 8.5pt; }
+.kr-odev-sag .gosterge-oge { display: inline-flex; align-items: center; gap: 1.5mm; }
+.kr-odev-sag .gosterge-oge i { width: 2.4mm; height: 2.4mm; border-radius: 50%; background: var(--c); }
+.kr-yuzde { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2mm; }
+.kr-yuzde i { position: relative; display: inline-block; width: 22mm; height: 1.6mm; border-radius: 1mm; background: var(--kr-ince); overflow: hidden; }
+.kr-yuzde i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--ana, #5a78a8); }
+.kr-yuzde b { min-width: 9mm; text-align: right; font-weight: 700; }
+
+/* Listeler ve yazılar */
+.kr-madde { display: grid; grid-template-columns: 26mm 1fr auto; gap: 0 4mm; margin: 0; padding: 1.3mm 0; border-bottom: 1px solid #f0ede6; font-size: 9pt; }
+.kr-madde b { font-weight: 600; }
+.kr-madde em { font-style: normal; color: var(--kr-soluk); white-space: nowrap; }
+.kr-gozlem { break-inside: avoid; }
+.kr-not { margin: 0 0 2mm; font-size: 9pt; line-height: 1.45; break-inside: avoid; }
+.kr-not b { display: block; font-size: 8pt; font-weight: 600; color: var(--kr-soluk); }
+
+@media (max-width: 600px) {
+  .kr-arac { flex-wrap: wrap; }
+}
+
+@page { size: A4; margin: 0; }
+@media print {
+  html, body.karne-govde { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.karne-govde { padding: 0 !important; margin: 0; }
+  body.karne-govde .bant, body.karne-govde .kr-arac, body.karne-govde #mesaj, body.karne-govde .alt-menu, body.karne-govde nav { display: none !important; }
+  .kr-kagitlar { display: block; gap: 0; padding: 0; zoom: 1 !important; }
+  .kr-sayfa { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; }
+  .kr-sayfa:last-child { break-after: auto; }
+}

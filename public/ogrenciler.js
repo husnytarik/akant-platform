@@ -35,6 +35,9 @@ function ciz() {
     .filter(o => !sinif || (sinif === 'yok' ? !o.sinifId : String(o.sinifId) === sinif))
     .sort((a, b) => bol(a.ad)[1].localeCompare(bol(b.ad)[1], 'tr') || a.ad.localeCompare(b.ad, 'tr'));
   $('sayi').textContent = `${gorunen.length} öğrenci`;
+  const karne = $('karne-ac');
+  karne.classList.toggle('gizli', !Number(sinif));
+  if (Number(sinif)) karne.href = '/karne?sinifId=' + sinif;
   const k = $('liste');
   k.replaceChildren();
   if (!gorunen.length) k.append(el('p', 'Gösterilecek öğrenci yok.', 'bos-not'));

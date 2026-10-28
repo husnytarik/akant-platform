@@ -15,7 +15,11 @@ function listeCiz() {
   k.replaceChildren();
   const s = veri.siniflar[sinifNo];
   if (!s) return k.appendChild(el('p', 'Mentor olduğunuz bir sınıf yok.', 'bos-not'));
-  k.appendChild(el('p', `${s.ad} · ${s.ogrenciler.length} öğrenci`, 'alt'));
+  const ust = el('div', undefined, 'ekle-ust');
+  const karne = el('a', 'Sınıf karneleri', 'ekle-ac');
+  karne.href = '/karne?sinifId=' + s.id;
+  ust.append(el('p', `${s.ad} · ${s.ogrenciler.length} öğrenci`, 'alt'), karne);
+  k.appendChild(ust);
   for (const o of s.ogrenciler) {
     const b = el('button', undefined, 'ogr-kart' + (secili === o.id ? ' secili' : ''));
     b.type = 'button';

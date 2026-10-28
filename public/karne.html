@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neademy - Karne</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/karne.css">
+  <script src="/renk.js"></script>
+</head>
+<body class="karne-govde">
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" id="geri" aria-label="Geri dön">&larr;</a>
+    <h1>Karne</h1>
+  </header>
+  <div class="kr-arac">
+    <div class="kr-arac-sol">
+      <strong id="k-baslik">Karne</strong>
+      <span id="k-bilgi" class="alt"></span>
+    </div>
+    <div class="kr-arac-sag">
+      <select id="k-donem" aria-label="Dönem" class="gizli"></select>
+      <button type="button" id="k-yazdir" class="birincil kucuk" disabled>Yazdır</button>
+    </div>
+  </div>
+  <p id="mesaj" class="mesaj kr-arac" role="status" aria-live="polite"></p>
+  <main id="karne" class="kr-kagitlar" aria-label="Karne sayfaları"></main>
+  <script src="/grafik.js"></script>
+  <script src="/avatar.js"></script>
+  <script src="/karne.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

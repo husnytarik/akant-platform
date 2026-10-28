@@ -112,6 +112,7 @@ const KURALLAR = [
   [/^\/api\/kazanim$/, ['sinav-yonet']],
   [/^\/api\/ogrenci\/(liste|kayit|rapor|teslim)$/, ['ogrenci-gor']],
   [/^\/api\/ogrenci\//, ['ogrenci-kayit']],
+  [/^\/api\/karne$/, ['ogrenci-gor']],
   [/^\/api\/sinav\/ogrenci$/, ['ogrenci-gor', 'sinav-sonuc', 'sinav-yonet']],
   [/^\/api\/sinav\/(liste|detay|secenekler|hazirlik|sonuc)$/, ['sinav-yonet', 'sinav-optik', 'sinav-yayin', 'sinav-sonuc']],
   [/^\/api\/sinav\/cevaplar$/, ['sinav-optik']],

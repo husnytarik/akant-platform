@@ -107,37 +107,15 @@ const sinifOgrencileri = idler => idler.length ? db.prepare(`
 
 // Sınav modülü: yönetim sınavı açar (düzey, ders başına soru sayısı) ve etkinleştirir; ders öğretmenleri soru kazanımını ve cevap anahtarını girip
 // onaylar; öğrenci cevaplarını (optik/Excel/elle) yalnız yönetim girer; öğretmen yalnız ders verdiği sınıfların sonuçlarını görür.
-export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
-  const yol = url.pathname;
-  if (!yol.startsWith('/api/sinav/')) return false;
-  const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
-  const yon = o.role === 'yonetim';
-
+// Sınav sonucu hesapları: istek/oturumdan bağımsızdır (sınav ekranı ve karne ortak kullanır). Önbellekler çağrı başınadır; her istekte yeniden kurulmalıdır.
+export function sinavHesap() {
   const dersleri = id => db.prepare(`SELECT d.id, d.ders, d.soru_sayisi AS soruSayisi, d.anahtar, d.iptal, d.onay, d.onay_tarih AS onayTarih,
       (SELECT u.full_name FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.id = d.onaylayan) AS onayAd
     FROM sinav_dersler d WHERE d.sinav_id = ? ORDER BY d.id`).all(id)
     .map(d => ({ ...d, onay: !!d.onay, iptal: JSON.parse(d.iptal), anahtar: (d.anahtar + '?'.repeat(d.soruSayisi)).slice(0, d.soruSayisi) }));
   const sinavSiniflari = id => db.prepare('SELECT c.id, c.name FROM sinav_siniflar ss JOIN classes c ON c.id = ss.class_id WHERE ss.sinav_id = ? ORDER BY c.name').all(id);
-  // Öğretmenin bu sınavda ders verdiği (sınıf, ders) çiftleri: sonuç görme ve puan girme kapsamı
-  const ciftler = (sinavId, ogretmenId) => db.prepare(`SELECT DISTINCT a.class_id AS sinifId, co.name AS ders FROM assignments a
-    JOIN courses co ON co.id = a.course_id JOIN sinav_siniflar ss ON ss.class_id = a.class_id
-    JOIN sinav_dersler sd ON sd.sinav_id = ss.sinav_id AND sd.ders = co.name
-    WHERE ss.sinav_id = ? AND a.teacher_membership_id = ?`).all(sinavId, ogretmenId);
-  // Yönetim her şeyi görür ve düzenler; öğretmen yalnız etkin sınavlarda, dersini verdiği dersleri
-  const erisim = id => {
-    const s = db.prepare('SELECT * FROM sinavlar WHERE id = ?').get(id);
-    if (!s) return null;
-    const dl = dersleri(id);
-    if (yon) return { s, ders: new Set(dl.map(d => d.id)) };
-    if (s.durum !== 'aktif') return null;
-    const adlar = new Set(ciftler(id, o.membership_id).map(c => c.ders));
-    const ders = new Set(dl.filter(d => adlar.has(d.ders)).map(d => d.id));
-    return ders.size ? { s, ders } : null;
-  };
-  const kisit = s => ({ cift: new Set(ciftler(s.id, o.membership_id).map(c => c.sinifId + ':' + c.ders)) });
 
   const genelKazanim = id => db.prepare('SELECT kazanim FROM sinav_genel_kazanim WHERE sinav_id = ? ORDER BY sira').all(id).map(r => r.kazanim);
-  const kazanimListe = v => [...new Set((Array.isArray(v) ? v : []).map(x => String(x || '').replace(/\s+/g, ' ').trim()).filter(Boolean))];
 
   // Soru başına kazanım: dersId -> [kazanım | null, ...]
   const kazanimlari = sinavId => {
@@ -148,13 +126,6 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       if (dizi && k.no >= 1 && k.no <= dizi.length) dizi[k.no - 1] = k.kazanim;
     }
     return harita;
-  };
-  // Dersin hazırlık durumu: anahtar ve kazanım kaç soruda girildi (iptal edilen soruda kazanım aranmaz)
-  const hazirlik = (d, kazDizi) => {
-    const sik = [...d.anahtar].filter(c => SIKLAR.includes(c)).length;
-    const gerekli = d.soruSayisi - d.iptal.length;
-    const kazanim = kazDizi.filter((k, i) => k && !d.iptal.includes(i + 1)).length;
-    return { sik, kazanim, gerekli, tamam: d.soruSayisi > 0 && sik === d.soruSayisi && kazanim === gerekli };
   };
 
   // Sonuç + madde analizi (öğretmen ekranı ve yayınlanmış sınavlarda öğrenci görünümü bunu kullanır)
@@ -305,10 +276,13 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
   };
 
   // Bir öğrencinin yayınlanmış sınav sonuçları (öğrenci/veli ve mentor öğretmen görünümü ortak kullanır)
+  // Sınıf karnesi gibi toplu çağrılarda aynı sınavın tüm sınıf hesabı tekrarlanmasın diye sonuç çağrı boyunca saklanır
+  const sonucOnbellek = new Map();
   const yayinliSinavlar = ogrId => db.prepare(`SELECT s.* FROM sinavlar s JOIN sinav_siniflar ss ON ss.sinav_id = s.id
       JOIN class_students cs ON cs.class_id = ss.class_id WHERE cs.student_membership_id = ? AND s.yayin = 1 AND s.amac = 'deneme' AND s.durum = 'aktif'
       ORDER BY s.date DESC, s.id DESC`).all(ogrId).map(s => {
-    const r = sonucHesapla(s, true);
+    if (!sonucOnbellek.has(s.id)) sonucOnbellek.set(s.id, sonucHesapla(s, true));
+    const r = sonucOnbellek.get(s.id);
     const g = r.ogrenciler.find(x => x.ogrenciId === ogrId);
     if (!g || g.ortalama === null) return null;
     const degisim = degisimBilgisi(s, ogrId, g.ortalama, true);
@@ -319,6 +293,45 @@ export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
       dersler: r.dersler.filter(d => g.dersler[d.id]).map(d => ({ ders: d.ders, soruSayisi: d.soruSayisi, ...g.dersler[d.id], onceki: degisim?.dersPuan[d.ders] ?? null, kazanimlar: g.kazanim[d.id] })),
     };
   }).filter(Boolean);
+  return { dersleri, sinavSiniflari, genelKazanim, kazanimlari, sonucHesapla, ozetOku, siralamaBilgisi, degisimBilgisi, yayinliSinavlar };
+}
+
+export async function sinavApi({ req, res, url, o, json, govde, denetle }) {
+  const yol = url.pathname;
+  if (!yol.startsWith('/api/sinav/')) return false;
+  const hata = (kod, mesaj) => { json(res, kod, { hata: mesaj }); return true; };
+  const yon = o.role === 'yonetim';
+
+  const { dersleri, sinavSiniflari, genelKazanim, kazanimlari, sonucHesapla, siralamaBilgisi, degisimBilgisi, yayinliSinavlar } = sinavHesap();
+
+  // Öğretmenin bu sınavda ders verdiği (sınıf, ders) çiftleri: sonuç görme ve puan girme kapsamı
+  const ciftler = (sinavId, ogretmenId) => db.prepare(`SELECT DISTINCT a.class_id AS sinifId, co.name AS ders FROM assignments a
+    JOIN courses co ON co.id = a.course_id JOIN sinav_siniflar ss ON ss.class_id = a.class_id
+    JOIN sinav_dersler sd ON sd.sinav_id = ss.sinav_id AND sd.ders = co.name
+    WHERE ss.sinav_id = ? AND a.teacher_membership_id = ?`).all(sinavId, ogretmenId);
+  // Yönetim her şeyi görür ve düzenler; öğretmen yalnız etkin sınavlarda, dersini verdiği dersleri
+  const erisim = id => {
+    const s = db.prepare('SELECT * FROM sinavlar WHERE id = ?').get(id);
+    if (!s) return null;
+    const dl = dersleri(id);
+    if (yon) return { s, ders: new Set(dl.map(d => d.id)) };
+    if (s.durum !== 'aktif') return null;
+    const adlar = new Set(ciftler(id, o.membership_id).map(c => c.ders));
+    const ders = new Set(dl.filter(d => adlar.has(d.ders)).map(d => d.id));
+    return ders.size ? { s, ders } : null;
+  };
+  const kisit = s => ({ cift: new Set(ciftler(s.id, o.membership_id).map(c => c.sinifId + ':' + c.ders)) });
+
+  const kazanimListe = v => [...new Set((Array.isArray(v) ? v : []).map(x => String(x || '').replace(/\s+/g, ' ').trim()).filter(Boolean))];
+
+  // Dersin hazırlık durumu: anahtar ve kazanım kaç soruda girildi (iptal edilen soruda kazanım aranmaz)
+  const hazirlik = (d, kazDizi) => {
+    const sik = [...d.anahtar].filter(c => SIKLAR.includes(c)).length;
+    const gerekli = d.soruSayisi - d.iptal.length;
+    const kazanim = kazDizi.filter((k, i) => k && !d.iptal.includes(i + 1)).length;
+    return { sik, kazanim, gerekli, tamam: d.soruSayisi > 0 && sik === d.soruSayisi && kazanim === gerekli };
+  };
+
 
   // Yönetim ya da öğrencinin sınıfında ders veren / mentor öğretmen: bir öğrencinin yayınlanmış sınav sonuçları
   if (req.method === 'GET' && yol === '/api/sinav/ogrenci') {

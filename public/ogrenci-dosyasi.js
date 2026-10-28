@@ -219,6 +219,7 @@ function tamRaporKur() {
     $('d-kurum-ad').textContent = b.kurum?.ad || '';
     if (b.kurum?.logo) { $('d-kurum-logo').src = '/api/kurum-logo'; $('d-kurum-logo').hidden = false; }
   }).catch(() => {});
+  $('d-karne').href = '/karne?id=' + id;
   $('geri').href = kayit.duzenleyebilir ? '/ogrenciler' : '/ogrencilerim';
   if (kayit.duzenleyebilir) { const d = $('d-duzenle'); d.href = '/ogrenci-kayit?id=' + id; d.classList.remove('gizli'); }
   $('dosya').classList.remove('gizli');

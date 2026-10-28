@@ -706,14 +706,17 @@ try {
     }
     // Yazılı sınavlar: tüm düzeylerde, puanları dersin öğretmeni girer
     const YAZILI_DERS = [['Türkçe', 'Türkçe', -20], ['Matematik', 'Matematik', -18], ['Hayat Bilgisi', 'Hayat Bilgisi', -13], ['Fen Bilimleri', 'Fen Bilimleri', -13],
-      ['Sosyal Bilgiler', 'Sosyal Bilgiler', -11], [INKILAP, 'İnkılap Tarihi', -11], ['İngilizce', 'İngilizce', -6], ['Din Kültürü', 'Din Kültürü', -5]];
+      ['Sosyal Bilgiler', 'Sosyal Bilgiler', -11], [INKILAP, 'İnkılap Tarihi', -11], ['İngilizce', 'İngilizce', -11], ['Din Kültürü', 'Din Kültürü', -12],
+      // Uygulamalı dersler: yazılı yerine dönem performans notu (puanı yine dersin öğretmeni girer)
+      ['Beden Eğitimi', 'Beden Eğitimi', -10, 'Performans Notu'], ['Görsel Sanatlar', 'Görsel Sanatlar', -12, 'Performans Notu'],
+      ['Müzik', 'Müzik', -14, 'Performans Notu'], ['Bilişim', 'Bilişim', -15, 'Performans Notu']];
     for (const duzey of o.ilk ? [1, 2, 3, 4] : [5, 6, 7, 8]) {
       const siniflar = o.siniflar.filter(s => s.duzey === duzey);
       const ogrenciler = siniflar.flatMap(s => s.ogrenciler);
-      YAZILI_DERS.filter(([ders]) => PROGRAM[duzey][ders]).forEach(([ders, kisa, gun], yNo) => {
+      YAZILI_DERS.filter(([ders]) => PROGRAM[duzey][ders]).forEach(([ders, kisa, gun, tur], yNo) => {
         const tarih = haftaIci(kaydir(bugun, gun));
         const sid = ins(`INSERT INTO sinavlar (name, date, teacher_membership_id, yanlis_kat, created_at, yayin, tur, duzey, durum, amac) VALUES (?,?,?,0,?,?,'yazili',?,'aktif','deneme')`,
-          `1. Dönem 1. ${kisa} Yazılısı`, tarih, yon.mid, zaman(kaydir(tarih, -12), '10:00'), tarih <= kaydir(bugun, -8) ? 1 : 0, duzey);
+          `1. Dönem ${tur ? kisa + ' ' + tur : '1. ' + kisa + ' Yazılısı'}`, tarih, yon.mid, zaman(kaydir(tarih, -12), '10:00'), tarih <= kaydir(bugun, -8) ? 1 : 0, duzey);
         for (const s of siniflar) calis('INSERT INTO sinav_siniflar (sinav_id, class_id) VALUES (?,?)', sid, s.id);
         const dId = ins("INSERT INTO sinav_dersler (sinav_id, ders, soru_sayisi, anahtar, iptal, onay, onaylayan, onay_tarih) VALUES (?,?,0,'','[]',1,?,?)", sid, ders, dersOgretmeni(o, duzey, ders).mid, zaman(tarih, '12:00'));
         const kaz = dersKazanimlari(ders, duzey);

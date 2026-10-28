@@ -60,6 +60,7 @@ function ciz() {
     satir('Devamsızlık', `${c.devam.gelmedi} gelmedi · ${c.devam.gec} geç · ${c.devam.izinli} izinli`, '/devamsizlik'),
     satir('Ödevler', c.odev.geciken ? `${c.odev.yapilacak} yapılacak · ${c.odev.geciken} gecikmiş` : `${c.odev.yapilacak} yapılacak · ${c.odev.onayda} onay bekliyor`, '/odevler'),
     satir('Sınav sonuçları', 'Yayınlanan sonuçlar', '/notlarim'),
+    satir('Dönem karnesi', 'Dersler, sınavlar, ödevler, gelişim', '/karne?id=' + c.id),
     satir('Ders programı', 'Haftalık çizelge', '/program'),
   );
   if (c.kulup) kisayol.append(satir('Kulüp', c.kulup, '/kulupler'));

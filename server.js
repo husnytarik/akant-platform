@@ -23,6 +23,7 @@ import { sinavApi } from './sinav.js';
 import { mufredatApi } from './mufredat.js';
 import { ogrencilerimApi } from './ogrencilerim.js';
 import { ogrenciApi } from './ogrenci.js';
+import { karneApi } from './karne.js';
 import { ogrencimApi } from './ogrencim.js';
 import { profilApi } from './profil.js';
 import { kulupApi } from './kulup.js';
@@ -442,6 +443,12 @@ async function api(req, res, url) {
     if (await ogrenciApi({ req, res, url, o, json, govde, denetle })) return;
   }
 
+  if (url.pathname === '/api/karne') {
+    const o = oturum(req);
+    if (!o) return json(res, 401, { hata: 'Oturum yok' });
+    if (await karneApi({ req, res, url, o, json })) return;
+  }
+
   if (url.pathname.startsWith('/api/ogrencilerim')) {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
@@ -592,6 +599,7 @@ function statik(req, res, url) {
   if (ad === '/ogrenci-kayit') ad = '/ogrenci-kayit.html';
   if (ad === '/ogrenci-dosyasi') ad = '/ogrenci-dosyasi.html';
   if (ad === '/ogrencim') ad = '/ogrencim.html';
+  if (ad === '/karne') ad = '/karne.html';
   if (ad === '/teslim') ad = '/teslim.html';
   if (ad === '/teslim-kodu') ad = '/teslim-kodu.html';
   if (ad === '/teslim-kapi') ad = '/teslim-kapi.html';
