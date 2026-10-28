@@ -5,7 +5,7 @@ const bag = location.pathname.match(/^\/t\/([0-9a-f]{48})$/);
 const TABAN = bag ? `/api/teslim/k/${bag[1]}/` : '/api/teslim/';
 
 const YENILE_MS = 20000;
-const SORGU_MS = 2000;
+const SORGU_MS = 3000;
 const SONUC_MS = 8000;
 
 let kodZamani = 0;
@@ -81,7 +81,7 @@ async function kodYenile() {
   }
   kodZamani = Date.now();
   qrCiz(r.veri.kod);
-  $('kod').textContent = r.veri.kod.slice(0, 5) + ' ' + r.veri.kod.slice(5);
+  $('kod').textContent = r.veri.kod.slice(0, 3) + ' ' + r.veri.kod.slice(3);
   kisiyiYaz(r.veri.kisi, r.veri.ogrenciler);
   document.title = 'neademy - Teslim kodu';
 }

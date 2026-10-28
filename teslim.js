@@ -58,16 +58,17 @@ CREATE TABLE IF NOT EXISTS teslim_kayitlari (
 
 const metinDuz = (v, en) => String(v ?? '').trim().replace(/\s+/g, ' ').slice(0, en);
 
+const KOD_UZUNLUK = 6;          // elle yazılabilecek kadar kısa; tek kullanımlık ve kısa ömürlü olduğu için yeterli
 const KOD_OMRU = 45_000;          // QR kodu bu kadar süre geçerli; ekran daha sık yeniler
 const TALEP_OMRU = 3 * 60_000;    // güvenlik okuttuktan sonra velinin karar süresi
 const ALFABE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 0/O, 1/I gibi karışanlar yok
 
 function kodUret() {
   let k = '';
-  for (const b of crypto.randomBytes(10)) k += ALFABE[b & 31];
+  for (const b of crypto.randomBytes(KOD_UZUNLUK)) k += ALFABE[b & 31];
   return k;
 }
-const kodTemizle = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-10);
+const kodTemizle = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-KOD_UZUNLUK);
 
 // Bir kişinin (veli hesabı ya da hesapsız yetkili) teslim alabileceği öğrenciler
 function ogrencilerDe(tur, id) {
@@ -89,8 +90,12 @@ function ozneBilgi(tur, id) {
   return db.prepare('SELECT ad, yakinlik FROM teslim_yetkilileri WHERE id = ?').get(id);
 }
 
+// Yoğun çıkışta her sorguda yazmamak için temizlik en fazla birkaç saniyede bir çalışır (kodun geçerliliği sorguda zaten bitis ile denetlenir)
+let sonTemizlik = 0;
 function sureDolanlariKapat() {
   const simdi = Date.now();
+  if (simdi - sonTemizlik < 5000) return;
+  sonTemizlik = simdi;
   db.prepare("UPDATE teslim_talepleri SET durum = 'doldu', karar = ? WHERE durum IN ('secim','bekliyor') AND olusma < ?").run(simdi, simdi - TALEP_OMRU);
   db.prepare('DELETE FROM teslim_kodlari WHERE bitis < ?').run(simdi - 60_000);
 }
@@ -103,8 +108,12 @@ function ozneIslem(tur, id, req, yol, b, { json, res, denetle }) {
 
   if (req.method === 'GET' && yol === 'kod') {
     sureDolanlariKapat();
-    const kod = kodUret();
-    db.prepare('INSERT INTO teslim_kodlari (ozne_tur, ozne_id, kod, bitis) VALUES (?,?,?,?)').run(tur, id, kod, Date.now() + KOD_OMRU);
+    let kod;
+    for (;;) { // kısa kodda çakışma ender de olsa mümkün: benzersiz olana kadar yeniden dene
+      kod = kodUret();
+      try { db.prepare('INSERT INTO teslim_kodlari (ozne_tur, ozne_id, kod, bitis) VALUES (?,?,?,?)').run(tur, id, kod, Date.now() + KOD_OMRU); break; }
+      catch (e) { if (!String(e.message).includes('UNIQUE')) throw e; }
+    }
     json(res, 200, { kod, omur: KOD_OMRU / 1000, kisi, ogrenciler: ogr.map(o => ({ ad: o.ad, sinif: o.sinif, okul: o.okul })) });
     return true;
   }
@@ -173,7 +182,7 @@ function kapiIslem(o, req, yol, b, url, { json, res, denetle }) {
     if (cokDeneme(o.user_id)) return json(res, 429, { hata: 'Çok fazla hatalı deneme. Bir dakika bekleyin.' }), true;
     sureDolanlariKapat();
     const kod = kodTemizle(b.kod);
-    const k = kod.length === 10 && db.prepare('SELECT * FROM teslim_kodlari WHERE kod = ? AND kullanildi = 0 AND bitis >= ?').get(kod, Date.now());
+    const k = kod.length === KOD_UZUNLUK && db.prepare('SELECT * FROM teslim_kodlari WHERE kod = ? AND kullanildi = 0 AND bitis >= ?').get(kod, Date.now());
     if (!k) {
       hatalar.get(o.user_id).push(Date.now());
       return json(res, 404, { hata: 'Kod geçersiz ya da süresi dolmuş. Velinin ekranındaki yeni kodu okutun.' }), true;
