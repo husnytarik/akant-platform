@@ -26,7 +26,7 @@ import { ogrencimApi } from './ogrencim.js';
 import { profilApi } from './profil.js';
 import { kulupApi } from './kulup.js';
 import { gelisimApi } from './gelisim.js';
-import { yetkiApi, etkinYetkiler, yolYetkisi } from './yetki.js';
+import { yetkiApi, etkinYetkiler, yolYetkisi, ekRolAdlari } from './yetki.js';
 import { odevApi } from './odev.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
@@ -158,6 +158,9 @@ function profilBilgisi(m) {
     if (!d.length) d = db.prepare(`SELECT c.name, c.renk FROM teacher_courses t JOIN courses c ON c.id = t.course_id
       WHERE t.teacher_membership_id = ? ORDER BY c.name`).all(m.id);
     if (d.length) { unvan = d[0].name + ' öğretmeni'; renk = d[0].renk || null; }
+    // Zümre başkanı ayrı profil değildir; öğretmen ekranında unvana eklenir
+    const uid = db.prepare('SELECT user_id FROM memberships WHERE id = ?').get(m.id)?.user_id;
+    if (uid && ekRolAdlari(uid).includes('Zümre başkanı')) unvan += ' · Zümre başkanı';
   } else if (m.role === 'ogrenci') {
     const c = db.prepare('SELECT c.name FROM class_students cs JOIN classes c ON c.id = cs.class_id WHERE cs.student_membership_id = ?').get(m.id);
     if (c) unvan = c.name + ' sınıfı öğrencisi';
@@ -254,7 +257,7 @@ async function api(req, res, url) {
       const demo = DEMO_HESAPLAR[b.rol];
       if (!demo) return json(res, 400, { hata: 'Geçersiz giriş türü' });
       kullanici = kullaniciBul(demo[0]);
-      uyelikler = yetkiliUyelikler(kullanici, demo[1], ['rehber', 'teknik', 'zumre', 'guvenlik'].includes(b.rol) ? 'yonetim' : b.rol);
+      uyelikler = yetkiliUyelikler(kullanici, demo[1], ['rehber', 'teknik', 'guvenlik'].includes(b.rol) ? 'yonetim' : b.rol === 'zumre' ? 'ogretmen' : b.rol);
     }
     if (!uyelikler.length) return json(res, 404, { hata: 'Demo hesap bulunamadı' });
     const sid = crypto.randomBytes(32).toString('hex');

@@ -187,7 +187,7 @@ try {
     }
   }
 
-  // Yönetim rolleri: rehber öğretmen ve teknik ekip yeni kişilerdir; matematik zümre başkanı ikinci profil olarak yönetimdedir, diğer branşların başkanları rol olarak atanır
+  // Yönetim rolleri: rehber öğretmen ve teknik ekip yeni kişilerdir; zümre başkanları ayrı profil değil, öğretmen profiline eklenen roldür
   sistemRolleriKur();
   {
     const meltem = okullar.find(x => x.ad === 'Meltem Ortaokulu');
@@ -197,9 +197,8 @@ try {
       const k = kullaniciEkle('7', '556', DEMO[anahtar].ad, DEMO[anahtar]);
       yonetimUyeligi(k); rolVer(k, kod);
     }
-    yonetimUyeligi(meltem.t.mat1); rolVer(meltem.t.mat1, 'zumre');
-    // Diğer zümre başkanları öğretmen olarak kalır (yalnızca rol: duyuru hedefi ve zümre işleri)
-    for (const anahtar of ['tr1', 'fen1', 'sos', 'ing', 'din', 'bed', 'gor', 'muz', 'bil']) rolVer(meltem.t[anahtar], 'zumre');
+    // Zümre başkanları normal öğretmendir; aynı ekranda ek olarak zümre işlerini görürler
+    for (const anahtar of ['mat1', 'tr1', 'fen1', 'sos', 'ing', 'din', 'bed', 'gor', 'muz', 'bil']) rolVer(meltem.t[anahtar], 'zumre');
   }
 
   // Sınıflar ve öğrenciler (ilkokulda her sınıfın kendi sınıf öğretmeni vardır)
