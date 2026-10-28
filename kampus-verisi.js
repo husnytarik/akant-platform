@@ -114,6 +114,7 @@ const DEMO = {
   rehber: { tc: tcUret('100000006'), tel: '5550000006', ad: 'Demo Rehber' },
   teknik: { tc: tcUret('100000007'), tel: '5550000007', ad: 'Demo Teknik' },
   zumre: { tc: tcUret('100000008'), tel: '5550000008', ad: 'Demo Zümre Başkanı' },
+  guvenlik: { tc: tcUret('100000009'), tel: '5550000009', ad: 'Demo Güvenlik' },
 };
 
 // ---------- Kullanıcılar ----------
@@ -192,7 +193,7 @@ try {
     const meltem = okullar.find(x => x.ad === 'Meltem Ortaokulu');
     const rolVer = (k, kod) => calis('INSERT INTO kullanici_roller (user_id, rol_id) VALUES (?,?)', k.uid, db.prepare('SELECT id FROM roller WHERE kod = ?').get(kod).id);
     const yonetimUyeligi = k => ins("INSERT INTO memberships (user_id, branch_id, role, gorev) VALUES (?,?,'yonetim','okul')", k.uid, meltem.id);
-    for (const [anahtar, kod] of [['rehber', 'rehber'], ['teknik', 'teknik']]) {
+    for (const [anahtar, kod] of [['rehber', 'rehber'], ['teknik', 'teknik'], ['guvenlik', 'guvenlik']]) {
       const k = kullaniciEkle('7', '556', DEMO[anahtar].ad, DEMO[anahtar]);
       yonetimUyeligi(k); rolVer(k, kod);
     }

@@ -37,6 +37,7 @@ export const KATALOG = [
     { kod: 'kulup', ad: 'Kulüp yönetimi', aciklama: 'Kulüp açma, kontenjan ve yerleştirme' },
     { kod: 'gelisim', ad: 'Gelişim raporu yönetimi', aciklama: 'Gözlem başlıkları, dönemler ve rapor' },
     { kod: 'rapor', ad: 'Raporlar', aciklama: 'Kurum ve okul özetleri' },
+    { kod: 'teslim-kapi', ad: 'Öğrenci teslim kapısı', aciklama: 'Velinin QR kodunu okutup öğrenciyi teslim etme (kampüs kapısı)' },
   ] },
   { grup: 'Kurum', yetkiler: [
     { kod: 'kurum', ad: 'Okul kurulumu', aciklama: 'Kurum, kampüs, okul, müdür ve yardımcıları (yalnızca kurum yönetimi)', kurum: true },
@@ -56,6 +57,7 @@ const SISTEM_ROLLERI = [
   { kod: 'rehber', ad: 'Rehber öğretmen', aciklama: 'Öğrenci dosyaları, gelişim ve sınav sonuçları', yetkiler: ['ogrenci-gor', 'gelisim', 'sinav-sonuc', 'rapor'] },
   { kod: 'zumre', ad: 'Zümre başkanı', aciklama: 'Branşının sınavlarını hazırlar, sonuçları ve programı izler', yetkiler: ['sinav-yonet', 'sinav-sonuc', 'ogrenci-gor', 'rapor'] },
   { kod: 'teknik', ad: 'Teknik ekip', aciklama: 'Optik cevap girişi ve veri düzenlemeleri', yetkiler: ['sinav-optik', 'sinav-sonuc', 'ogrenci-gor', 'ogrenci-kayit', 'kadro'] },
+  { kod: 'guvenlik', ad: 'Güvenlik', aciklama: 'Kapıda veli QR kodunu okutur, öğrenciyi teslim eder', yetkiler: ['teslim-kapi'] },
 ];
 
 export function sistemRolleriKur() {
@@ -104,6 +106,7 @@ const KURALLAR = [
   [/^\/api\/tatil\//, ['kadro']],
   [/^\/api\/duyuru\//, ['duyuru']],
   [/^\/api\/rapor\//, ['rapor']],
+  [/^\/api\/teslim\/kapi\//, ['teslim-kapi']],
   [/^\/api\/kulup\//, ['kulup']],
   [/^\/api\/gelisim\//, ['gelisim']],
   [/^\/api\/kazanim$/, ['sinav-yonet']],

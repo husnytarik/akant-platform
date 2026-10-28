@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>neademy - Teslim kodu</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/renk.js"></script>
+</head>
+<body>
+  <header class="bant alt-bant">
+    <h1 id="baslik">neademy · Teslim kodu</h1>
+  </header>
+  <main class="kart panel tk-kap">
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <section id="b-qr" class="tk-bolum">
+      <div class="tk-kim"><strong id="kim"></strong><span id="yakinlik" class="alt"></span></div>
+      <canvas id="qr" class="tk-qr" width="264" height="264" aria-label="Teslim QR kodu"></canvas>
+      <div class="tk-sayac" aria-hidden="true"><div id="sayac-dolgu"></div></div>
+      <p class="tk-kod" id="kod"></p>
+      <p class="alt tk-not">Bu kodu kapıdaki güvenliğe gösterin. Kod birkaç saniyede bir kendiliğinden yenilenir; ekran görüntüsü işe yaramaz. Bu sayfayı kimseyle paylaşmayın.</p>
+      <ul id="ogrenciler" class="tk-liste"></ul>
+    </section>
+
+    <section id="b-karar" class="tk-bolum gizli">
+      <h2 class="baslik2">Teslim edilsin mi?</h2>
+      <p class="alt">Kapıdaki güvenlik aşağıdaki öğrencileri size teslim etmek istiyor.</p>
+      <ul id="karar-ogrenci" class="tk-liste tk-buyuk"></ul>
+      <div class="tk-dugme">
+        <button type="button" id="onay" class="birincil">Onayla</button>
+        <button type="button" id="red" class="ikincil">Hayır</button>
+      </div>
+    </section>
+
+    <section id="b-sonuc" class="tk-bolum gizli">
+      <p id="sonuc-metin" class="tk-sonuc"></p>
+    </section>
+
+    <section id="b-hata" class="tk-bolum gizli">
+      <p id="hata-metin" class="tk-sonuc"></p>
+    </section>
+  </main>
+  <script src="/vendor/qrcode.js"></script>
+  <script src="/teslim-kodu.js"></script>
+</body>
+</html>

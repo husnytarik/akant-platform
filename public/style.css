@@ -2937,3 +2937,50 @@ body.dosya-sayfa main :is(#icerik, #tam-rapor) .veli-kart:has(+ .ok-eposta) { bo
 
 /* neademy işareti (giriş sayfası) */
 .marka-isaret { font-family: var(--serif); font-size: 2.2rem; font-weight: 600; line-height: 1; color: var(--ana); }
+
+/* Teslim kodu (veli / yetkili) ve teslim kapısı (güvenlik): QR, onay ve seçim ekranları */
+.tk-kap { max-width: 460px; }
+.tk-bolum { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 8px 0 0; }
+.tk-kim { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tk-kim strong { font-size: 1.25rem; }
+.tk-qr { display: block; max-width: 100%; height: auto; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(11,37,69,.06), 0 8px 28px rgba(11,37,69,.08); }
+.tk-sayac { width: 100%; max-width: 264px; height: 4px; border-radius: 999px; background: var(--ic-zemin, #eef1f6); overflow: hidden; }
+.tk-sayac > div { height: 100%; width: 100%; border-radius: 999px; background: var(--ana); transition: width .5s linear; }
+.tk-kod { margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: .14em; font-variant-numeric: tabular-nums; }
+.tk-not { max-width: 34ch; margin: 0; }
+.tk-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.tk-liste li { display: flex; flex-direction: column; align-items: center; }
+.tk-buyuk li { font-size: 1.15rem; font-weight: 600; }
+.tk-dugme { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px; }
+.tk-sonuc { margin: 24px 0 4px; font-size: 1.4rem; font-weight: 600; }
+.tk-sonuc[data-tur="tamam"], #b-sonuc[data-tur="tamam"] .tk-sonuc { color: #1f7a4d; }
+.tk-sonuc[data-tur="red"], #b-sonuc[data-tur="red"] .tk-sonuc { color: var(--accent); }
+
+.tk-kamera { position: relative; width: 100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: var(--ic-zemin, #eef1f6); display: grid; place-items: center; }
+.tk-kamera video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tk-kamera p { position: relative; margin: 0; padding: 0 20px; }
+.tk-elle { width: 100%; text-align: left; }
+.tk-elle-satir { display: flex; gap: 8px; }
+.tk-elle-satir input { flex: 1; min-width: 0; letter-spacing: .12em; text-transform: uppercase; }
+.tk-kapi .baslik3 { align-self: flex-start; }
+.tk-bugun { list-style: none; margin: 0; padding: 0; width: 100%; text-align: left; }
+.tk-bugun li { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; padding: 8px 0; border-top: 1px solid var(--ince, #e1e7ef); }
+.tk-bugun li:first-child { border-top: 0; }
+.tk-bugun li .alt:nth-child(2) { grid-column: 1; }
+.tk-bugun time { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+.tk-secim { list-style: none; margin: 0; padding: 0; width: 100%; text-align: left; display: flex; flex-direction: column; }
+.tk-secim li { position: relative; border-top: 1px solid var(--ince, #e1e7ef); }
+.tk-secim li:first-child { border-top: 0; }
+.tk-secim input { position: absolute; right: 4px; top: 50%; width: 22px; height: 22px; margin: -11px 0 0; accent-color: var(--ana); }
+.tk-secim label { display: flex; align-items: center; gap: 14px; margin: 0; padding: 12px 40px 12px 0; cursor: pointer; }
+.tk-ogr { display: flex; flex-direction: column; min-width: 0; }
+.tk-ogr strong { font-size: 1.05rem; }
+.tk-avatar { width: 64px; height: 64px; font-size: 1.2rem; }
+
+.tk-eylem { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.tk-eylem .kucuk { width: auto; margin: 0; }
+main .ders-panel .ekle-ust .dugme-link { margin: 0 8px 0 auto; }
+.tk-secim label { color: var(--text); font-size: .9rem; font-weight: 400; }
+.tk-kamera { max-height: 340px; }
+main .ders-panel .tk-kodum { display: flex; justify-content: center; width: 100%; margin: 0 0 8px; }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neademy - Teslim kapısı</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/renk.js"></script>
+</head>
+<body>
+  <header class="bant alt-bant">
+    <a href="/panel" class="bant-geri" aria-label="Panele dön">&larr;</a>
+    <h1 id="baslik">Teslim kapısı</h1>
+  </header>
+  <main class="kart panel tk-kap tk-kapi">
+    <p id="mesaj" class="mesaj" role="status" aria-live="polite"></p>
+
+    <section id="a-tara" class="tk-bolum">
+      <div class="tk-kamera">
+        <video id="video" playsinline muted></video>
+        <p id="kamera-not" class="alt">Kamera açılıyor…</p>
+      </div>
+      <form id="kod-form" class="tk-elle" autocomplete="off">
+        <label for="kod-gir">Kodu elle gir</label>
+        <div class="tk-elle-satir">
+          <input id="kod-gir" maxlength="12" placeholder="XXXXX XXXXX" autocapitalize="characters" spellcheck="false">
+          <button type="submit" class="birincil kucuk">Ara</button>
+        </div>
+      </form>
+      <h2 class="baslik3">Bugün teslim edilenler</h2>
+      <ul id="bugun" class="tk-bugun"></ul>
+    </section>
+
+    <section id="a-secim" class="tk-bolum gizli">
+      <div class="tk-kim"><strong id="kisi"></strong><span id="yakinlik" class="alt"></span></div>
+      <p class="alt">Teslim edilecek öğrencileri seçin.</p>
+      <ul id="secim" class="tk-secim"></ul>
+      <div class="tk-dugme">
+        <button type="button" id="gonder" class="birincil">Veliye onaya gönder</button>
+        <button type="button" id="vazgec" class="ikincil">Vazgeç</button>
+      </div>
+    </section>
+
+    <section id="a-bekle" class="tk-bolum gizli">
+      <p class="tk-sonuc" id="bekle-metin">Veli onayı bekleniyor…</p>
+      <ul id="bekle-liste" class="tk-liste"></ul>
+      <div class="tk-dugme"><button type="button" id="bekle-iptal" class="ikincil">İptal et</button></div>
+    </section>
+
+    <section id="a-sonuc" class="tk-bolum gizli">
+      <p class="tk-sonuc" id="sonuc-metin"></p>
+      <ul id="sonuc-liste" class="tk-liste"></ul>
+    </section>
+  </main>
+  <script src="/avatar.js"></script>
+  <script src="/vendor/jsqr.js"></script>
+  <script src="/teslim-kapi.js"></script>
+  <script src="/bant.js"></script>
+</body>
+</html>

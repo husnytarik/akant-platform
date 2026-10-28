@@ -11,7 +11,7 @@ import { kurulumApi, okulLogoApi } from './kurulum.js';
 import { ayarlar as okulAyarlari } from './okul-ayar.js';
 import { etutApi } from './etut.js';
 import { duyuruApi } from './duyuru.js';
-import { teslimApi } from './teslim.js';
+import { teslimApi, teslimBaglantiApi } from './teslim.js';
 import { raporApi } from './rapor.js';
 import { tatilApi } from './tatil.js';
 import { kurumApi, kurumLogoApi, yonetimUnvani } from './kurum.js';
@@ -42,6 +42,7 @@ const DEMO_HESAPLAR = {
   rehber: ['10000000696', '5550000006'],
   teknik: ['10000000764', '5550000007'],
   zumre: ['10000000832', '5550000008'],
+  guvenlik: ['10000000900', '5550000009'],
 };
 const ROLLER = ['yonetim', 'ogretmen', 'ogrenci', 'veli'];
 const KOD_SURESI = 5 * 60 * 1000;
@@ -82,6 +83,8 @@ const MODULLER = [
   { id: 'devamsizlik-veli', ad: 'Devamsızlık', aciklama: 'Çocuğumun ders devamsızlıkları', roller: ['veli'], yol: '/devamsizlik' },
   { id: 'devamsizlik-ogrenci', ad: 'Devamsızlığım', aciklama: 'Ders devam durumum', roller: ['ogrenci'], yol: '/devamsizlik' },
   { id: 'teslim', ad: 'Teslim yetkileri', aciklama: 'Öğrenciyi teslim alabilecek kişiler', roller: ['veli'], yol: '/teslim' },
+  { id: 'teslim-kodu', ad: 'Teslim kodu', aciklama: 'Çocuğumu almak için güvenliğe gösterilecek QR kod', roller: ['veli'], yol: '/teslim-kodu' },
+  { id: 'teslim-kapi', ad: 'Teslim kapısı', aciklama: 'Veli QR kodunu okut, öğrenciyi teslim et', roller: ['yonetim'], yetki: ['teslim-kapi'], yol: '/teslim-kapi' },
 ];
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
@@ -194,6 +197,9 @@ function yetkiliUyelikler(kullanici, telefon, rol) {
 async function api(req, res, url) {
   const ip = req.socket.remoteAddress || '?';
 
+  // Hesapsız teslim yetkilisinin özel bağlantısı (veli iptal edene kadar geçerli)
+  if (url.pathname.startsWith('/api/teslim/k/') && await teslimBaglantiApi({ req, res, url, json, govde, denetle })) return;
+
   // Yönetim oturumları yalnızca rollerinin yetkisi olan uçlara girebilir
   if (cerezler(req).sid) {
     const oo = oturum(req);
@@ -248,7 +254,7 @@ async function api(req, res, url) {
       const demo = DEMO_HESAPLAR[b.rol];
       if (!demo) return json(res, 400, { hata: 'Geçersiz giriş türü' });
       kullanici = kullaniciBul(demo[0]);
-      uyelikler = yetkiliUyelikler(kullanici, demo[1], ['rehber', 'teknik', 'zumre'].includes(b.rol) ? 'yonetim' : b.rol);
+      uyelikler = yetkiliUyelikler(kullanici, demo[1], ['rehber', 'teknik', 'zumre', 'guvenlik'].includes(b.rol) ? 'yonetim' : b.rol);
     }
     if (!uyelikler.length) return json(res, 404, { hata: 'Demo hesap bulunamadı' });
     const sid = crypto.randomBytes(32).toString('hex');
@@ -575,6 +581,12 @@ function statik(req, res, url) {
   if (ad === '/ogrenci-dosyasi') ad = '/ogrenci-dosyasi.html';
   if (ad === '/ogrencim') ad = '/ogrencim.html';
   if (ad === '/teslim') ad = '/teslim.html';
+  if (ad === '/teslim-kodu') ad = '/teslim-kodu.html';
+  if (ad === '/teslim-kapi') ad = '/teslim-kapi.html';
+  if (/^\/t\/[0-9a-f]{48}$/.test(ad)) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'self'" });
+    return fs.createReadStream(path.join(publicDir, 'teslim-baglanti.html')).pipe(res);
+  }
   if (ad === '/raporlar') ad = '/raporlar.html';
   if (ad === '/profil') ad = '/profil.html';
   if (ad === '/sinav') ad = '/sinav.html';

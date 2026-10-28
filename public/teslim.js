@@ -54,12 +54,47 @@ function ekleForm(ogrenci) {
   return f;
 }
 
+// Hesabı olmayan yetkili (dede, servis şoförü...) için iptal edilebilir özel bağlantı
+function baglantiDugmeleri(k) {
+  const dugme = (metin, tehlike) => { const b = el('button', metin, 'ikincil kucuk' + (tehlike ? ' tehlike' : '')); b.type = 'button'; return b; };
+  const gonder = async kod => {
+    const url = location.origin + '/t/' + kod;
+    const metin = `${k.ad}, ${liste[secili].ad} için teslim kodu bağlantınız. Kimseyle paylaşmayın: `;
+    if (navigator.share) { await navigator.share({ title: 'Teslim kodu', text: metin, url }).catch(() => {}); return; }
+    try { await navigator.clipboard.writeText(url); mesaj('Bağlantı kopyalandı. Kişiye mesajla iletebilirsiniz.', 'tamam'); }
+    catch { prompt('Bağlantıyı kopyalayıp kişiye iletin:', url); }
+  };
+  if (!k.baglanti) {
+    const b = dugme('Bağlantı oluştur');
+    b.addEventListener('click', async () => {
+      const r = await api('/api/teslim/baglanti', { id: k.id, islem: 'olustur' });
+      if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+      k.baglanti = r.veri.kod;
+      await gonder(r.veri.kod);
+      yukle();
+    });
+    return [b];
+  }
+  const g = dugme('Bağlantıyı gönder');
+  g.addEventListener('click', () => gonder(k.baglanti));
+  const i = dugme('Bağlantıyı iptal et', true);
+  i.addEventListener('click', async () => {
+    if (!confirm(`${k.ad} için verilen bağlantı iptal edilsin mi? Bağlantı hemen çalışmaz hale gelir.`)) return;
+    const r = await api('/api/teslim/baglanti', { id: k.id, islem: 'iptal' });
+    if (!r.ok) return mesaj(r.veri.hata || 'Hata', 'hata');
+    mesaj('Bağlantı iptal edildi.', 'tamam');
+    yukle();
+  });
+  return [g, i];
+}
+
 function kisi(k) {
   const kart = el('div', undefined, 'not-kart');
   const ust = el('div', undefined, 'not-ust');
   ust.append(el('strong', k.ad), el('span', k.yakinlik, 'alt'));
   const tel = el('a', k.telefon); tel.href = 'tel:' + k.telefon.replace(/\s/g, '');
   const p = el('p'); p.append(tel);
+  const eylem = el('div', undefined, 'tk-eylem');
   const s = el('button', 'Sil', 'ikincil tehlike kucuk'); s.type = 'button';
   s.addEventListener('click', async () => {
     if (!confirm(`${k.ad} teslim yetkililerinden çıkarılsın mı?`)) return;
@@ -68,7 +103,10 @@ function kisi(k) {
     mesaj('Kişi çıkarıldı.', 'tamam');
     yukle();
   });
-  kart.append(ust, p, s);
+  eylem.append(...baglantiDugmeleri(k), s);
+  kart.append(ust, p);
+  if (k.baglanti) kart.append(el('p', 'Özel bağlantı açık: kişi bu bağlantıyla hesap olmadan QR kod alabilir.', 'alt'));
+  kart.append(eylem);
   return kart;
 }
 
@@ -95,7 +133,8 @@ function ciz() {
     d.classList.toggle('acik', !kapali);
   });
   ust.append(el('h3', `${c.ad} için yetkili kişiler`, 'baslik3'), d);
-  icerik.append(ust, form);
+  const kodBag = el('a', 'Teslim kodumu göster', 'dugme-link tk-kodum'); kodBag.href = '/teslim-kodu';
+  icerik.append(kodBag, ust, form);
   icerik.append(el('p', 'Anne ve baba her zaman yetkilidir. Buraya yalnızca onlar dışında öğrenciyi teslim alabilecek kişileri ekleyin; okul teslimde kimlik isteyebilir.', 'alt'));
   if (!c.kisiler.length) icerik.append(el('p', 'Henüz kimse eklenmedi.', 'alt'));
   for (const k of c.kisiler) icerik.append(kisi(k));
