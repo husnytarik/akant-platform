@@ -1,5 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
+import { gzipSync } from 'node:zlib';
+import { ortam } from './ortam.js';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +17,7 @@ import { duyuruApi } from './duyuru.js';
 import { teslimApi, teslimBaglantiApi } from './teslim.js';
 import { raporApi } from './rapor.js';
 import { tatilApi } from './tatil.js';
-import { kurumApi, kurumLogoApi, yonetimUnvani } from './kurum.js';
+import { kurumApi, kurumLogoApi, yonetimUnvani, ilkOkulKur } from './kurum.js';
 import { yoklamaApi } from './yoklama.js';
 import { dersApi } from './ders.js';
 import { kazanimApi } from './kazanim.js';
@@ -30,12 +32,13 @@ import { kulupApi } from './kulup.js';
 import { gelisimApi } from './gelisim.js';
 import { yetkiApi, etkinYetkiler, yolYetkisi, ekRolAdlari } from './yetki.js';
 import { odevApi } from './odev.js';
+import { yedekZamanla, yedekAl } from './yedek.js';
 
 okulNoDoldur(); // örnek veri sunucudan önce yüklenmiş olabilir
 
 const PORT = Number(process.env.PORT || 3000);
 // Gerçek SMS entegrasyonu yokken kod ekranda gösterilir. Canlıda DEV_KOD=0 olmalı.
-const DEV_KOD = process.env.DEV_KOD !== '0';
+const DEV_KOD = !ortam.uretim && process.env.DEV_KOD !== '0';
 const DEMO_HESAPLAR = {
   yonetim: ['10000000146', '5550000001'],
   ogretmen: ['10000000214', '5550000002'],
@@ -104,6 +107,21 @@ const telNormalize = t => String(t || '').replace(/\D/g, '').slice(-10);
 
 // Basit hız sınırı: IP başına dakikada 20 istek (giriş uçları için)
 const hizSayac = new Map();
+// Hatalı giriş koruması: aynı kimlik + aynı IP'den 5, aynı kimlikten (tüm IP'ler) 30 hatalı denemede 15 dk kilit
+const HATALI = new Map();
+const KILIT_SURESI = 15 * 60 * 1000;
+function hataKaydet(anahtar) {
+  const simdi = Date.now(), k = HATALI.get(anahtar);
+  if (!k || simdi - k.ilk > KILIT_SURESI) HATALI.set(anahtar, { n: 1, ilk: simdi });
+  else k.n++;
+  if (HATALI.size > 20000) for (const [a, v] of HATALI) { if (simdi - v.ilk > KILIT_SURESI) HATALI.delete(a); }
+}
+function kilitliMi(kimlik, ip) {
+  const simdi = Date.now();
+  const sinir = (a, n) => { const k = HATALI.get(a); return k && simdi - k.ilk <= KILIT_SURESI && k.n >= n; };
+  return sinir(`${kimlik}|${ip}`, 5) || sinir(kimlik, 30);
+}
+
 function hizAsildi(ip) {
   const simdi = Date.now();
   const k = hizSayac.get(ip) || [];
@@ -187,9 +205,9 @@ function kullaniciBul(kimlik) {
   const k = String(kimlik || '').trim().toUpperCase();
   if (/^\d{11}$/.test(k)) {
     if (!tcGecerliMi(k)) return null;
-    return db.prepare('SELECT * FROM users WHERE tc_no = ?').get(k);
+    return db.prepare('SELECT * FROM users WHERE tc_no = gz(?)').get(k);
   }
-  if (/^[A-Z0-9]{5,20}$/.test(k)) return db.prepare('SELECT * FROM users WHERE passport_no = ?').get(k);
+  if (/^[A-Z0-9]{5,20}$/.test(k)) return db.prepare('SELECT * FROM users WHERE passport_no = gz(?)').get(k);
   return null;
 }
 
@@ -200,8 +218,24 @@ function yetkiliUyelikler(kullanici, telefon, rol) {
     .all(kullanici.id, rol);
 }
 
+// Tünel/ters vekil yerel adresten bağlanır; yalnızca o durumda vekilin bildirdiği gerçek istemci IP'sine güvenilir
+function istemciIp(req) {
+  const adr = req.socket.remoteAddress || '?';
+  if (/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(adr)) {
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf) return cf.trim();
+  }
+  return adr;
+}
+
+// HTTPS üzerinden gelen isteklerde çerez yalnızca şifreli bağlantıda gönderilir
+function cerezSid(req, sid) {
+  const guvenli = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  return `sid=${sid}; Path=/; HttpOnly; SameSite=Strict${guvenli}; Max-Age=${OTURUM_SURESI / 1000}`;
+}
+
 async function api(req, res, url) {
-  const ip = req.socket.remoteAddress || '?';
+  const ip = istemciIp(req);
 
   // Hesapsız teslim yetkilisinin özel bağlantısı (veli iptal edene kadar geçerli)
   if (url.pathname.startsWith('/api/teslim/k/') && await teslimBaglantiApi({ req, res, url, json, govde, denetle })) return;
@@ -245,7 +279,7 @@ async function api(req, res, url) {
   }
 
   // Giriş ekranı ayarı: demo kısayolları yalnızca test aşamasında görünür
-  if (req.method === 'GET' && url.pathname === '/api/giris/ayar') return json(res, 200, { demo: !!DEV_KOD });
+  if (req.method === 'GET' && url.pathname === '/api/giris/ayar') return json(res, 200, { demo: !!DEV_KOD, kodsuz: ortam.kodsuzGiris, kurulumGerek: db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0 });
 
   // Yalnızca test aşaması (DEV_KOD açıkken): demo hesapla doğrudan giriş.
   // rol: yonetim/ogretmen/ogrenci/veli veya 'coklu' (birden çok profili olan hesap)
@@ -254,7 +288,7 @@ async function api(req, res, url) {
     const b = await govde(req);
     let kullanici, uyelikler;
     if (b.rol === 'coklu') {
-      kullanici = db.prepare('SELECT * FROM users WHERE phone = ? AND full_name = ?').get(telNormalize('5550000005'), 'Demo Öğretmen-Veli');
+      kullanici = db.prepare('SELECT * FROM users WHERE phone = gz(?) AND full_name = ?').get(telNormalize('5550000005'), 'Demo Öğretmen-Veli');
       uyelikler = kullanici ? profilListesi(kullanici.id) : [];
     } else {
       const demo = DEMO_HESAPLAR[b.rol];
@@ -267,8 +301,22 @@ async function api(req, res, url) {
     db.prepare('INSERT INTO sessions (id, user_id, membership_id, expires_at) VALUES (?,?,?,?)')
       .run(sha(sid), kullanici.id, uyelikler[0].id, Date.now() + OTURUM_SURESI);
     return json(res, 200, { tamam: true, coklu: uyelikler.length > 1 }, {
-      'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${OTURUM_SURESI / 1000}`,
+      'Set-Cookie': cerezSid(req, sid),
     });
+  }
+
+  // Boş sistemde ilk üyelik: okulu ve ilk yöneticiyi kurar, sonra bu uç kapanır
+  if (req.method === 'POST' && url.pathname === '/api/giris/ilk-kurulum') {
+    if (hizAsildi(ip)) return json(res, 429, { hata: 'Çok fazla deneme. Lütfen biraz bekleyin.' });
+    const b = await govde(req);
+    const s = ilkOkulKur({ ad: b.ad, tc: b.tc, telefon: b.telefon, okul: b.okul });
+    if (s.hata) return json(res, s.durum || 400, { hata: s.hata });
+    const uye = db.prepare("SELECT id FROM memberships WHERE user_id = ? AND role = 'yonetim'").get(s.kullaniciId);
+    denetle(s.kullaniciId, 'ilk-kurulum', { ip });
+    const sid = crypto.randomBytes(32).toString('hex');
+    db.prepare('INSERT INTO sessions (id, user_id, membership_id, expires_at) VALUES (?,?,?,?)')
+      .run(sha(sid), s.kullaniciId, uye.id, Date.now() + OTURUM_SURESI);
+    return json(res, 200, { tamam: true, coklu: false }, { 'Set-Cookie': cerezSid(req, sid) });
   }
 
   if (req.method === 'POST' && (url.pathname === '/api/giris/kod' || url.pathname === '/api/giris/dogrula')) {
@@ -293,21 +341,27 @@ async function api(req, res, url) {
     }
 
     // /api/giris/dogrula
-    const hata = { hata: 'Bilgiler veya kod hatalı' };
-    if (!uyelikler.length) return json(res, 401, hata);
-    const otp = db.prepare('SELECT * FROM otps WHERE user_id = ? AND used = 0 ORDER BY id DESC LIMIT 1').get(kullanici.id);
-    if (!otp || otp.expires_at < Date.now() || otp.attempts >= MAKS_DENEME) return json(res, 401, hata);
-    db.prepare('UPDATE otps SET attempts = attempts + 1 WHERE id = ?').run(otp.id);
-    const gelen = Buffer.from(sha(String(b.kod || '')));
-    const beklenen = Buffer.from(otp.code_hash);
-    if (!crypto.timingSafeEqual(gelen, beklenen)) return json(res, 401, hata);
-
-    db.prepare('UPDATE otps SET used = 1 WHERE id = ?').run(otp.id);
+    const hata = { hata: ortam.kodsuzGiris ? 'Bilgiler hatalı' : 'Bilgiler veya kod hatalı' };
+    const kimlikAnahtar = String(b.kimlik || '').trim().toUpperCase().slice(0, 20);
+    if (kilitliMi(kimlikAnahtar, ip)) return json(res, 429, { hata: 'Çok fazla hatalı deneme. 15 dakika sonra tekrar deneyin.' });
+    const basarisiz = () => { hataKaydet(`${kimlikAnahtar}|${ip}`); hataKaydet(kimlikAnahtar); return json(res, 401, hata); };
+    if (!uyelikler.length) return basarisiz();
+    if (!ortam.kodsuzGiris) {
+      const otp = db.prepare('SELECT * FROM otps WHERE user_id = ? AND used = 0 ORDER BY id DESC LIMIT 1').get(kullanici.id);
+      if (!otp || otp.expires_at < Date.now() || otp.attempts >= MAKS_DENEME) return basarisiz();
+      db.prepare('UPDATE otps SET attempts = attempts + 1 WHERE id = ?').run(otp.id);
+      const gelen = Buffer.from(sha(String(b.kod || '')));
+      const beklenen = Buffer.from(otp.code_hash);
+      if (!crypto.timingSafeEqual(gelen, beklenen)) return basarisiz();
+      db.prepare('UPDATE otps SET used = 1 WHERE id = ?').run(otp.id);
+    }
+    HATALI.delete(`${kimlikAnahtar}|${ip}`);
+    denetle(kullanici.id, 'giris', { ip, yontem: ortam.kodsuzGiris ? 'kimlik+telefon' : 'sms' });
     const sid = crypto.randomBytes(32).toString('hex');
     db.prepare('INSERT INTO sessions (id, user_id, membership_id, expires_at) VALUES (?,?,?,?)')
       .run(sha(sid), kullanici.id, uyelikler[0].id, Date.now() + OTURUM_SURESI);
     return json(res, 200, { tamam: true, coklu: uyelikler.length > 1 }, {
-      'Set-Cookie': `sid=${sid}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${OTURUM_SURESI / 1000}`,
+      'Set-Cookie': cerezSid(req, sid),
     });
   }
 
@@ -327,7 +381,7 @@ async function api(req, res, url) {
     return json(res, 200, { tamam: true });
   }
 
-  if (url.pathname === '/api/profil/bilgi' || url.pathname === '/api/profil/kaydet') {
+  if (url.pathname === '/api/profil/bilgi' || url.pathname === '/api/profil/kaydet' || url.pathname === '/api/profil/ad') {
     const o = oturum(req);
     if (!o) return json(res, 401, { hata: 'Oturum yok' });
     if (await profilApi({ req, res, url, o, json, govde, denetle })) return;
@@ -488,6 +542,16 @@ async function yonetimApi(req, res, url) {
   if (await dersProgramiApi(ortak)) return;
   if (await gorevApi(ortak)) return;
 
+  // Okulun kendi bilgisayarına indirebileceği yedek: sıkıştırılmış tam veritabanı (kişisel alanlar şifreli, oturumlar çıkarılmış)
+  if (req.method === 'GET' && yol === '/api/yonetim/yedek-indir') {
+    if (o.gorev !== 'kurum') return json(res, 403, { hata: 'Bu işlem yalnızca kurum yönetimine açıktır' });
+    const y = yedekAl();
+    denetle(o.user_id, 'yedek-indir', { dosya: path.basename(y.dosya) });
+    const veri = gzipSync(fs.readFileSync(y.dosya));
+    res.writeHead(200, { 'Content-Type': 'application/gzip', 'Content-Disposition': `attachment; filename="${path.basename(y.dosya)}.gz"`, 'Content-Length': veri.length, 'Cache-Control': 'no-store' });
+    return res.end(veri);
+  }
+
   if (req.method === 'GET' && yol === '/api/yonetim/subeler') {
     return json(res, 200, {
       subeler: db.prepare('SELECT id, name AS ad, campus_id AS kampusId FROM branches ORDER BY id').all(),
@@ -532,7 +596,7 @@ async function yonetimApi(req, res, url) {
     if (!/^\d{10}$/.test(tel)) return json(res, 400, { hata: 'Telefon 10 haneli olmalı' });
     if (!ROLLER.includes(b.rol)) return json(res, 400, { hata: 'Geçersiz rol' });
     if (!subeVar(b.subeId)) return json(res, 400, { hata: 'Geçersiz şube' });
-    const var_ = db.prepare('SELECT 1 FROM users WHERE tc_no = ? OR passport_no = ?').get(kimlik, kimlik);
+    const var_ = db.prepare('SELECT 1 FROM users WHERE tc_no = gz(?) OR passport_no = gz(?)').get(kimlik, kimlik);
     if (var_) return json(res, 409, { hata: 'Bu kimlik numarası ile kayıtlı hesap zaten var' });
     const id = Number(db.prepare('INSERT INTO users (tc_no, passport_no, phone, full_name, created_at) VALUES (?,?,?,?,?)')
       .run(tcMi ? kimlik : null, tcMi ? null : kimlik, tel, ad, Date.now()).lastInsertRowid);
@@ -541,6 +605,15 @@ async function yonetimApi(req, res, url) {
     if (rol && !['kurum-yonetimi', 'mudur', 'mudur_yrd'].includes(rol.kod)) db.prepare('INSERT OR IGNORE INTO kullanici_roller (user_id, rol_id) VALUES (?,?)').run(id, rol.id);
     denetle(o.user_id, 'kullanici-ekle', { userId: id, rol: b.rol, subeId: Number(b.subeId) });
     return json(res, 201, { tamam: true, id });
+  }
+
+  if (yol === '/api/yonetim/kullanici-ad') {
+    const ad = String(b.ad || '').replace(/\s+/g, ' ').trim();
+    if (ad.length < 3 || ad.length > 80 || !ad.includes(' ')) return json(res, 400, { hata: 'Ad ve soyadı birlikte yazın' });
+    if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(Number(b.userId))) return json(res, 404, { hata: 'Kullanıcı bulunamadı' });
+    db.prepare('UPDATE users SET full_name = ? WHERE id = ?').run(ad, Number(b.userId));
+    denetle(o.user_id, 'kullanici-ad', { userId: Number(b.userId) });
+    return json(res, 200, { tamam: true });
   }
 
   if (yol === '/api/yonetim/uyelik-ekle') {
@@ -618,6 +691,8 @@ function statik(req, res, url) {
   }
   res.writeHead(200, {
     'Content-Type': turler[path.extname(tam)] || 'application/octet-stream',
+    // Sayfa/stil/betik değişince hemen görünsün (tünel ve CDN eski kopyayı tutmasın); görseller kısa süre saklanır
+    'Cache-Control': /\.(jpg|png)$/.test(tam) ? 'public, max-age=3600' : 'no-cache',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Content-Security-Policy': "default-src 'self'",
@@ -625,13 +700,34 @@ function statik(req, res, url) {
   fs.createReadStream(tam).pipe(res);
 }
 
-http.createServer(async (req, res) => {
+const sunucu = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/saglik') {
+      try { db.prepare('SELECT 1').get(); res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return res.end('ok'); }
+      catch { res.writeHead(503); return res.end('db'); }
+    }
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     statik(req, res, url);
   } catch (e) {
     console.error(e);
     if (!res.headersSent) json(res, 400, { hata: 'Geçersiz istek' });
   }
-}).listen(PORT, () => console.log(`neademy: http://localhost:${PORT}`));
+});
+sunucu.listen(PORT, () => console.log(`neademy: http://localhost:${PORT}`));
+
+// Kapanırken (yeniden dağıtım, plan değişikliği) bekleyen yazmaları diske işle ve temiz bir yedek al
+yedekZamanla();
+let kapaniyor = false;
+const kapat = () => {
+  if (kapaniyor) return; kapaniyor = true;
+  console.log('Kapanıyor...');
+  sunucu.close(() => {
+    try { db.exec('PRAGMA optimize'); db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); db.close(); } catch {}
+    process.exit(0);
+  });
+  sunucu.closeIdleConnections?.();
+  setTimeout(() => process.exit(0), 8000).unref();
+};
+process.on('SIGTERM', kapat);
+process.on('SIGINT', kapat);

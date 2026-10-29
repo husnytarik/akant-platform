@@ -44,21 +44,34 @@
   const girdi = (deger, ek = {}) => Object.assign(el('input'), { value: deger || '', maxLength: 200 }, ek);
   const secenek = (sel, liste) => { for (const [d, e] of liste) sel.append(Object.assign(el('option', e), { value: d })); return sel; };
 
-  // Logoyu en uzun kenarı 512 px olacak şekilde küçültür; oranı ve saydamlığı korur (PNG)
-  async function logoKucult(dosya) {
-    const bmp = await createImageBitmap(dosya);
-    const oran = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
-    const tuval = document.createElement('canvas');
-    tuval.width = Math.round(bmp.width * oran);
-    tuval.height = Math.round(bmp.height * oran);
-    tuval.getContext('2d').drawImage(bmp, 0, 0, tuval.width, tuval.height);
-    bmp.close?.();
-    return await new Promise((ok, hata) => tuval.toBlob(b => b ? ok(b) : hata(new Error('küçültülemedi')), 'image/png'));
+  // Logo seçici: dosyayı yuvarlak çerçevede kırptırır (PNG, 512 px); kaydedilene dek yalnızca bellekte tutulur
+  function logoSecici(ad, mevcutUrl) {
+    const kap = el('div', undefined, 'logo-sec');
+    const onizleme = el('span');
+    onizleme.append(avatarYap(ad, mevcutUrl, 'orta logo'));
+    const dosya = el('input'); dosya.type = 'file'; dosya.accept = 'image/jpeg,image/png,image/webp'; dosya.hidden = true;
+    const dugme = el('button', mevcutUrl ? 'Logoyu değiştir' : 'Logo seç', 'ikincil'); dugme.type = 'button';
+    dugme.addEventListener('click', () => dosya.click());
+    const sec = { blob: null, kap };
+    dosya.addEventListener('change', async () => {
+      const f = dosya.files[0];
+      dosya.value = '';
+      if (!f) return;
+      try {
+        const k = await fotoKirp(f, { tur: 'png', kenar: 512, baslik: 'Logoyu ayarlayın' });
+        if (!k) return;
+        sec.blob = k.blob;
+        const av = el('span', undefined, 'ogr-avatar orta logo');
+        av.append(k.tuval);
+        onizleme.replaceChildren(av);
+        dugme.textContent = 'Logoyu değiştir';
+      } catch { mesaj('Logo okunamadı; başka bir görsel deneyin.', 'hata'); }
+    });
+    kap.append(onizleme, dugme, dosya);
+    return sec;
   }
-  async function logoYukle(yol, dosya) {
-    let govde;
-    try { govde = await logoKucult(dosya); } catch { return 'Logo okunamadı; başka bir görsel deneyin.'; }
-    const y = await fetch(yol, { method: 'POST', headers: { 'Content-Type': govde.type }, body: govde });
+  async function logoYukle(yol, blob) {
+    const y = await fetch(yol, { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
     return y.ok ? null : ((await y.json().catch(() => ({}))).hata || 'Logo yüklenemedi');
   }
 
@@ -102,15 +115,15 @@
 
     const f = el('form', undefined, 'ekle-form');
     const ad = girdi(k.ad, { required: true, maxLength: 80 });
-    const kisa = girdi(k.kisaAd, { maxLength: 30, placeholder: 'Örn. Akant' });
+    const kisa = girdi(k.kisaAd, { maxLength: 30, placeholder: 'Kısa ad (isteğe bağlı)' });
     const tel = girdi(telYaz(k.telefon), { type: 'tel', maxLength: 30 });
     const ep = girdi(k.eposta, { type: 'email', maxLength: 80 });
-    const web = girdi(k.web, { maxLength: 100, placeholder: 'www.ornek.com' });
+    const web = girdi(k.web, { maxLength: 100, placeholder: 'Web sitesi adresi' });
     const adr = girdi(k.adres);
-    const logo = el('input'); logo.type = 'file'; logo.accept = 'image/jpeg,image/png,image/webp';
+    const logo = logoSecici(k.ad, logoUrl);
     const sat1 = el('div', undefined, 'form-satir'); sat1.append(alan('Kısa ad', kisa, 'kp-kisa'), alan('Telefon', tel, 'kp-tel'));
     const sat2 = el('div', undefined, 'form-satir'); sat2.append(alan('E-posta', ep, 'kp-ep'), alan('Web sitesi', web, 'kp-web'));
-    f.append(alan('Kurum adı', ad, 'kp-ad'), sat1, sat2, alan('Adres', adr, 'kp-adr'), alan('Logo (JPEG, PNG, WebP)', logo, 'kp-logo'));
+    f.append(alan('Kurum adı', ad, 'kp-ad'), sat1, sat2, alan('Adres', adr, 'kp-adr'), alan('Logo', logo.kap, 'kp-logo'));
     if (v.logo) {
       const sil = el('button', 'Mevcut logoyu kaldır', 'kur-sil'); sil.type = 'button';
       sil.addEventListener('click', async () => {
@@ -125,7 +138,7 @@
       const r = await api('/api/yonetim/kurum-kaydet', { ad: ad.value, kisaAd: kisa.value, telefon: tel.value, eposta: ep.value, web: web.value, adres: adr.value });
       if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
       let ek = '';
-      if (logo.files[0]) { const h = await logoYukle('/api/yonetim/kurum-logo', logo.files[0]); if (h) ek = ' ' + h; }
+      if (logo.blob) { const h = await logoYukle('/api/yonetim/kurum-logo', logo.blob); if (h) ek = ' ' + h; }
       duzenKurum = false;
       await yukle();
       mesaj('Kurum profili kaydedildi.' + ek, ek ? 'hata' : 'tamam');
@@ -164,16 +177,16 @@
 
   function okulFormu(okul, kampusId) {
     const f = el('form', undefined, 'ekle-form');
-    const ad = girdi(okul?.ad, { required: true, maxLength: 80, placeholder: 'Örn. Meltem Lisesi' });
+    const ad = girdi(okul?.ad, { required: true, maxLength: 80, placeholder: 'Okul adı' });
     const tur = secenek(el('select'), [['', 'Seçilmedi'], ...v.turler.map(t => [t, t])]); tur.value = okul?.tur || '';
     const kod = girdi(okul?.kurumKodu, { maxLength: 30 });
     const tel = girdi(telYaz(okul?.telefon), { type: 'tel', maxLength: 30 });
     const ep = girdi(okul?.eposta, { type: 'email', maxLength: 80 });
     const adr = girdi(okul?.adres);
-    const logo = el('input'); logo.type = 'file'; logo.accept = 'image/jpeg,image/png,image/webp';
+    const logo = logoSecici(okul?.ad, okul?.logo ? `/api/okul-logo?id=${okul.id}&v=${okul.logo}` : null);
     const s1 = el('div', undefined, 'form-satir'); s1.append(alan('Okul türü', tur, 'of-tur'), alan('Kurum kodu', kod, 'of-kod'));
     const s2 = el('div', undefined, 'form-satir'); s2.append(alan('Telefon', tel, 'of-tel'), alan('E-posta', ep, 'of-ep'));
-    f.append(alan('Okul adı', ad, 'of-ad'), s1, s2, alan('Adres', adr, 'of-adr'), alan('Logo (JPEG, PNG, WebP)', logo, 'of-logo'));
+    f.append(alan('Okul adı', ad, 'of-ad'), s1, s2, alan('Adres', adr, 'of-adr'), alan('Logo', logo.kap, 'of-logo'));
     if (okul?.logo) {
       const sil = el('button', 'Mevcut logoyu kaldır', 'kur-sil'); sil.type = 'button';
       sil.addEventListener('click', async () => {
@@ -197,7 +210,7 @@
       const r = await api('/api/yonetim/okul-kaydet', { id: okul?.id ?? null, kampusId, ad: ad.value, tur: tur.value, kurumKodu: kod.value, telefon: tel.value, eposta: ep.value, adres: adr.value });
       if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
       let ek = '';
-      if (logo.files[0]) { const h = await logoYukle('/api/okul-logo?id=' + r.veri.id, logo.files[0]); if (h) ek = ' ' + h; }
+      if (logo.blob) { const h = await logoYukle('/api/okul-logo?id=' + r.veri.id, logo.blob); if (h) ek = ' ' + h; }
       okulForm = null;
       acikOkul = r.veri.id;
       await yukle();

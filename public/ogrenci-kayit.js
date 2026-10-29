@@ -74,10 +74,15 @@ function fotoBolumu() {
   sec.addEventListener('click', () => dosya.click());
   dosya.addEventListener('change', async () => {
     const f = dosya.files[0];
+    dosya.value = '';
     if (!f) return;
     try {
-      fotoBlob = await fotoKucult(f);
-      goster(URL.createObjectURL(fotoBlob));
+      const k = await fotoKirp(f, { baslik: d.ogrenci?.ad || 'Öğrenci fotoğrafı' });
+      if (!k) return;
+      fotoBlob = k.blob;
+      const av = el('span', undefined, 'ogr-avatar buyuk');
+      av.append(k.tuval);
+      onizleme.replaceChildren(av);
       sec.textContent = 'Fotoğrafı değiştir';
     } catch { mesaj('Fotoğraf okunamadı, başka bir görsel deneyin.'); }
   });
@@ -196,7 +201,7 @@ function formuKur() {
   // --- Adres ve acil durum ---
   f.append(el('h3', 'Adres ve acil durum', 'baslik3'), satirKur(
     alan('E-posta', giris('email', 'email', i.email, { maxLength: 120 })),
-    alan('İl', giris('il', 'text', i.il || 'Antalya', { maxLength: 40 })),
+    alan('İl', giris('il', 'text', i.il || '', { maxLength: 40 })),
     alan('İlçe', giris('ilce', 'text', i.ilce, { maxLength: 40 })),
     alan('Adres', giris('adres', 'text', i.adres, { maxLength: 250 }), true),
     alan('Acil durumda aranacak kişi', giris('yakinAd', 'text', i.yakinAd, { maxLength: 80 })),

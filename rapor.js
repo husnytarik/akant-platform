@@ -44,7 +44,8 @@ export async function raporApi({ req, res, url, o, json }) {
     SELECT s.class_id AS sinifId, s.period AS saat, a.teacher_membership_id AS ogretmen
     FROM schedule s JOIN assignments a ON a.id = s.assignment_id JOIN classes c ON c.id = s.class_id
     WHERE s.day = ?${f('c.branch_id')}`);
-  const tamam = db.prepare('SELECT 1 FROM yoklama WHERE class_id = ? AND date = ? AND period = ? AND (completed_at IS NOT NULL OR cancelled = 1)');
+  const tamamSet = new Set(db.prepare('SELECT class_id, date, period FROM yoklama WHERE date >= ? AND (completed_at IS NOT NULL OR cancelled = 1)')
+    .all(kaydir(bugun(), -14)).map(r => `${r.class_id}|${r.date}|${r.period}`));
   const eksik = new Map();
   let eksikToplam = 0, programToplam = 0;
   for (let n = 1; n <= 14; n++) {
@@ -53,7 +54,7 @@ export async function raporApi({ req, res, url, o, json }) {
     if (!tarihAcik(t)) continue;
     for (const r of program.all(gun)) {
       programToplam++;
-      if (tamam.get(r.sinifId, t, r.saat)) continue;
+      if (tamamSet.has(`${r.sinifId}|${t}|${r.saat}`)) continue;
       eksik.set(r.ogretmen, (eksik.get(r.ogretmen) || 0) + 1);
       eksikToplam++;
     }

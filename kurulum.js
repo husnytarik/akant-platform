@@ -33,7 +33,7 @@ export function kisiKaydet(b, rol, aktorId, denetle) {
     return { kod: 409, hata: 'Bu okul numarası şubede başka bir öğrencide kayıtlı' };
   }
 
-  const var_ = db.prepare('SELECT * FROM users WHERE tc_no = ? OR passport_no = ?').get(kimlik, kimlik);
+  const var_ = db.prepare('SELECT * FROM users WHERE tc_no = gz(?) OR passport_no = gz(?)').get(kimlik, kimlik);
   if (var_ && var_.phone !== tel) return { kod: 409, hata: 'Bu kimlik numarası başka bir telefonla kayıtlı' };
   if (var_ && db.prepare('SELECT 1 FROM memberships WHERE user_id = ? AND branch_id = ? AND role = ?').get(var_.id, subeId, rol)) {
     return { kod: 409, hata: 'Bu kişi bu şubede zaten kayıtlı' };

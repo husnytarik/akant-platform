@@ -101,7 +101,7 @@ function veliBagla(ogr, v, aktor, denetle) {
   const eposta = metin(v.email, 120);
   if (eposta && !epostaGecerli(eposta)) throw new Hata(400, `${etiket} e-posta adresi geçerli değil`);
 
-  const var_ = db.prepare('SELECT * FROM users WHERE tc_no = ? OR passport_no = ?').get(kimlik, kimlik);
+  const var_ = db.prepare('SELECT * FROM users WHERE tc_no = gz(?) OR passport_no = gz(?)').get(kimlik, kimlik);
   if (var_ && var_.phone !== tel) throw new Hata(409, `${etiket}: bu kimlik numarası başka bir telefonla kayıtlı`);
   const userId = var_?.id ?? Number(db.prepare('INSERT INTO users (tc_no, passport_no, phone, full_name, created_at) VALUES (?,?,?,?,?)')
     .run(tcMi ? kimlik : null, tcMi ? null : kimlik, tel, ad, Date.now()).lastInsertRowid);

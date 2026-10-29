@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>neademy - Kullanıcılar</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/renk.js"></script>
+  <link rel="stylesheet" href="/style.css?v=13">
+  <script src="/renk.js?v=10"></script>
 </head>
 <body>
   <header class="bant alt-bant">
@@ -25,6 +25,7 @@
         <h3 class="baslik3" id="baslik">Yönetim</h3>
         <div class="kad-eylem">
           <button type="button" id="yeni" class="ekle-ac gizli">+ Yeni</button>
+          <button type="button" id="yazdir" class="ekle-ac ikon" title="Listeyi yazdır" aria-label="Listeyi yazdır"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg></button>
           <button type="button" id="duzen" class="ekle-ac">Düzenle</button>
         </div>
       </div>
@@ -35,12 +36,13 @@
       </div>
       <div id="yeni-alan" class="ekle-form gizli"></div>
       <div id="liste"></div>
-      <p class="alt kad-alt"><span id="sayi"></span><button type="button" id="yazdir" class="kad-link">Yazdır</button></p>
+      <p class="alt kad-alt"><span id="sayi"></span></p>
       <p class="alt gizli" id="ogretmen-not">Yeni öğretmen eklemek için <a href="/kurulum" class="kur-baglanti">Okul kurulumu → Öğretmenler</a> bölümünü kullanın.</p>
     </section>
+    <div id="rapor" class="pr-rapor"></div>
   </main>
-  <script src="/avatar.js"></script>
-  <script src="/kullanicilar.js"></script>
-  <script src="/bant.js"></script>
+  <script src="/avatar.js?v=10"></script>
+  <script src="/kullanicilar.js?v=10"></script>
+  <script src="/bant.js?v=10"></script>
 </body>
 </html>

@@ -42,7 +42,25 @@ function bolum(baslik, satirlar, not) {
   kimlik.classList.remove('gizli');
 
   const icerik = $('icerik');
-  icerik.append(bolum('Hesap bilgileri', b.hesap, 'Ad, kimlik ve giriş telefonu okul yönetimi tarafından güncellenir.'));
+  const hesap = bolum('Hesap bilgileri', b.hesap, b.adDegistir ? 'Kimlik ve giriş telefonu değiştirilemez.' : 'Ad, kimlik ve giriş telefonu okul yönetimi tarafından güncellenir.');
+  if (b.adDegistir) {
+    const f = el('form', undefined, 'pf-ad');
+    const g = el('input'); g.value = k.ad; g.maxLength = 80; g.required = true; g.setAttribute('aria-label', 'Ad soyad');
+    const d = el('button', 'Adı kaydet', 'ikincil'); d.type = 'submit';
+    f.append(g, d);
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      d.disabled = true;
+      const r = await api('/api/profil/ad', { ad: g.value });
+      d.disabled = false;
+      if (!r.ok) return mesaj(r.veri.hata || 'Kaydedilemedi', 'hata');
+      yazi.querySelector('h2').textContent = g.value = r.veri.ad;
+      avatar.querySelector('span')?.replaceChildren(bas(r.veri.ad));
+      mesaj('Adınız güncellendi', 'tamam');
+    });
+    hesap.querySelector('dl').before(f);
+  }
+  icerik.append(hesap);
   if (b.okul.satirlar.length) icerik.append(bolum(b.okul.baslik, b.okul.satirlar));
 
   // Düzenlenebilir alanlar

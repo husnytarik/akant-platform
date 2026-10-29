@@ -2,7 +2,7 @@
 // Okul yılı başından bugüne kadar ders programı, yoklama, işlenen konu, ödev, etüt, sınav, kulüp ve gelişim kayıtları üretilir.
 // Kullanım: npm run kampus           (veritabanı boşsa doldurur, doluysa hiçbir şey yapmaz)
 //           npm run kampus-yenile    (önce yedek alır, sonra tüm veriyi silip baştan üretir; sunucu kapalıyken çalıştırın)
-import { copyFileSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { deflateSync, crc32 } from 'node:zlib';
@@ -46,14 +46,11 @@ function tcUret(ilk9) {
   return ilk9 + d10 + d11;
 }
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
 const yenile = process.argv.includes('--yenile');
 const dolu = db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
 if (dolu) {
   if (!yenile) { console.log('Veritabanı dolu, kampüs verisi eklenmedi. Baştan kurmak için: npm run kampus-yenile'); process.exit(0); }
-  const damga = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
-  const yedek = path.join(dir, 'data', `akant.db.yedek-${damga}`);
-  copyFileSync(path.join(dir, 'data', 'akant.db'), yedek);
+  const yedek = (await import('./yedek.js')).yedekAl().dosya;
   console.log('Yedek alındı:', yedek);
 }
 // Boş veritabanında da kurulumun açtığı varsayılan satırlar (ders adları gibi) temizlenir

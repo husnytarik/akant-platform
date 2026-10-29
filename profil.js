@@ -14,7 +14,8 @@ const gizle = k => (k && k.length === 11 ? k.slice(0, 3) + '******' + k.slice(-2
 
 // Kişinin kendi iletişim bilgileri; giriş telefonu ve kimlik yalnızca okul yönetimi tarafından değişir
 export async function profilApi({ req, res, url, o, json, govde, denetle }) {
-  if (url.pathname !== '/api/profil/bilgi' && url.pathname !== '/api/profil/kaydet') return false;
+  if (url.pathname !== '/api/profil/bilgi' && url.pathname !== '/api/profil/kaydet' && url.pathname !== '/api/profil/ad') return false;
+  const adDegistirebilir = o.role === 'yonetim' && o.gorev === 'kurum';
 
   if (req.method === 'GET' && url.pathname === '/api/profil/bilgi') {
     const u = db.prepare('SELECT tc_no, passport_no, phone, full_name FROM users WHERE id = ?').get(o.user_id);
@@ -49,10 +50,22 @@ export async function profilApi({ req, res, url, o, json, govde, denetle }) {
     }
 
     json(res, 200, {
-      hesap, okul, yakinlar: YAKINLIK,
+      hesap, okul, yakinlar: YAKINLIK, adDegistir: adDegistirebilir,
       duzenle: { email: b.email || '', telefon2: b.telefon2 || '', il: b.il || '', ilce: b.ilce || '', adres: b.adres || '',
         yakinAd: b.yakin_ad || '', yakinYakinlik: b.yakin_yakinlik || '', yakinTelefon: b.yakin_telefon || '' },
     });
+    return true;
+  }
+
+  // Kurum yönetimi kendi adını düzeltebilir; diğer kişilerin adını yönetim Kullanıcılar ekranından düzeltir
+  if (req.method === 'POST' && url.pathname === '/api/profil/ad') {
+    if (!adDegistirebilir) { json(res, 403, { hata: 'Adınızı okul yönetimi değiştirebilir' }); return true; }
+    const b = await govde(req);
+    const ad = String(b.ad ?? '').replace(/\s+/g, ' ').trim();
+    if (ad.length < 3 || ad.length > 80 || !ad.includes(' ')) { json(res, 400, { hata: 'Ad ve soyadı birlikte yazın' }); return true; }
+    db.prepare('UPDATE users SET full_name = ? WHERE id = ?').run(ad, o.user_id);
+    denetle(o.user_id, 'profil.ad', { kullanici: o.user_id });
+    json(res, 200, { tamam: true, ad });
     return true;
   }
 

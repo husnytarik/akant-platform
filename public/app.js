@@ -98,9 +98,11 @@ async function profilleriGoster() {
   adim(3);
 }
 
-let demoAcik = false;
+let demoAcik = false, kodsuz = false;
 fetch('/api/giris/ayar').then(r => r.json()).then(a => {
   demoAcik = !!a.demo;
+  kodsuz = !!a.kodsuz;
+  if (a.kurulumGerek) { $('kurulum').classList.remove('gizli'); $('adim1').classList.add('gizli'); }
   $('demo').classList.toggle('gizli', !demoAcik || !$('adim1').offsetParent);
 }).catch(() => {});
 
@@ -112,9 +114,24 @@ document.querySelectorAll('#demo button').forEach(b => {
   });
 });
 
+$('kurulum').addEventListener('submit', async e => {
+  e.preventDefault();
+  mesaj('Kuruluyor...');
+  const d = await istek('/api/giris/ilk-kurulum', {
+    okul: $('k-okul').value, ad: $('k-ad').value, tc: $('k-tc').value, telefon: $('k-tel').value,
+  });
+  if (!d.ok) return mesaj(d.veri.hata || 'Bir hata oluştu', 'hata');
+  panele();
+});
+
 $('adim1').addEventListener('submit', async e => {
   e.preventDefault();
   mesaj('Gönderiliyor...');
+  if (kodsuz) {
+    const g = await istek('/api/giris/dogrula', { kimlik: $('kimlik').value, telefon: $('telefon').value });
+    if (!g.ok) return mesaj(g.veri.hata || 'Bir hata oluştu', 'hata');
+    return girisSonrasi(g.veri.coklu);
+  }
   const { ok, veri } = await istek('/api/giris/kod', {
     kimlik: $('kimlik').value, telefon: $('telefon').value,
   });

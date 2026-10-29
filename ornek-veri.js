@@ -46,7 +46,7 @@ function veliBagla() {
     const ad = `${ADLAR[(o.mid * 5 + 1) % ADLAR.length]} ${soyad}`;
     const tc = tcUret('6' + String(o.mid).padStart(8, '0'));
     const tel = '551' + String(o.mid).padStart(7, '0');
-    let u = db.prepare('SELECT id FROM users WHERE tc_no = ?').get(tc);
+    let u = db.prepare('SELECT id FROM users WHERE tc_no = gz(?)').get(tc);
     if (!u) u = { id: Number(db.prepare('INSERT INTO users (tc_no, phone, full_name, created_at) VALUES (?,?,?,?)').run(tc, tel, ad, Date.now()).lastInsertRowid) };
     const vm = db.prepare("SELECT id FROM memberships WHERE user_id = ? AND branch_id = ? AND role = 'veli'").get(u.id, o.sube)
       || { id: Number(db.prepare("INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,'veli')").run(u.id, o.sube).lastInsertRowid) };
@@ -55,10 +55,10 @@ function veliBagla() {
   }
   // Demo veli <-> demo öğrenci (aynı şube); demo öğrenci 6-C'ye yerleşir (sınav verisi bu sınıfta)
   const dm = (tc, rol) => db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
-                                      WHERE u.tc_no = ? AND m.role = ? AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get(tc, rol);
+                                      WHERE u.tc_no = gz(?) AND m.role = ? AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get(tc, rol);
   const dOgr = dm('10000000382', 'ogrenci');
   const dVeli = db.prepare(`SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id
-                            WHERE u.tc_no = '10000000450' AND m.role = 'veli' AND m.branch_id = ? AND m.status = 'aktif'`)
+                            WHERE u.tc_no = gz('10000000450') AND m.role = 'veli' AND m.branch_id = ? AND m.status = 'aktif'`)
     .get(dOgr?.branch_id);
   if (dOgr && dVeli) {
     db.prepare('INSERT OR IGNORE INTO guardians (parent_membership_id, student_membership_id) VALUES (?,?)').run(dVeli.id, dOgr.id);
@@ -71,11 +71,11 @@ function veliBagla() {
 // Demo Öğretmen hesabı da gerçek dersler alsın: Fen Bilimleri derslerinin öğretmeni olur.
 function demoOgretmenBagla() {
   const d = db.prepare(`SELECT m.id, m.branch_id FROM memberships m JOIN users u ON u.id = m.user_id
-                        WHERE u.tc_no = '10000000214' AND m.role = 'ogretmen' AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get();
+                        WHERE u.tc_no = gz('10000000214') AND m.role = 'ogretmen' AND m.status = 'aktif' ORDER BY m.id LIMIT 1`).get();
   const ders = db.prepare("SELECT id FROM courses WHERE name = 'Fen Bilimleri'").get();
   if (!d || !ders) return 0;
   // Demo öğretmen: profil fotoğrafı ve bir sınıfın mentoru (Öğrencilerim ekranı için)
-  db.prepare("UPDATE users SET full_name = 'Ceren Husny', foto = '/foto/ceren-husny.jpg' WHERE tc_no = '10000000214'").run();
+  db.prepare("UPDATE users SET full_name = 'Ceren Husny', foto = '/foto/ceren-husny.jpg' WHERE tc_no = gz('10000000214')").run();
   db.prepare("UPDATE classes SET homeroom_membership_id = ? WHERE branch_id = ? AND name = '6-C'").run(d.id, d.branch_id);
   db.prepare('INSERT OR IGNORE INTO teacher_courses (teacher_membership_id, course_id) VALUES (?,?)').run(d.id, ders.id);
   const n = Number(db.prepare(`UPDATE assignments SET teacher_membership_id = ?

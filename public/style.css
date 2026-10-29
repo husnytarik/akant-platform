@@ -2374,8 +2374,8 @@ main .kur-bilgi { display: flex; flex-direction: column; gap: 6px; padding: 2px 
 main .kur-bilgi > div { display: flex; justify-content: space-between; gap: 14px; }
 main .kur-bilgi span { color: var(--soluk, #8a8577); flex: none; }
 main .kur-bilgi b { font-weight: 500; text-align: right; overflow-wrap: anywhere; }
-main .ogr-avatar.logo { border-radius: 14px; background: #fff; border: 1px solid var(--ince, #ebe5d6); }
-main .ogr-avatar.logo .avatar-foto { object-fit: contain; object-position: center; padding: 3px; box-sizing: border-box; }
+main .ogr-avatar.logo { border-radius: 50% !important; overflow: hidden; background: #fff; border: 1px solid var(--ince, #ebe5d6); }
+main .ogr-avatar.logo .avatar-foto { object-fit: contain; object-position: center; padding: 5px; box-sizing: border-box; }
 main .kur-ekle { border: 0; background: transparent; color: var(--ana, #5878a8); font: inherit; font-size: .9rem; font-weight: 500; padding: 10px 2px; cursor: pointer; margin: 0; }
 main .kur-panel { margin: 8px 0 12px; padding: 4px 14px 14px; border: 1px solid var(--ince, #ebe5d6); border-radius: 18px; background: #fffdf8; }
 main .kur-panel .baslik3 { margin: 12px 0 6px; }
@@ -2868,8 +2868,8 @@ main .kad-panel .yazdir-baslik { display: none; }
   main .kad-eylem, main .kad-alt .kad-link, main .kad-ok { display: none !important; }
 }
 
-/* Giriş sayfası: okul fotoğrafı ve logo */
-body.giris-sayfa .bant.buyuk { background: linear-gradient(rgba(62,88,132,.62), rgba(62,88,132,.86)), url('/foto/okul-genel.jpg') center / cover; }
+/* Giriş sayfası: fotoğrafsız, yumuşak renk geçişi */
+body.giris-sayfa .bant.buyuk { background: linear-gradient(135deg, #7d96c0 0%, #5a78a8 55%, #3e5884 100%); }
 body.giris-sayfa .bant.buyuk .bant-avatar { overflow: hidden; padding: 0; background: #fff; }
 body.giris-sayfa .bant-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
@@ -3003,3 +3003,69 @@ main .zm-etiket { font-size: .72rem; font-weight: 600; color: var(--ana); backgr
 main .bk-zumre { --bk-renk: var(--ana); --bk-zemin: color-mix(in srgb, var(--ana) 14%, #fff); }
 main .zm-toplanti .alt { margin: 0; }
 main .zm-toplanti .zm-gundem { margin-top: 6px; }
+
+/* ===== Köşeli, modern düğmeler ===== */
+:root { --r-dugme: 6px; }
+button, .birincil, .ikincil, .dugme-link, .panel-ust a.alt, input[type="file"]::file-selector-button { border-radius: var(--r-dugme) !important; }
+/* Sekme/anahtar kapları ve etiketler de yuvarlak hap değil, hafif köşeli */
+.sekmeler, main .sekmeler, .giris-kart .sekmeler, .kl-3, .mod-anahtar { border-radius: 8px !important; }
+.rozet, .etiket, .cip, .durum-etiket, .durum-isaret, [class*="-cip"], [class*="chip"], [class*="rozet"], [class*="etiket"], [class*="-durum"], [class*="-sayi"], .yeni-rozet { border-radius: 5px !important; }
+
+/* ===== Geniş ekran (bilgisayar) düzeni ===== */
+@media (min-width: 1024px) {
+  main.panel { max-width: 880px; padding: 24px 28px 48px; }
+  main.panel.genis { max-width: 1140px; padding: 24px 32px 56px; }
+  .onay-liste { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+}
+.onay-liste label, .onay-liste span { word-break: normal; overflow-wrap: normal; hyphens: none; }
+
+/* Köşeli alanlar ve kartlar */
+main input:not([type=checkbox]):not([type=radio]), main select, main textarea, .giris-kart input, .gun-gezgin button, main details > summary { border-radius: 6px !important; }
+.kutu, .kart-yumusak, .bolum-kutu, .sinav-kart, .not-kart, .ders-panel, .hafta-detay, .odev-kart, .tablo-sar, .ders-satir, .ders-oge, .kare, .siradaki, main fieldset, main.kart, .kart { border-radius: 10px !important; }
+.kare-ikon, .tarih-rozet, .siradaki-saat, .secili-ders, #geciken, .zaman-satir, .odev-sayac, .etut-not, .profil-kart { border-radius: 8px !important; }
+main fieldset { padding-top: 14px; margin-top: 16px; }
+main fieldset > legend { float: left; width: 100%; padding: 0; margin: 0 0 10px; }
+main fieldset > legend + * { clear: both; }
+
+/* Fotoğraf / logo kırpıcı */
+body.kirp-acik { overflow: hidden; }
+.kirp-zemin { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(30,25,15,.55); }
+.kirp-kart { width: min(360px, 100%); max-height: 100%; overflow: auto; padding: 18px; background: #fff; border-radius: 10px; box-shadow: 0 20px 50px -20px rgba(0,0,0,.5); text-align: center; }
+.kirp-kart h3 { margin: 0 0 12px; font-size: 1.05rem; }
+.kirp-tuval { display: block; width: 100%; max-width: 320px; aspect-ratio: 1; margin: 0 auto; border-radius: 8px; touch-action: none; cursor: grab; user-select: none; }
+.kirp-tuval:active { cursor: grabbing; }
+.kirp-kart small { display: block; margin: 10px 0 4px; color: var(--soluk, #888); font-size: .8rem; }
+.kirp-kay { display: flex; align-items: center; gap: 10px; margin: 8px 0 16px; }
+.kirp-kay input { flex: 1; min-height: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; accent-color: var(--ana); }
+.kirp-kay button { flex: none; width: 36px; height: 36px; padding: 0; margin: 0; background: #f1ede4; color: var(--murekkep, #222); font-size: 1.2rem; line-height: 1; }
+.kirp-alt { display: flex; gap: 10px; justify-content: flex-end; }
+.kirp-alt button { margin: 0; }
+.ogr-avatar canvas { display: block; width: 100%; height: 100%; border-radius: 50%; }
+main .logo-sec { display: flex; align-items: center; gap: 12px; }
+main .logo-sec .ikincil { margin: 0; }
+.kirp-alt .birincil { background: var(--ana); border-color: var(--ana); color: #fff; min-height: 42px; padding: 0 22px; }
+.kirp-alt .ikincil { min-height: 42px; padding: 0 18px; }
+.kirp-alt button:focus-visible { outline: 2px solid color-mix(in srgb, var(--ana) 50%, #fff); outline-offset: 2px; }
+main .ekle-ac.ikon { display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; }
+
+/* Personel listesi raporu: yalnızca yazdırırken görünür */
+main .pr-rapor { display: none; }
+@media print {
+  body.rapor-yazdir .bant, body.rapor-yazdir main > :not(.pr-rapor) { display: none !important; }
+  body.rapor-yazdir main { box-shadow: none; border: 0; padding: 0; margin: 0; max-width: none; background: none; }
+  body.rapor-yazdir main .pr-rapor { display: block; color: #000; font-size: 11pt; }
+  .pr-rapor h2 { margin: 0 0 2px; font-size: 1.3rem; text-transform: none; letter-spacing: 0; color: #000; }
+  .pr-rapor .pr-alt { margin: 0 0 14px; color: #444; font-size: .9rem; }
+  .pr-rapor table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .pr-rapor th, .pr-rapor td { padding: 6px 8px; border-bottom: 1px solid #bbb; text-align: left; }
+  .pr-rapor th { border-bottom: 2px solid #000; font-size: .85rem; }
+  .pr-rapor th:first-child, .pr-rapor td:first-child { width: 32px; }
+  .pr-rapor tr { break-inside: avoid; }
+  @page { size: A4 portrait; margin: 14mm; }
+}
+.kirp-kay button { border: 1px solid #e3dccb; box-shadow: none; }
+main .kad-ad { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; }
+main .kad-ad input { flex: 1; min-width: 0; }
+main .pf-ad { display: flex; gap: 10px; margin: 0 0 12px; }
+main .pf-ad input { flex: 1; min-width: 0; }
+main .pf-ad button { margin: 0; flex: none; }

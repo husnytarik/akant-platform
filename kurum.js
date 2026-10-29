@@ -31,13 +31,36 @@ CREATE TABLE IF NOT EXISTS okul_yoneticileri (
   UNIQUE (branch_id, user_id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS okul_mudur_tek ON okul_yoneticileri (branch_id) WHERE gorev = 'mudur';
-INSERT OR IGNORE INTO kurum (id, ad, guncelleme) VALUES (1, 'Akant Koleji', 0);`);
+INSERT OR IGNORE INTO kurum (id, ad, guncelleme) VALUES (1, 'Yeni Okul', 0);`);
 if (!db.prepare('PRAGMA table_info(memberships)').all().some(c => c.name === 'gorev')) {
   db.exec("ALTER TABLE memberships ADD COLUMN gorev TEXT NOT NULL DEFAULT 'kurum'");
 }
 
 export const GOREVLER = { mudur: 'Müdür', mudur_yrd: 'Müdür yardımcısı' };
 export const OKUL_TURLERI = ['Anaokulu', 'İlkokul', 'Ortaokul', 'Lise'];
+
+// Boş veritabanında ilk okulu ve ilk yöneticiyi kurar (üyelik ile başlayan kurulum). Dolu veritabanında reddeder.
+export function ilkOkulKur({ ad, tc, telefon, okul }) {
+  const adSoyad = String(ad ?? '').trim().slice(0, 80);
+  const tcNo = String(tc ?? '').replace(/\D/g, '');
+  const tel = String(telefon ?? '').replace(/\D/g, '').slice(-10);
+  const okulAd = String(okul ?? '').trim().slice(0, 120);
+  if (adSoyad.length < 3 || !adSoyad.includes(' ')) return { hata: 'Ad ve soyadı yazın' };
+  if (!tcGecerliMi(tcNo)) return { hata: 'T.C. kimlik numarası geçersiz' };
+  if (!/^5\d{9}$/.test(tel)) return { hata: 'Telefon 5 ile başlayan 10 haneli olmalı' };
+  if (okulAd.length < 2) return { hata: 'Okul adını yazın' };
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0) { db.exec('ROLLBACK'); return { hata: 'Kurulum daha önce yapılmış', durum: 403 }; }
+    db.prepare("INSERT OR IGNORE INTO kampusler (name) VALUES ('Ana Kampüs')").run();
+    const sube = Number(db.prepare("INSERT INTO branches (name, campus_id) VALUES (?, (SELECT MIN(id) FROM kampusler))").run(okulAd).lastInsertRowid);
+    const kisi = Number(db.prepare('INSERT INTO users (tc_no, phone, full_name, created_at) VALUES (?,?,?,?)').run(tcNo, tel, adSoyad, Date.now()).lastInsertRowid);
+    db.prepare("INSERT INTO memberships (user_id, branch_id, role) VALUES (?,?,'yonetim')").run(kisi, sube);
+    db.prepare('UPDATE kurum SET ad = ? WHERE id = 1').run(okulAd);
+    db.exec('COMMIT');
+    return { kullaniciId: kisi };
+  } catch (e) { try { db.exec('ROLLBACK'); } catch {} throw e; }
+}
 
 const metin = (v, azami) => String(v ?? '').trim().slice(0, azami);
 const tamSayi = (v, min, max) => { const n = Number(v); return Number.isInteger(n) && n >= min && n <= max ? n : null; };
@@ -131,7 +154,7 @@ export async function kurumApi({ req, res, url, o, json, govde, denetle }) {
       if (ad.length < 3) return hata(400, 'Ad soyad en az 3 karakter olmalı');
       if (tcMi ? !tcGecerliMi(kimlik) : !/^[A-Z0-9]{5,20}$/.test(kimlik)) return hata(400, 'Kimlik / pasaport numarası geçersiz');
       if (!/^\d{10}$/.test(tel)) return hata(400, 'Telefon 10 haneli olmalı');
-      kisi = db.prepare('SELECT id, full_name, phone FROM users WHERE tc_no = ? OR passport_no = ?').get(kimlik, kimlik);
+      kisi = db.prepare('SELECT id, full_name, phone FROM users WHERE tc_no = gz(?) OR passport_no = gz(?)').get(kimlik, kimlik);
       if (kisi && kisi.phone !== tel) return hata(409, 'Bu kimlik numarası başka bir telefonla kayıtlı');
       if (!kisi) {
         const id = Number(db.prepare('INSERT INTO users (tc_no, passport_no, phone, full_name, created_at) VALUES (?,?,?,?,?)')

@@ -104,7 +104,8 @@ function fotoBolumu(u) {
     if (!d) return;
     sec.disabled = true;
     let govde;
-    try { govde = await fotoKucult(d); } catch { sec.disabled = false; return mesaj('Bu fotoğraf okunamadı, başka bir fotoğraf deneyin', 'hata'); }
+    try { govde = (await fotoKirp(d, { baslik: u.ad }))?.blob; } catch { sec.disabled = false; return mesaj('Bu fotoğraf okunamadı, başka bir fotoğraf deneyin', 'hata'); }
+    if (!govde) { sec.disabled = false; return; }
     const r = await fetch('/api/foto?id=' + u.id, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: govde });
     if (r.status === 401) { location.href = '/'; return; }
     if (!r.ok) { sec.disabled = false; return mesaj((await r.json().catch(() => ({}))).hata || 'Fotoğraf yüklenemedi', 'hata'); }
@@ -116,6 +117,19 @@ function fotoBolumu(u) {
   if (u.foto) linkler.append(kadLink('Kaldır', async () => sonuc(await api('/api/foto-sil?id=' + u.id, {}), 'Fotoğraf kaldırıldı.')));
   kap.append(avatarYap(u.ad, u.foto, 'buyuk'), linkler);
   return kap;
+}
+
+function adBolumu(u) {
+  const f = el('form', undefined, 'kad-ad');
+  const g = Object.assign(document.createElement('input'), { value: u.ad, maxLength: 80, required: true, ariaLabel: 'Ad soyad' });
+  const kaydet = el('button', 'Adı kaydet', 'kad-link'); kaydet.type = 'submit';
+  f.append(g, kaydet);
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (g.value.trim() === u.ad) return;
+    sonuc(await api('/api/yonetim/kullanici-ad', { userId: u.id, ad: g.value }), 'Ad güncellendi.');
+  });
+  return f;
 }
 
 function rolBolumu(u) {
@@ -189,7 +203,7 @@ function kisiSatiri(u) {
   const ozet = el('summary', undefined, 'ol-satir');
   ozet.append(...ust, el('span', undefined, 'kad-ok'));
   const g = el('div', undefined, 'kad-duzen');
-  g.append(fotoBolumu(u), rolBolumu(u), uyelikBolumu(u));
+  g.append(fotoBolumu(u), adBolumu(u), rolBolumu(u), uyelikBolumu(u));
   d.append(ozet, g);
   return d;
 }
@@ -336,6 +350,7 @@ function ciz() {
   $('yeni').textContent = yeniAcik ? 'Vazgeç' : roldeyiz ? '+ Yeni rol' : '+ Yeni kişi';
   $('yeni').classList.toggle('acik', yeniAcik);
   $('yeni-alan').classList.toggle('gizli', !(duzenle && yeniAcik && sekme !== 'ogretmen'));
+  $('yazdir').classList.toggle('gizli', roldeyiz);
   $('duzen').textContent = duzenle ? 'Bitti' : 'Düzenle';
   $('duzen').classList.toggle('kad-dolu', duzenle);
 
@@ -372,7 +387,39 @@ async function yukle() {
 
 $('f-okul').addEventListener('change', ciz);
 $('ara').addEventListener('input', ciz);
-$('yazdir').addEventListener('click', () => window.print());
+// Personel listesi raporu: ekrandaki düzenleme araçları değil, süzülmüş kişiler temiz bir tablo olarak basılır
+function raporuHazirla() {
+  const okul = Number($('f-okul').value) || 0;
+  const o = $('f-okul');
+  const rol = sekmeRolu();
+  const satirlar = suzulmus().map(u => {
+    const okullar = [...new Set(u.uyelikler.filter(m => m.rol === rol && m.durum === 'aktif' && (!okul || m.subeId === okul)).map(m => m.sube).filter(Boolean))];
+    const gorev = [];
+    if (rol === 'yonetim') {
+      if (u.uyelikler.some(m => m.rol === 'yonetim' && m.gorev === 'kurum' && m.durum === 'aktif')) gorev.push('Kurum yönetimi');
+      for (const g of u.okulGorevleri) gorev.push(GOREV_AD[g.gorev]);
+    }
+    gorev.push(...u.roller.map(id => roller.find(r => r.id === id)?.ad).filter(Boolean));
+    return { ad: u.ad, gorev: [...new Set(gorev)].join(', ') || (rol === 'ogretmen' ? 'Öğretmen' : ''), okullar: okullar.join(', ') };
+  }).filter(r => r.okullar).sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+  const kok = $('rapor');
+  kok.replaceChildren();
+  const kapsam = okul ? o.options[o.selectedIndex].text : 'Tüm okullar';
+  kok.append(el('h2', sekme === 'ogretmen' ? 'Öğretmen listesi' : 'Yönetim personeli listesi'), el('p', `${kapsam} · ${new Date().toLocaleDateString('tr-TR')}`, 'pr-alt'));
+  const tablo = el('table'), ust = el('tr');
+  for (const b of ['No', 'Ad soyad', 'Görev', 'Okul']) ust.append(el('th', b));
+  tablo.append(el('thead')); tablo.firstChild.append(ust);
+  const gv = el('tbody');
+  satirlar.forEach((r, i) => { const t = el('tr'); for (const d of [String(i + 1), r.ad, r.gorev, r.okullar]) t.append(el('td', d)); gv.append(t); });
+  tablo.append(gv);
+  kok.append(tablo, el('p', `Toplam ${satirlar.length} kişi`, 'pr-alt'));
+}
+$('yazdir').addEventListener('click', () => {
+  raporuHazirla();
+  document.body.classList.add('rapor-yazdir');
+  window.print();
+});
+window.addEventListener('afterprint', () => document.body.classList.remove('rapor-yazdir'));
 
 $('duzen').addEventListener('click', () => {
   duzenle = !duzenle;

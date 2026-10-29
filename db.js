@@ -1,13 +1,36 @@
 import { DatabaseSync } from 'node:sqlite';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
+import { ortam } from './ortam.js';
+import { sifrele, satirCoz } from './gizli.js';
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
-fs.mkdirSync(path.join(dir, 'data'), { recursive: true });
+fs.mkdirSync(ortam.veriKlasoru, { recursive: true });
 
-export const db = new DatabaseSync(path.join(dir, 'data', 'akant.db'));
+export const DB_YOLU = path.join(ortam.veriKlasoru, 'akant.db');
+const ham = new DatabaseSync(DB_YOLU);
+// Kişisel alanlar (gizli.js) sorgu sonuçlarında otomatik çözülür; kalan her şey doğrudan veritabanına gider
+const sarmala = st => ({
+  get: (...a) => satirCoz(st.get(...a)),
+  all: (...a) => st.all(...a).map(satirCoz),
+  run: (...a) => st.run(...a),
+});
+export const db = new Proxy(ham, {
+  get(hedef, ad) {
+    if (ad === 'prepare') return sql => sarmala(hedef.prepare(sql));
+    const v = hedef[ad];
+    return typeof v === 'function' ? v.bind(hedef) : v;
+  },
+});
+ham.function('gz', { deterministic: true }, v => sifrele(v));
 db.exec('PRAGMA foreign_keys = ON');
+// Hız: WAL (okuma yazmayı beklemez), NORMAL eşzamanlama (WAL'da çökmede veri bozulmaz), bellek önbelleği ve mmap
+db.exec(`PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA busy_timeout = 5000;
+PRAGMA temp_store = MEMORY;
+PRAGMA wal_autocheckpoint = 1000;
+PRAGMA cache_size = -${Math.round(ortam.onbellekMB * 1024)};
+PRAGMA mmap_size = ${Math.round(ortam.mmapMB * 1024 * 1024)}`);
 
 // Hesap (users) ile okuldaki üyelik/rol (memberships) ayrı tutulur.
 db.exec(`
@@ -521,6 +544,38 @@ if (sutunlar('assignments').find(c => c.name === 'teacher_membership_id')?.notnu
   db.exec('PRAGMA foreign_keys = ON');
 }
 
+// Kişisel alanlar yazılırken otomatik şifrelenir (gz = gizli.js); okurken db sarmalayıcısı çözer.
+// Aramalar "WHERE tc_no = gz(?)" biçiminde yapılır. Tetikleyiciler gz fonksiyonu olmadan çalışmaz: yanlışlıkla düz metin yazılmaz.
+db.exec(`
+CREATE TRIGGER IF NOT EXISTS gizli_users_ekle AFTER INSERT ON users BEGIN
+  UPDATE users SET tc_no = gz(tc_no), passport_no = gz(passport_no), phone = gz(phone) WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS gizli_users_guncelle AFTER UPDATE OF tc_no, passport_no, phone ON users BEGIN
+  UPDATE users SET tc_no = gz(tc_no), passport_no = gz(passport_no), phone = gz(phone) WHERE id = NEW.id;
+END;
+DROP TRIGGER IF EXISTS gizli_profil_ekle;
+DROP TRIGGER IF EXISTS gizli_profil_guncelle;
+CREATE TRIGGER gizli_profil_ekle AFTER INSERT ON profil_bilgi BEGIN
+  UPDATE profil_bilgi SET telefon2 = gz(telefon2), yakin_telefon = gz(yakin_telefon), email = gz(email), adres = gz(adres) WHERE user_id = NEW.user_id;
+END;
+CREATE TRIGGER gizli_profil_guncelle AFTER UPDATE OF telefon2, yakin_telefon, email, adres ON profil_bilgi BEGIN
+  UPDATE profil_bilgi SET telefon2 = gz(telefon2), yakin_telefon = gz(yakin_telefon), email = gz(email), adres = gz(adres) WHERE user_id = NEW.user_id;
+END`);
+// Mevcut düz metin kayıtlar (ilk geçiş)
+db.exec(`UPDATE users SET tc_no = gz(tc_no), passport_no = gz(passport_no), phone = gz(phone)
+  WHERE (tc_no IS NOT NULL AND tc_no NOT LIKE 'v1:%') OR (passport_no IS NOT NULL AND passport_no NOT LIKE 'v1:%') OR phone NOT LIKE 'v1:%'`);
+db.exec(`UPDATE profil_bilgi SET telefon2 = gz(telefon2), yakin_telefon = gz(yakin_telefon), email = gz(email), adres = gz(adres)
+  WHERE (telefon2 != '' AND telefon2 NOT LIKE 'v1:%') OR (yakin_telefon != '' AND yakin_telefon NOT LIKE 'v1:%')
+     OR (email != '' AND email NOT LIKE 'v1:%') OR (adres != '' AND adres NOT LIKE 'v1:%')`);
+
+// Sık okunan raporlar için ek indeksler (veri büyüdükçe tam tablo taramasını önler)
+db.exec(`
+CREATE INDEX IF NOT EXISTS idx_schedule_gun ON schedule (day);
+CREATE INDEX IF NOT EXISTS idx_yoklama_kayit_durum ON yoklama_kayit (status, yoklama_id);
+CREATE INDEX IF NOT EXISTS idx_odevler_atama ON odevler (assignment_id);
+CREATE INDEX IF NOT EXISTS idx_yoklama_sinif ON yoklama (class_id, completed_at)`);
+db.exec('PRAGMA optimize = 0x10002');
+
 // T.C. kimlik no doğrulama algoritması
 export function tcGecerliMi(tc) {
   if (!/^[1-9]\d{10}$/.test(tc)) return false;
@@ -538,6 +593,8 @@ function tcUret(ilk9) {
 }
 
 function seed() {
+  // Üretimde demo kullanıcı oluşturulmaz; ilk yönetici ilk-kurulum.js ile eklenir
+  if (ortam.uretim) return false;
   if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0) return false;
   const now = Date.now();
   const sube = db.prepare('INSERT INTO branches (name) VALUES (?)');

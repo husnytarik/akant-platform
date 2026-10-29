@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>neademy - Giriş</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=13">
 </head>
 <body class="giris-sayfa">
   <header class="bant buyuk" id="bant">
@@ -12,6 +12,20 @@
     <div class="bant-avatar" aria-hidden="true"><span class="marka-isaret">n</span></div>
   </header>
   <main class="kart giris-kart">
+    <form id="kurulum" class="gizli">
+      <h2 class="profil-baslik">Okulunuzu kurun</h2>
+      <p class="alt">İlk üyelik yönetici hesabı olur. Kurulumdan sonra bu ekran kapanır, öğretmen ve öğrencileri siz eklersiniz.</p>
+      <label for="k-okul">Okul adı</label>
+      <input id="k-okul" required maxlength="120" autocomplete="organization">
+      <label for="k-ad">Adınız soyadınız</label>
+      <input id="k-ad" required maxlength="80" autocomplete="name">
+      <label for="k-tc">T.C. kimlik no</label>
+      <input id="k-tc" inputmode="numeric" required maxlength="11" autocomplete="off">
+      <label for="k-tel">Telefon numarası</label>
+      <input id="k-tel" type="tel" placeholder="5XX XXX XX XX" required maxlength="20" autocomplete="tel">
+      <button class="birincil" type="submit">Okulu kur ve başla</button>
+    </form>
+
     <form id="adim1">
       <label for="kimlik">T.C. kimlik no veya pasaport no</label>
       <input id="kimlik" autocomplete="username" inputmode="text" required maxlength="20">
@@ -47,6 +61,6 @@
       <button type="button" data-rol="coklu">Çok profilli</button>
     </div>
   </main>
-  <script src="/app.js"></script>
+  <script src="/app.js?v=10"></script>
 </body>
 </html>
